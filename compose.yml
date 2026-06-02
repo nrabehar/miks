@@ -12,6 +12,7 @@ services:
         - web
       networks:
         - miks_net
+        - dokploy-network
       labels:
         - "traefik.docker.network=dokploy-network"
       restart: unless-stopped
@@ -44,7 +45,6 @@ services:
       - API_URL=http://api:3000
     networks:
       - miks_net
-      - dokploy-network
     restart: unless-stopped
   
 
@@ -52,3 +52,5 @@ networks:
   miks_net:
     name: miks_net
     driver: bridge
+  dokploy-network:
+    external: true
