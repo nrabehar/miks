@@ -1,0 +1,20 @@
+services:
+  nginx:
+    image: miks:nginx
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: miks_nginx
+    command: nginx -g 'daemon off;'
+    depends_on:
+      - api
+      - web
+    networks:
+      - miks_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k http://localhost:80/health || exit 1"]
+      interval: 20s
+      timeout: 60s
+      retries: 10
+      start_period: 30s
