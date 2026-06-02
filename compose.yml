@@ -1,12 +1,54 @@
-include:
-  - path: ./proxy/compose.yml
-  - path: ./api/compose.yml
-  - path: ./web/compose.yml
+services:
+
+  proxy:
+      image: miks:proxy
+      build:
+        context: proxy
+        dockerfile: Dockerfile
+      container_name: miks_proxy
+      command: nginx -g 'daemon off;'
+      depends_on:
+        - api
+        - web
+      networks:
+        - miks_net
+      labels:
+        - "traefik.docker.network=dokploy-network"
+      restart: unless-stopped
+
+  api:
+    build:
+      context: api
+      dockerfile: Dockerfile
+    container_name: miks_api
+    environment:
+      - COOKIE_SECRET=${COOKIE_SECRET:-default_cookie_secret}
+      - JWT_SECRET=${JWT_SECRET:-default_jwt_secret}
+
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-your_google_client_id}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-your_google_client_secret}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://localhost:8443/api/auth/oauth/google/callback}
+    networks:
+      - miks_net
+    restart: unless-stopped
+
+  web:
+    build:
+      context: web
+      dockerfile: Dockerfile
+    container_name: miks_web
+    environment:
+      - NODE_ENV=production
+      - API_URL=http://api:3000
+    networks:
+      - miks_net
+      - dokploy-network
+    restart: unless-stopped
   
 
 networks:
   miks_net:
     name: miks_net
     driver: bridge
-  dokploy-network:
-    external: true
