@@ -11,10 +11,7 @@ services:
       - web
     networks:
       - miks_net
+      - dokploy-network
+    labels:
+      - "traefik.docker.network=dokploy-network"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -k http://localhost:80/health || exit 1"]
-      interval: 20s
-      timeout: 60s
-      retries: 10
-      start_period: 30s

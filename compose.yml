@@ -1,0 +1,12 @@
+include:
+  - path: ./proxy/compose.yml
+  - path: ./api/compose.yml
+  - path: ./web/compose.yml
+  
+
+networks:
+  miks_net:
+    name: miks_net
+    driver: bridge
+  dokploy-network:
+    external: true
