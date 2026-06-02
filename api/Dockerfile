@@ -1,29 +1,42 @@
-FROM node:24.12.0-alpine AS dependencies
+ARG NODE_VERSION=24.14.0-slim
+
+FROM node:${NODE_VERSION} AS dependencies
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 
 RUN npm ci
+
+FROM node:${NODE_VERSION} AS builder
+
+WORKDIR /app
+
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
-
-# RUN npx prisma generate
-
-FROM development AS builder
-
-ENV NODE_ENV=production
 
 RUN npm run build
 
-FROM base AS runner
+FROM node:${NODE_VERSION} AS prod-dependencies
 
 WORKDIR /app
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json /app/package-lock.json ./
 
-RUN npm prune --omit=dev
+COPY package.json package-lock.json ./
+
+RUN npm ci --omit=dev
+
+FROM node:${NODE_VERSION} AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --chown=node:node --from=builder /app/dist ./dist
+COPY --chown=node:node --from=prod-dependencies /app/node_modules ./node_modules
+COPY --chown=node:node --from=prod-dependencies /app/package.json ./package.json
+
+USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/index.js" ]
