@@ -14,7 +14,9 @@ services:
         - miks_net
         - dokploy-network
       labels:
-        - "traefik.docker.network=miks_net"
+        - "traefik.enable=true"
+        - "traefik.http.services.proxy.loadbalancer.server.port=80"
+        - "traefik.docker.network=dokploy-network"
       restart: unless-stopped
 
   api:
@@ -50,4 +52,6 @@ services:
 
 networks:
   miks_net:
+    driver: bridge
+  dokploy-network:
     external: true
