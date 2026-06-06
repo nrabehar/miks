@@ -27,6 +27,9 @@ export default function RootLayout({
 			lang="en"
 			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
+			<head>
+				<meta name="apple-mobile-web-app-title" content="Miks" />
+			</head>
 			<body className="flex min-h-full flex-col">{children}</body>
 		</html>
 	);
