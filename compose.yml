@@ -3,7 +3,7 @@ services:
   web:
       image: miks:web
       build:
-        context: web
+        context: frontend
         dockerfile: Dockerfile
       container_name: miks_web
       command: nginx -g 'daemon off;'
