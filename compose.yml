@@ -1,15 +1,14 @@
 services:
 
-  proxy:
-      image: miks:proxy
+  web:
+      image: miks:web
       build:
-        context: proxy
+        context: web
         dockerfile: Dockerfile
-      container_name: miks_proxy
+      container_name: miks_web
       command: nginx -g 'daemon off;'
       depends_on:
         - api
-        - web
       networks:
         - miks_net
         - dokploy-network
@@ -19,11 +18,11 @@ services:
         - "traefik.docker.network=dokploy-network"
       restart: unless-stopped
 
-  api:
+  backend:
     build:
-      context: api
+      context: backend
       dockerfile: Dockerfile
-    container_name: miks_api
+    container_name: miks_backend
     environment:
       - COOKIE_SECRET=${COOKIE_SECRET:-default_cookie_secret}
       - JWT_SECRET=${JWT_SECRET:-default_jwt_secret}
@@ -36,19 +35,6 @@ services:
     networks:
       - miks_net
     restart: unless-stopped
-
-  web:
-    build:
-      context: web
-      dockerfile: Dockerfile
-    container_name: miks_web
-    environment:
-      - NODE_ENV=production
-      - API_URL=http://api:3000
-    networks:
-      - miks_net
-    restart: unless-stopped
-  
 
 networks:
   miks_net:
