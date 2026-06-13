@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router'
 
 export const Header = () => {
 	return (
-		<nav className="fixed w-full top-0 z-50 bg-background/80 backdrop-blur-sm p-4">
+		<nav className="fixed w-full top-0 z-50 bg-background/20 backdrop-blur-sm p-4">
 			<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex items-center justify-between">
 					{/* Logo */}
@@ -37,15 +37,15 @@ export const Header = () => {
 						</li>
 					</ul>
 					{/* Login and Register */}
-					<div className="flex items-center gap-3">
+					<div className="flex items-center gap-2">
 						<Link
-							to="/"
+							to="/auth/login"
 							className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
 						>
 							Connexion
 						</Link>
 						<Link
-							to="/"
+							to='/auth/register'
 							className="bg-primary text-primary-foreground text-sm px-4 py-2 rounded-lg hover:bg-primary transition-colors font-medium shadow-sm"
 						>
 							Créer un Workspace
