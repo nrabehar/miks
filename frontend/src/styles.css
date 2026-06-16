@@ -6,54 +6,58 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-	/* Fonds et surfaces */
-	--background: oklch(0.985 0.004 240); /* #F8FAFC - Gris-bleu très clair */
-	--foreground: oklch(0.2 0.03 250); /* Texte foncé lisible */
-	--card: oklch(1 0 0); /* Blanc pur pour les cartes */
-	--card-foreground: oklch(0.2 0.03 250);
+	/* Light mode */
+	--background: oklch(0.985 0.003 250);
+	--foreground: oklch(0.18 0.02 250);
+
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.18 0.02 250);
+
 	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.2 0.03 250);
+	--popover-foreground: oklch(0.18 0.02 250);
 
-	/* Identité de Marque Miks (Bleu Royal du Logo) */
-	--primary: oklch(0.35 0.14 255); /* #1D3A8A - Bleu Royal */
-	--primary-foreground: oklch(0.985 0 0);
+	/* Bleu du logo */
+	--primary: oklch(0.56 0.18 250);
+	--primary-foreground: oklch(0.98 0 0);
 
-	/* Bouton Secondaire & Éléments discrets */
-	--secondary: oklch(0.93 0.015 250);
-	--secondary-foreground: oklch(0.3 0.1 255);
+	/* Surface secondaire */
+	--secondary: oklch(0.95 0.01 250);
+	--secondary-foreground: oklch(0.30 0.04 250);
 
-	--muted: oklch(0.95 0.005 240);
-	--muted-foreground: oklch(0.45 0.02 240);
+	--muted: oklch(0.96 0.005 250);
+	--muted-foreground: oklch(0.50 0.02 250);
 
-	/* Bouton d'Action Spécial Épargne (Vert du Logo) */
-	--accent: oklch(0.7 0.19 155); /* #10B981 - Vert Menthe */
-	--accent-foreground: oklch(0.15 0.05 155);
+	/* Orange du logo */
+	--accent: oklch(0.72 0.19 50);
+	--accent-foreground: oklch(0.98 0 0);
 
-	/* Alertes & Système */
-	--destructive: oklch(0.577 0.245 27.325); /* Alerte budget rouge */
+	--destructive: oklch(0.62 0.22 25);
 	--destructive-foreground: oklch(1 0 0);
 
-	/* Bordures et focus */
-	--border: oklch(0.9 0.01 240);
-	--input: oklch(0.9 0.01 240);
-	--ring: oklch(0.35 0.14 255);
+	--border: oklch(0.90 0.01 250);
+	--input: oklch(0.90 0.01 250);
 
-	/* Graphiques d'épargne et d'organisation */
-	--chart-1: oklch(0.35 0.14 255); /* Bleu */
-	--chart-2: oklch(0.7 0.19 155); /* Vert */
-	--chart-3: oklch(0.6 0.18 40); /* Orange alerte */
-	--chart-4: oklch(0.5 0.15 265);
-	--chart-5: oklch(0.4 0.12 270);
+	--ring: oklch(0.56 0.18 250);
 
-	/* Barre latérale (Sidebar) */
-	--sidebar: oklch(1 0 0);
-	--sidebar-foreground: oklch(0.2 0.03 250);
-	--sidebar-primary: oklch(0.35 0.14 255);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.7 0.19 155);
-	--sidebar-accent-foreground: oklch(0.15 0.05 155);
-	--sidebar-border: oklch(0.9 0.01 240);
-	--sidebar-ring: oklch(0.35 0.14 255);
+	/* Charts */
+	--chart-1: oklch(0.56 0.18 250);
+	--chart-2: oklch(0.65 0.14 190);
+	--chart-3: oklch(0.72 0.19 50);
+	--chart-4: oklch(0.60 0.13 160);
+	--chart-5: oklch(0.45 0.12 270);
+
+	/* Sidebar */
+	--sidebar: oklch(0.99 0 0);
+	--sidebar-foreground: oklch(0.18 0.02 250);
+
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+
+	--sidebar-accent: var(--accent);
+	--sidebar-accent-foreground: var(--accent-foreground);
+
+	--sidebar-border: var(--border);
+	--sidebar-ring: var(--ring);
 
 	--font-sans:
 		ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
@@ -89,50 +93,59 @@
 }
 
 .dark {
-	/* Fonds immersifs sombres */
-	--background: oklch(0.12 0.02 250); /* #0F172A - Fond bleu sombre */
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.18 0.025 250); /* #1E293B - Cartes */
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.18 0.025 250);
-	--popover-foreground: oklch(0.985 0 0);
+	/* Noir premium */
+	--background: oklch(0.12 0.01 250);
+	--foreground: oklch(0.96 0.005 250);
 
-	/* Marque Éclaircie pour le contraste sombre */
-	--primary: oklch(0.6 0.16 250); /* Bleu plus lumineux et lisible */
-	--primary-foreground: oklch(0.12 0.02 250);
+	/* Cartes légèrement relevées */
+	--card: oklch(0.17 0.015 250);
+	--card-foreground: oklch(0.96 0.005 250);
 
-	--secondary: oklch(0.25 0.02 250);
-	--secondary-foreground: oklch(0.985 0 0);
+	--popover: oklch(0.17 0.015 250);
+	--popover-foreground: oklch(0.96 0.005 250);
 
-	--muted: oklch(0.25 0.02 250);
-	--muted-foreground: oklch(0.7 0.015 250);
+	/* Bleu principal */
+	--primary: oklch(0.67 0.18 245);
+	--primary-foreground: oklch(0.12 0.01 250);
 
-	/* Vert d'action toujours éclatant */
-	--accent: oklch(0.7 0.19 155);
-	--accent-foreground: oklch(0.12 0.02 250);
+	/* Surface */
+	--secondary: oklch(0.22 0.01 250);
+	--secondary-foreground: oklch(0.96 0.005 250);
 
-	--destructive: oklch(0.704 0.191 22.216);
-	--destructive-foreground: oklch(0.985 0 0);
+	--muted: oklch(0.22 0.01 250);
+	--muted-foreground: oklch(0.72 0.015 250);
 
-	--border: oklch(0.28 0.015 250);
-	--input: oklch(0.28 0.015 250);
-	--ring: oklch(0.6 0.16 250);
+	/* Orange signature */
+	--accent: oklch(0.76 0.20 50);
+	--accent-foreground: oklch(0.12 0.01 250);
 
-	--chart-1: oklch(0.6 0.16 250);
-	--chart-2: oklch(0.7 0.19 155);
-	--chart-3: oklch(0.6 0.18 40);
-	--chart-4: oklch(0.5 0.15 265);
-	--chart-5: oklch(0.4 0.12 270);
+	--destructive: oklch(0.70 0.20 25);
+	--destructive-foreground: oklch(0.98 0 0);
 
-	/* Sidebar Sombre */
-	--sidebar: oklch(0.12 0.02 250);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-primary: oklch(0.6 0.16 250);
-	--sidebar-primary-foreground: oklch(0.12 0.02 250);
-	--sidebar-accent: oklch(0.7 0.19 155);
-	--sidebar-accent-foreground: oklch(0.12 0.02 250);
-	--sidebar-border: oklch(0.28 0.015 250);
-	--sidebar-ring: oklch(0.6 0.16 250);
+	--border: oklch(0.26 0.01 250);
+	--input: oklch(0.26 0.01 250);
+
+	--ring: oklch(0.67 0.18 245);
+
+	/* Charts */
+	--chart-1: oklch(0.67 0.18 245);
+	--chart-2: oklch(0.65 0.15 190);
+	--chart-3: oklch(0.76 0.20 50);
+	--chart-4: oklch(0.60 0.13 160);
+	--chart-5: oklch(0.52 0.12 275);
+
+	/* Sidebar */
+	--sidebar: oklch(0.10 0.01 250);
+	--sidebar-foreground: oklch(0.96 0.005 250);
+
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+
+	--sidebar-accent: var(--accent);
+	--sidebar-accent-foreground: var(--accent-foreground);
+
+	--sidebar-border: var(--border);
+	--sidebar-ring: var(--ring);
 }
 
 @theme inline {
@@ -203,3 +216,4 @@
 		@apply font-sans w-full h-full;
 	}
 }
+

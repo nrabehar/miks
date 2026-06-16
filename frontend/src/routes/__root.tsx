@@ -1,3 +1,4 @@
+import { ClerkProvider } from '@clerk/react'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Outlet, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
@@ -12,9 +13,11 @@ export const Route = createRootRoute({
 function RootComponent() {
 	return (
 		<>
-			<ThemeProvider>
-				<Outlet />
-			</ThemeProvider>
+			<ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
+				<ThemeProvider>
+					<Outlet />
+				</ThemeProvider>
+			</ClerkProvider>
 			<TanStackDevtools
 				config={{
 					position: 'bottom-right',

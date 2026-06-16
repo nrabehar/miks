@@ -1,78 +1,108 @@
-import miks from '#/assets/miks.svg'
+import logo from '#/assets/miks.svg'
 import { Button } from '#/components/ui/button'
-import { GoogleIcon } from '#/components/ui/google-icon'
 import { Input } from '#/components/ui/input'
-import { Separator } from '#/components/ui/separator'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { BsFacebook } from 'react-icons/bs'
+import { FcGoogle } from 'react-icons/fc'
+import z from 'zod'
 
 export const Route = createFileRoute('/auth/login')({
 	component: RouteComponent,
 })
 
 function RouteComponent() {
+	const [error, setError] = useState<string | null>(null)
+
+	const formSchema = z.object({
+		email: z.email({ message: 'Invalid email address' }),
+	})
+
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<z.infer<typeof formSchema>>({
+		resolver: zodResolver(formSchema),
+		defaultValues: { email: '' },
+	})
+
+	const onSubmit = (data: z.infer<typeof formSchema>) => {
+		console.log('Form Data:', data)
+		// Handle form submission, e.g., send data to the server
+	}
+
 	return (
-		<div className="w-full min-h-screen font-sans bg-background sm:p-10 p-4 space-y-10 flex flex-col items-center justify-between">
-			<div className="w-full grid grid-cols-3 items-center">
-				<div></div>
-				<Link
-					to="/"
-					className="flex gap-2 text-center justify-center items-center"
-				>
-					<img src={miks} alt="miks icon" className="w-7" />
-					<h2 className="text-2xl font-semibold">miks</h2>
-				</Link>
-				<div className="flex justify-end">
-					<div className="text-right">
-						Vous découvrez Miks ?
-						<br />
-						<Link
-							to="/auth/register"
-							className="font-semibold text-primary hover:underline"
-						>
-							Créer un compte
-						</Link>
+		<div className="w-full min-h-screen font-sans p-5 grid text-center place-content-center">
+			<div className="max-w-md">
+				<div className="flex justify-center items-center gap-3 mb-4">
+					<img src={logo} alt="Logo" className="w-9 h-9" />
+					<h2 className="text-2xl font-bold">Miks</h2>
+				</div>
+				<h2 className="text-lg font-semibold mb-2">
+					Sign in to your Miks
+				</h2>
+				<p className="text-sm text-muted-foreground mb-6">
+					We suggest using the email address that you use at your
+					organization.
+				</p>
+
+				<div className="flex items-center justify-center space-x-4 w-full">
+					<Button
+						variant="outline"
+						size="lg"
+						className="cursor-pointer"
+					>
+						<FcGoogle />
+						Sign in with Google
+					</Button>
+					<Button
+						variant="outline"
+						size="lg"
+						className="cursor-pointer"
+					>
+						<BsFacebook />
+						Sign in with Facebook
+					</Button>
+				</div>
+
+				<div>
+					<div className="flex items-center my-6">
+						<div className="grow border-t border-muted"></div>
+						<span className="mx-4 text-sm text-muted-foreground">
+							OR
+						</span>
+						<div className="grow border-t border-muted"></div>
 					</div>
 				</div>
-			</div>
-			<form className="flex flex-col grow shrink-0 items-center justify-center w-full max-w-3xl sm:gap-6 gap-4">
-				<h1 className="text-center max-w-3xl sm:text-5xl text-3xl font-semibold leading-12">
-					Saisissez votre adresse e-mail pour vous connecter
-				</h1>
-				<span className='text-muted-foreground'>Ou choisissez une autre méthode de connexion.</span>
-				<div className="max-w-md items-center justify-center w-full flex flex-col gap-4">
+
+				<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 					<Input
+						// label="Email"
 						type="email"
-						placeholder="nom@work-email.com"
+						placeholder="your@email.com"
+						// icon={<Mail size={18} />}
+						// error={errors.email?.message}
+						{...register('email')}
 						className="w-full h-10"
 					/>
+					{error && (
+						<div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+							{error}
+						</div>
+					)}
+
 					<Button
-						className="w-full h-10 bg-primary text-white rounded-md cursor-pointer"
 						type="submit"
+						size="lg"
+						className="w-full bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
 					>
-						Se connecter avec un e-mail
+						Sign In
 					</Button>
-					<Separator />
-					<div className="flex items-center justify-center w-full max-w-3xl gap-3">
-						<Button
-							size="lg"
-							variant="outline"
-							className="w-full h-10 flex items-center justify-center gap-2 cursor-pointer"
-						>
-							<GoogleIcon />
-							Se connecter avec Google
-						</Button>
-					</div>
-					<div className="text-center">
-					Vous rencontrez des difficultés ? {' '}
-					<Link
-						to="/"
-						className="font-semibold text-primary hover:underline"
-					>
-						Veuillez saisir une URL de l’espace de travail
-					</Link>
-					</div>
-				</div>
-			</form>
+				</form>
+			</div>
 		</div>
 	)
 }
