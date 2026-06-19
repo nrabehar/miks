@@ -24,6 +24,7 @@
 			"#/*": ["./src/*"],
 			"@/*": ["./src/*"],
       "#core/*": ["./src/core/*"],
+      "#prisma/*": ["./src/generated/prisma/*"]
 		},
   }
 }
