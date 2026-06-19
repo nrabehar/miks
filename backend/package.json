@@ -41,6 +41,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
+    "@nestjs/cli": "^11.0.23",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.27",
     "@types/argon2": "^0.14.1",
