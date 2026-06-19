@@ -15,6 +15,8 @@ WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 
+RUN npm run db:generate
+
 RUN npm run build
 
 FROM node:${NODE_VERSION} AS prod-dependencies
@@ -24,6 +26,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 RUN npm ci --omit=dev
+
+COPY --chown=node:node --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 FROM node:${NODE_VERSION} AS runner
 

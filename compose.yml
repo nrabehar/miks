@@ -24,6 +24,9 @@ services:
       dockerfile: Dockerfile
     container_name: miks_backend
     environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+
       - COOKIE_SECRET=${COOKIE_SECRET:-default_cookie_secret}
       - JWT_SECRET=${JWT_SECRET:-default_jwt_secret}
 
