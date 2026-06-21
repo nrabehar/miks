@@ -15,9 +15,9 @@ export class PrismaService
 {
 	private readonly logger = new Logger(PrismaService.name);
 
-	constructor(private readonly config: ConfigService) {
+	constructor(config: ConfigService) {
 		const adapter = new PrismaPg({
-			connectionString: config.get<string>('database.url'),
+			connectionString: config.get<string>('database.postgresUrl')!,
 		});
 
 		super({ adapter, log: ['error', 'warn'], errorFormat: 'pretty' });
@@ -32,7 +32,9 @@ export class PrismaService
 			this.logger.error(
 				`Error connecting to database: ${error instanceof Error ? error.message : 'Unknown error'}`,
 			);
-			throw error instanceof Error ? error : new Error('Unknown error during database connection');
+			throw error instanceof Error
+				? error
+				: new Error('Unknown error during database connection');
 		}
 	}
 
@@ -45,7 +47,9 @@ export class PrismaService
 			this.logger.error(
 				`Error disconnecting from database: ${error instanceof Error ? error.message : 'Unknown error'}`,
 			);
-			throw error instanceof Error ? error : new Error('Unknown error during database disconnection');
+			throw error instanceof Error
+				? error
+				: new Error('Unknown error during database disconnection');
 		}
 	}
 }

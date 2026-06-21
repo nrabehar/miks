@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+<head>
+  <meta charset="utf-8">
+  <title>{{t 'subjects.welcome'}}</title>
+  {{> styles }}
+</head>
+<body>
+  <div class="container">
+    <div class="logo-area">
+      <span class="logo-text">Miks<span class="logo-dot">.</span></span>
+    </div>
+
+    <h1 class="header">{{t 'welcome.title' name=name}}</h1>
+    
+    <p class="text">
+      {{t 'welcome.intro'}}
+    </p>
+    
+    <div class="card">
+      <div class="card-title">{{t 'welcome.card_title'}}</div>
+      <ul class="features-list">
+        <li>{{t 'welcome.feature_1'}}</li>
+        <li>{{t 'welcome.feature_2'}}</li>
+        <li>{{t 'welcome.feature_3'}}</li>
+      </ul>
+    </div>
+
+    <div class="btn-wrapper">
+      <a href="{{dashboardLink}}" class="btn">{{t 'welcome.cta_btn'}}</a>
+    </div>
+
+    {{> footer }}
+  </div>
+</body>
+</html>

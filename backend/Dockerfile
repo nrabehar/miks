@@ -34,7 +34,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --chown=node:node --from=builder /app/dist ./dist
-COPY --chown=node:node --from=builder /app/src/generated /app/dist/src/generated
 COPY --chown=node:node --from=prod-dependencies /app/node_modules ./node_modules
 COPY --chown=node:node --from=prod-dependencies /app/package.json ./package.json
 

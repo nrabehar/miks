@@ -24,7 +24,9 @@
 			"#/*": ["./src/*"],
 			"@/*": ["./src/*"],
       "#core/*": ["./src/core/*"],
-      "#prisma/*": ["./src/generated/prisma/*"]
+      "#prisma/*": ["./src/generated/prisma/*"],
+      "$/*": ["./src/modules/*"],
+      "#config/*": ["./src/config/*"]
 		},
   }
 }

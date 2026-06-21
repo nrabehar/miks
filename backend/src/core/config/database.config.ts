@@ -1,13 +1,14 @@
-import { registerAs } from "@nestjs/config";
+import { registerAs } from '@nestjs/config';
 
 export interface DatabaseConfig {
-	url: string;
+	postgresUrl: string;
+	redisUrl: string;
 }
-
 
 export default registerAs<DatabaseConfig>(
 	'database',
 	(): DatabaseConfig => ({
-		url: process.env.DATABASE_URL!,
-	})
-)
+		postgresUrl: process.env.DATABASE_URL!,
+		redisUrl: process.env.REDIS_URL!,
+	}),
+);
