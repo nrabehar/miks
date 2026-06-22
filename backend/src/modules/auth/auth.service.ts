@@ -31,31 +31,32 @@ export class AuthService {
 
 	async register(
 		email: string,
-		username: string,
+		firstName: string,
+		lastName: string,
 		password: string,
 		lang: string = 'fr',
 	): Promise<void> {
-		if (!email || !username || !password) {
+		if (!email || !firstName || !lastName || !password) {
 			throw new UnauthorizedException({
-				email: 'Email, username and password are required',
+				email: 'Email, first name, last name and password are required',
 			});
 		}
 
 		try {
-			const user = await this.usersService.create(email, username);
+			const user = await this.usersService.create(email, firstName, lastName);
 			await this.accountsService.createCredentials(user.id, password);
 			await this.sendWelcomeEmail(user);
 			const token = await this.tokenService.createToken(user.id, 15);
 			await this.mailService.sendVerificationCode({
 				to: user.email,
-				name: user.username!,
+				name: `${firstName} ${lastName}`,
 				code: token,
 				context: VerificationContext.EMAIL_CONFIRMATION,
 				lang,
 				expirationTime: '15 min',
 			});
 			// TODO: Generate and store a default avatar in background — never throws.
-			this.logger.log(`User registered successfully: ${username}`);
+			this.logger.log(`User registered successfully: ${firstName} ${lastName}`);
 		} catch (error) {
 			const message = getErrorMessage(error);
 			this.logger.error(`Failed to register user: ${message}`);

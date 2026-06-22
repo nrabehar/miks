@@ -1,5 +1,7 @@
 import {
+  IsBoolean,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsStrongPassword,
   MaxLength,
@@ -18,4 +20,8 @@ export class UserLoginDto {
   @MinLength(8)
   @MaxLength(100)
   password: string = '';
+
+  @IsBoolean()
+  @IsOptional()
+  rememberMe: boolean = false;
 }

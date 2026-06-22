@@ -13,11 +13,9 @@ export class UsersService {
 
 	constructor(private prisma: PrismaService) {}
 
-	async create(email: string, username: string) {
+	async create(email: string, firstName: string, lastName: string) {
 		const existingUser = await this.prisma.user.findFirst({
-			where: {
-				OR: [{ email }, { username }],
-			},
+			where: { email },
 		});
 
 		if (existingUser) {
@@ -26,15 +24,14 @@ export class UsersService {
 					'Email already exists, login instead',
 				);
 			}
-			throw new ConflictException(
-				'Username already exists, choose another one',
-			);
 		}
 
 		const newUser = await this.prisma.user.create({
 			data: {
 				email,
-				username,
+				firstName,
+				lastName,
+				username: email.replace(/@.*/, ''),
 			},
 		});
 

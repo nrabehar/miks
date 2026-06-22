@@ -24,8 +24,8 @@ export class AuthController {
 
 	@Post('register')
 	async registerUser(@Body() body: UserRegisterDto, @GetLang() lang: string) {
-		const { email, username, password } = body;
-		await this.userAuthService.register(email, username, password, lang);
+		const { firstName, lastName, email, password } = body;
+		await this.userAuthService.register(email, firstName, lastName, password, lang);
 
 		return {
 			message:
@@ -56,7 +56,7 @@ export class AuthController {
 			res.clearCookie(AuthService.REFRESH_TOKEN_COOKIE);
 			return res.status(HttpStatus.OK).json({
 				twoFaRequired: true,
-				userId: user.id,
+				user,
 				accessToken,
 			});
 		}
@@ -65,7 +65,7 @@ export class AuthController {
 
 		return res
 			.status(HttpStatus.OK)
-			.json({ accessToken, twoFaRequired: false });
+			.json({ user, accessToken, twoFaRequired: false });
 	}
 
 	@Post('refresh')

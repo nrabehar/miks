@@ -15,15 +15,26 @@ const strongPasswordSchema = z
 		message: 'Password must contain at least one special character',
 	})
 
-const emailSchema = z.email({ message: 'Invalid email address' })
+const identifierSchema = z
+	.string()
+	.min(1, { message: 'Identifier is required' })
 
 /**
  * Login form validation schema
  */
 export const loginSchema = z.object({
-	email: emailSchema,
+	identifier: identifierSchema,
 	password: strongPasswordSchema,
-	rememberMe: z.boolean().optional()
+	rememberMe: z.boolean().optional(),
 })
 
 export type LoginFormData = z.infer<typeof loginSchema>
+
+export const registerSchema = z.object({
+	firstName: z.string().min(1, { message: 'First name is required' }),
+	lastName: z.string().min(1, { message: 'Last name is required' }),
+	email: z.email({ message: 'Invalid email address' }),
+	password: strongPasswordSchema,
+})
+
+export type RegisterFormData = z.infer<typeof registerSchema>

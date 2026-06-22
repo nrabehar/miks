@@ -78,7 +78,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 				{helperText && !error && (
 					<p
 						id={`${inputId}-helper`}
-						className="mt-2 text-sm text-text-muted"
+						className="mt-2 text-xs text-muted-foreground"
 					>
 						{helperText}
 					</p>

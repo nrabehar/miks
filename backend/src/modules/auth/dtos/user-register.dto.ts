@@ -3,24 +3,24 @@ import {
 	IsNotEmpty,
 	IsString,
 	IsStrongPassword,
-	Matches,
 	MaxLength,
-	MinLength,
+	MinLength
 } from 'class-validator';
 
 export class UserRegisterDto {
-	@IsEmail({}, { message: 'Invalid email address' })
+	@IsString()
 	@IsNotEmpty()
-	email: string = '';
+	@MinLength(2, { message: 'First name must be at least 2 characters' })
+	firstName: string = '';
 
 	@IsString()
 	@IsNotEmpty()
-	@MinLength(3, { message: 'Username must be at least 3 characters' })
-	@MaxLength(15, { message: 'Username must not exceed 15 characters' })
-	@Matches(/^[a-zA-Z0-9_]+$/, {
-		message: 'Username can only contain letters, numbers, and underscores',
-	})
-	username: string = '';
+	@MinLength(2, { message: 'Last name must be at least 2 characters' })
+	lastName: string = '';
+
+	@IsEmail({}, { message: 'Invalid email address' })
+	@IsNotEmpty()
+	email: string = '';
 
 	@IsStrongPassword(
 		{},

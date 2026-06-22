@@ -3,6 +3,8 @@ model User {
   email    String  @unique
   phone    String? @unique
   username String? @unique
+  firstName String?
+  lastName  String?
   name     String?
 
   emailVerified Boolean @default(false)
