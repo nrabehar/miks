@@ -26,6 +26,8 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - RESEND_API_KEY=${RESEND_API_KEY}
 
       - COOKIE_SECRET=${COOKIE_SECRET:-default_cookie_secret}
       - JWT_SECRET=${JWT_SECRET:-default_jwt_secret}
