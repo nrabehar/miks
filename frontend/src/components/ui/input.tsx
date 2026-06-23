@@ -1,9 +1,10 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
+import { Label } from './label'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-	label?: string
+	label?: string | ReactNode
 	error?: string
 	helperText?: string
 	icon?: ReactNode
@@ -23,16 +24,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 		},
 		ref,
 	) => {
-		const inputId = id || `ipt-${label?.toLowerCase().replace(/\s+/g, '-')}`
+		const inputId = `ipt-${props.name || id}`
 		return (
 			<div className="w-full">
 				{label && (
-					<label
+					<Label
 						htmlFor={inputId}
 						className="mb-2 block text-sm font-medium text-text-secondary"
 					>
 						{label}
-					</label>
+					</Label>
 				)}
 
 				<div className="relative">

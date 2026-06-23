@@ -23,7 +23,7 @@ export const LoginForm = () => {
 		formState: { errors },
 	} = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
-		defaultValues: { identifier: '', password: '', rememberMe: false },
+		defaultValues: { identifier: '', password: '' },
 	})
 
 	const mutation = useMutation({

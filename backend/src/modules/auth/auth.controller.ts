@@ -1,4 +1,5 @@
 import { GetLang } from '#/common/decorators/get-lang.decorator';
+import { Public } from '#/common/decorators/public.decorator';
 import {
 	Body,
 	Controller,
@@ -22,6 +23,7 @@ export class AuthController {
 		private readonly configService: ConfigService,
 	) {}
 
+	@Public()
 	@Post('register')
 	async registerUser(@Body() body: UserRegisterDto, @GetLang() lang: string) {
 		const { firstName, lastName, email, password } = body;
@@ -32,7 +34,8 @@ export class AuthController {
 				'User registered successfully. Please check your email for verification instructions.',
 		};
 	}
-
+	
+	@Public()
 	@Post('login')
 	@HttpCode(HttpStatus.OK)
 	async login(

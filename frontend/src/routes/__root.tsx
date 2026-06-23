@@ -24,7 +24,10 @@ function RootComponent() {
 	return (
 		<>
 			<QueryClientProvider client={queryClient}>
-				<MotionConfig reducedMotion="user">
+				<MotionConfig
+					reducedMotion="user"
+					transition={{ duration: 0.4 }}
+				>
 					<ClerkProvider
 						publishableKey={
 							import.meta.env.VITE_CLERK_PUBLISHABLE_KEY

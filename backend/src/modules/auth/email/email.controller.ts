@@ -1,4 +1,3 @@
-import { Public } from '#/common/decorators/public.decorator';
 import {
 	Body,
 	Controller,
@@ -22,7 +21,6 @@ export class EmailController {
 
 	constructor(private readonly emailService: EmailService) {}
 
-	@Public()
 	@Post('confirm')
 	@HttpCode(HttpStatus.OK)
 	async confirmEmail(@Req() req: AuthedRequest, @Body() body: EmailConfirmDto) {

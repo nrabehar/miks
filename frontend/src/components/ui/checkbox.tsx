@@ -1,62 +1,37 @@
-import { type InputHTMLAttributes, forwardRef } from 'react'
+import { CheckIcon } from 'lucide-react'
+import { Checkbox as CheckboxPrimitive } from 'radix-ui'
+import * as React from 'react'
 
-interface CheckboxProps extends Omit<
-	InputHTMLAttributes<HTMLInputElement>,
-	'type'
-> {
-	label?: string
+import { cn } from '@/lib/utils'
+
+interface CheckboxProps extends React.ComponentProps<typeof CheckboxPrimitive.Root> {
+  label?: string
 }
 
-export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
-	({ label, className = '', id, ...props }, ref) => {
-		const checkboxId = id || label?.toLowerCase().replace(/\s+/g, '-')
-
-		return (
-			<label
-				htmlFor={checkboxId}
-				className="group flex cursor-pointer items-center gap-3"
+function Checkbox({
+	className,
+	label,
+	...props
+}: CheckboxProps) {
+	return (
+		<CheckboxPrimitive.Root
+			data-slot="checkbox"
+			className={cn(
+				'peer relative flex size-4 shrink-0 items-center justify-center rounded-lg border border-input transition-colors outline-none group-has-disabled/field:opacity-50 after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 aria-invalid:aria-checked:border-primary dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground dark:data-checked:bg-primary',
+				className,
+			)}
+			{...props}
+		>
+			<CheckboxPrimitive.Indicator
+				data-slot="checkbox-indicator"
+				className="grid place-content-center text-current transition-none [&>svg]:size-3.5"
 			>
-				<div className="relative">
-					<input
-						ref={ref}
-						type="checkbox"
-						id={checkboxId}
-						className={`peer sr-only ${className}`}
-						{...props}
-					/>
-					<div className="h-5 w-5 rounded border border-border-default bg-bg-secondary transition-all group-hover:border-border-hover peer-checked:border-primary-600 peer-checked:bg-primary-600 peer-focus-visible:ring-2 peer-focus-visible:ring-primary-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg-primary">
-						<svg
-							className="h-full w-full text-white opacity-0 transition-opacity peer-checked:opacity-100"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="3"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						>
-							<polyline points="20 6 9 17 4 12" />
-						</svg>
-					</div>
-					<svg
-						className="pointer-events-none absolute top-0 left-0 h-5 w-5 text-white opacity-0 transition-opacity peer-checked:opacity-90"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="3"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					>
-						<polyline points="20 6 9 17 4 12" />
-					</svg>
-				</div>
-				{label && (
-					<span className="text-sm text-text-secondary transition-colors group-hover:text-text-primary">
-						{label}
-					</span>
-				)}
-			</label>
-		)
-	},
-)
+				<CheckIcon />
+				{label && <span className="ml-2 text-sm font-medium text-foreground">{label}</span>}
+			</CheckboxPrimitive.Indicator>
+		</CheckboxPrimitive.Root>
+	)
+}
 
-Checkbox.displayName = 'Checkbox'
+export { Checkbox }
+

@@ -13,6 +13,7 @@ interface ButtonProps
 	asChild?: boolean
 	isLoading?: boolean
 	loader?: React.ReactNode
+	loadingText?: string
 }
 
 const buttonVariants = cva(
@@ -61,6 +62,7 @@ function Button({
 	loader,
 	children,
 	disabled,
+	loadingText,
 	...props
 }: ButtonProps) {
 	const Comp = asChild ? Slot.Root : 'button'
@@ -78,7 +80,7 @@ function Button({
 				? loader || (
 						<span className="flex items-center gap-2">
 							<LoaderCircleIcon className="animate-spin" />
-							Loading...
+							{loadingText || 'Loading...'}
 						</span>
 					)
 				: children}
