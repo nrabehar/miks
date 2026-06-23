@@ -8,7 +8,7 @@ export const Route = createFileRoute('/auth/login')({
 function RouteComponent() {
 	return (
 		<div className="min-h-screen flex bg-background">
-			<div className="hidden lg:flex w-5/12 bg-linear-to-br from-primary/10 via-accent/5 to-background relative overflow-hidden items-center justify-center">
+			<div className="hidden lg:flex w-6/12 bg-linear-to-br from-primary/10 via-accent/5 to-background relative overflow-hidden items-center justify-center">
 				<div className="absolute inset-0 bg-[radial-gradient(at_50%_30%,rgba(59,130,246,0.15),transparent_50%)]" />
 				<div className="relative z-10 max-w-md px-10 text-center">
 					<div className="flex justify-center items-center mb-6 space-x-2">
