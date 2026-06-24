@@ -37,7 +37,11 @@ export class MailService implements OnModuleInit {
 		to: string,
 		templateName: string,
 		subjectKey: string,
-		context: Record<string, any> & { lang: string; sender?: string },
+		context: Record<string, any> & {
+			lang: string;
+			sender?: string;
+			senderKey?: string;
+		},
 	) {
 		try {
 			const templatePath = path.join(
@@ -67,8 +71,10 @@ export class MailService implements OnModuleInit {
 			if (typeof currentSubjectLevel === 'string')
 				subject = currentSubjectLevel;
 
+			const sender = this.resolveSender(context);
+
 			const { data, error } = await this.resend.emails.send({
-				from: 'Miks Coopérative <hello@miks.dedyn.io>',
+				from: sender,
 				to,
 				subject,
 				html,
@@ -104,6 +110,11 @@ export class MailService implements OnModuleInit {
 			code: payload.code,
 			extraDetails: payload.extraDetails,
 			expirationTime,
+			resetLink: payload.resetLink,
+			btnKey: payload.resetLink
+			  ? `confirmation.${contextKey}_BTN`
+			  : null,
+			senderKey: `senders.${contextKey}`,
 			subjectKey: `subjects.${contextKey}`,
 			titleKey: `confirmation.${contextKey}_TITLE`,
 			descKey: `confirmation.${contextKey}_DESC`,
@@ -146,6 +157,36 @@ export class MailService implements OnModuleInit {
 				this.i18nData[lang] = JSON.parse(content);
 			}
 		});
+	}
+
+	private resolveSender(context: {
+		lang?: string;
+		sender?: string;
+		senderKey?: string;
+	}): string {
+		if (context.sender) return context.sender;
+
+		const langData =
+			this.i18nData[context.lang || 'fr'] || this.i18nData['fr'];
+
+		if (context.senderKey) {
+			const keys = context.senderKey.split('.');
+			let value: any = langData;
+			for (const k of keys) {
+				if (value && typeof value === 'object' && k in value) {
+					value = value[k];
+				} else {
+					value = null;
+					break;
+				}
+			}
+			if (typeof value === 'string') return value;
+		}
+
+		// Fallback générique pour ne jamais envoyer avec un from vide
+		return langData?.senders?.welcome
+			? langData.senders.welcome
+			: 'Miks Coopérative <hello@miks.dedyn.io>';
 	}
 
 	private registerHelpers() {

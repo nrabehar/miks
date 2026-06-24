@@ -1,6 +1,7 @@
 import { AuthCard } from '#/components/auth/auth-card'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
+import { ResendButton } from '#/components/ui/resend-button'
 import { authApi } from '#/lib/api'
 import { maskEmail } from '#/lib/utils/mask-email'
 import { forgotPasswordSchema } from '#/lib/validation/auth.schema'
@@ -73,16 +74,17 @@ function ForgotPasswordPage() {
 						Enter code manually
 					</Button>
 
-					<button
-						type="button"
-						className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
-						onClick={() => {
+					<ResendButton
+						storageKey={`miks_forgot_resend_${submittedEmail}`}
+						cooldownSeconds={60}
+						label="Didn't receive it? Send again"
+						cooldownLabel="You can resend in {s}s"
+						disabled={mutation.isPending}
+						onResend={async () => {
 							mutation.mutate(submittedEmail)
 							toast.info('Sending another code...')
 						}}
-					>
-						Didn't receive it? Send again
-					</button>
+					/>
 				</div>
 			</AuthCard>
 		)

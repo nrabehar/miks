@@ -1,11 +1,27 @@
 import {
+	IsBoolean,
 	IsEmail,
 	IsNotEmpty,
 	IsString,
 	IsStrongPassword,
 	MaxLength,
-	MinLength
+	MinLength,
+	Validate,
+	ValidationArguments,
+	ValidatorConstraint,
+	ValidatorConstraintInterface,
 } from 'class-validator';
+
+@ValidatorConstraint({ name: 'IsTrue', async: false })
+class IsTrueConstraint implements ValidatorConstraintInterface {
+	validate(value: unknown) {
+		return value === true;
+	}
+
+	defaultMessage(args: ValidationArguments) {
+		return `${args.property} must be true`;
+	}
+}
 
 export class UserRegisterDto {
 	@IsString()
@@ -33,5 +49,9 @@ export class UserRegisterDto {
 	@MaxLength(25, { message: 'Password must not exceed 25 characters' })
 	@IsNotEmpty()
 	password: string = '';
-	
+
+	@IsBoolean({ message: 'CGU must be a boolean' })
+	@Validate(IsTrueConstraint, { message: 'You must accept the CGU to register' })
+	cgu: boolean = false;
+
 }

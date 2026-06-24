@@ -59,7 +59,12 @@ function RegisterPage() {
 			navigate({ to: '/auth/verify-email' })
 		},
 		onError: (err: any) => {
-			const msg: string = err.response?.data?.message ?? ''
+			const raw = err.response?.data?.message
+			const msg = Array.isArray(raw)
+				? raw.join(', ')
+				: typeof raw === 'string'
+					? raw
+					: ''
 			if (msg.toLowerCase().includes('already exists')) {
 				toast.error('An account with this email already exists.', {
 					description: 'Try logging in instead.',

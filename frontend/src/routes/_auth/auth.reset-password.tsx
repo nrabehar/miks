@@ -16,7 +16,10 @@ import { z } from 'zod'
 export const Route = createFileRoute('/_auth/auth/reset-password')({
 	validateSearch: z.object({
 		userId: z.string().optional(),
-		token: z.string().optional(),
+		token: z
+			.union([z.string(), z.number()])
+			.transform((v) => String(v))
+			.optional(),
 	}),
 	component: ResetPasswordPage,
 })

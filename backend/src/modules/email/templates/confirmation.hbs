@@ -26,6 +26,14 @@
     </div>
 
     <p class="warning-text">{{t 'common.warning_expiration' expirationTime=expirationTime}}</p>
+
+    {{#if resetLink}}
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="{{resetLink}}" class="cta-button" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">{{t btnKey}}</a>
+      </div>
+      <p class="notice-text" style="margin-top: 16px;">{{t 'common.manual_code_hint'}}</p>
+    {{/if}}
+
     <p class="notice-text">{{t 'common.security_notice'}}</p>
 
     {{> footer }}

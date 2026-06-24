@@ -102,8 +102,8 @@ export class AuthService {
 		}
 
 		const token = await this.tokenService.createToken(user.id, 15);
-		const frontendUrl = 'https://miks.dedyn.io';
-		const resetLink = `${frontendUrl}/auth/reset-password?userId=${user.id}&token=${token}`;
+		const frontendUrl = process.env.FRONTEND_URL || 'https://miks.dedyn.io';
+		const resetLink = `${frontendUrl.replace(/\/$/, '')}/auth/reset-password?userId=${user.id}&token=${token}`;
 
 		await this.mailService.sendVerificationCode({
 			to: user.email,
@@ -164,7 +164,7 @@ export class AuthService {
 
 		const tokens = this.tokenService.generateJwtToken({ sub: user.id });
 
-		if (!user.enabled2FA) {
+		if (!user.twoFaEnabled) {
 			await this.sessionService.createSession({
 				userId: user.id,
 				jti: tokens.refreshJti,
@@ -256,7 +256,7 @@ export class AuthService {
 			displayName: user.username ?? undefined,
 			emailVerified: user.emailVerified,
 			phoneVerified: user.phoneVerified,
-			twoFaEnabled: user.enabled2FA,
+			twoFaEnabled: user.twoFaEnabled,
 		};
 	}
 

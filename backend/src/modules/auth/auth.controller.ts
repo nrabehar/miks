@@ -1,14 +1,14 @@
 import { GetLang } from '#/common/decorators/get-lang.decorator';
 import { Public } from '#/common/decorators/public.decorator';
 import {
-	Body,
-	Controller,
-	HttpCode,
-	HttpStatus,
-	Post,
-	Req,
-	Res,
-	UnauthorizedException,
+    Body,
+    Controller,
+    HttpCode,
+    HttpStatus,
+    Post,
+    Req,
+    Res,
+    UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
@@ -23,13 +23,23 @@ import { VerifyEmailDto } from './dtos/verify-email.dto';
 
 @Controller('auth')
 export class AuthController {
+	private readonly isProduction =
+		process.env.NODE_ENV === 'production';
+
+	private readonly cookieOptions = {
+		httpOnly: true as const,
+		secure: this.isProduction,
+		sameSite: 'strict' as const,
+		path: '/',
+	};
+
 	constructor(
 		private readonly userAuthService: AuthService,
 		private readonly configService: ConfigService,
 	) {}
 
 	@Public()
-	@Throttle({ default: { ttl: 3_600_000, limit: 3 } })
+	@Throttle({ 'auth-register': { ttl: 3_600_000, limit: 3 } })
 	@Post('register')
 	async registerUser(@Body() body: UserRegisterDto, @GetLang() lang: string) {
 		const { firstName, lastName, email, password } = body;
@@ -38,7 +48,7 @@ export class AuthController {
 	}
 
 	@Public()
-	@Throttle({ default: { ttl: 900_000, limit: 10 } })
+	@Throttle({ 'auth-login': { ttl: 900_000, limit: 10 } })
 	@Post('verify-email')
 	@HttpCode(HttpStatus.OK)
 	async verifyEmail(@Body() body: VerifyEmailDto) {
@@ -47,7 +57,7 @@ export class AuthController {
 	}
 
 	@Public()
-	@Throttle({ default: { ttl: 3_600_000, limit: 3 } })
+	@Throttle({ 'auth-email': { ttl: 3_600_000, limit: 5 } })
 	@Post('resend-email')
 	@HttpCode(HttpStatus.OK)
 	async resendEmail(@Body() body: ResendEmailDto, @GetLang() lang: string) {
@@ -56,7 +66,7 @@ export class AuthController {
 	}
 
 	@Public()
-	@Throttle({ default: { ttl: 3_600_000, limit: 3 } })
+	@Throttle({ 'auth-email': { ttl: 3_600_000, limit: 5 } })
 	@Post('forgot-password')
 	@HttpCode(HttpStatus.OK)
 	async forgotPassword(@Body() body: ForgotPasswordDto, @GetLang() lang: string) {
@@ -65,7 +75,7 @@ export class AuthController {
 	}
 
 	@Public()
-	@Throttle({ default: { ttl: 900_000, limit: 5 } })
+	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
 	@Post('reset-password')
 	@HttpCode(HttpStatus.OK)
 	async resetPassword(@Body() body: ResetPasswordDto) {
@@ -74,7 +84,7 @@ export class AuthController {
 	}
 
 	@Public()
-	@Throttle({ default: { ttl: 900_000, limit: 5 } })
+	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
 	@Post('login')
 	@HttpCode(HttpStatus.OK)
 	async login(
@@ -129,27 +139,29 @@ export class AuthController {
 		const refreshToken = this.extractRefreshToken(req);
 		await this.userAuthService.logout(refreshToken ?? '');
 
-		res.clearCookie(AuthService.REFRESH_TOKEN_COOKIE, {
-			httpOnly: true,
-			secure: this.configService.get('app.nodeEnv') === 'production',
-			sameSite: 'strict',
-		});
+		res.clearCookie(AuthService.REFRESH_TOKEN_COOKIE, this.cookieOptions);
 		res.status(HttpStatus.NO_CONTENT).send();
 	}
 
 	private setRefreshCookie(res: Response, refreshToken: string): void {
 		res.cookie(AuthService.REFRESH_TOKEN_COOKIE, refreshToken, {
-			httpOnly: true,
-			secure: this.configService.get('app.nodeEnv') === 'production',
-			sameSite: 'strict',
+			...this.cookieOptions,
 			maxAge: AuthService.REFRESH_TOKEN_MAX_AGE_MS,
-			path: '/',
+			signed: true,
 		});
 	}
 
 	private extractRefreshToken(req: Request): string | undefined {
-		return (req as Request & {
+		const cookies = (req as Request & {
 			cookies?: Record<string, string | undefined>;
-		}).cookies?.[AuthService.REFRESH_TOKEN_COOKIE];
+			signedCookies?: Record<string, string | undefined>;
+		}).cookies;
+		const signedCookies = (req as Request & {
+			signedCookies?: Record<string, string | undefined>;
+		}).signedCookies;
+		return (
+			signedCookies?.[AuthService.REFRESH_TOKEN_COOKIE] ??
+			cookies?.[AuthService.REFRESH_TOKEN_COOKIE]
+		);
 	}
 }

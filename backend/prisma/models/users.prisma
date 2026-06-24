@@ -10,7 +10,7 @@ model User {
   emailVerified Boolean @default(false)
   phoneVerified Boolean @default(false)
 
-  enabled2FA Boolean @default(false)
+  twoFaEnabled Boolean @default(false)
 
   twoFaSecret String?
   tokenSecret String?

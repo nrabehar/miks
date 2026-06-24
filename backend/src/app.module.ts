@@ -1,22 +1,27 @@
 import KeyvRedis from '@keyv/redis';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { KeyvCacheableMemory } from 'cacheable';
 import { Keyv } from 'keyv';
-import { authConfig, databaseConfig, emailConfig } from './core/config';
+import { appConfig, authConfig, databaseConfig, emailConfig } from './core/config';
 import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
-			load: [databaseConfig, authConfig, emailConfig],
+			load: [appConfig, databaseConfig, authConfig, emailConfig],
 		}),
 		ThrottlerModule.forRoot({
-			throttlers: [{ ttl: 60_000, limit: 60 }],
+			throttlers: [
+				{ name: 'default', ttl: 60_000, limit: 60 },
+				{ name: 'auth-email', ttl: 3_600_000, limit: 5 },
+				{ name: 'auth-login', ttl: 900_000, limit: 10 },
+				{ name: 'auth-register', ttl: 3_600_000, limit: 3 },
+			],
 		}),
 		CacheModule.registerAsync({
 			useFactory: async (configService: ConfigService) => {

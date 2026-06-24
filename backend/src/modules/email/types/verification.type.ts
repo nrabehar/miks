@@ -12,4 +12,5 @@ export interface VerificationMailPayload {
 	context: VerificationContext;
 	extraDetails?: string;
 	expirationTime?: string;
+	resetLink?: string;
 }

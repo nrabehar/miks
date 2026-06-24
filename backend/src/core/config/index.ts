@@ -6,3 +6,7 @@ export type { AuthConfig } from './auth.config';
 
 export { default as emailConfig } from './email.config';
 export type { EmailConfig } from './email.config';
+
+export { default as appConfig } from './app.config';
+export type { AppConfig } from './app.config';
+

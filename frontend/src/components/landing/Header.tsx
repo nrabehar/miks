@@ -4,13 +4,13 @@ export const Header = () => {
 	return (
 		<nav className="fixed w-full top-0 z-50 bg-background/20 backdrop-blur-sm p-4">
 			<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="flex items-center justify-between">
+				<div className="grid grid-cols-2 items-center gap-4 md:grid-cols-3">
 					{/* Logo */}
 					<Link to="/" className="text-xl font-bold">
 						Miks
 					</Link>
 					{/* Navigation Links */}
-					<ul className="hidden md:flex items-center gap-7">
+					<ul className="hidden md:flex items-center justify-center gap-7">
 						<li>
 							<a
 								href="#features"
@@ -37,7 +37,7 @@ export const Header = () => {
 						</li>
 					</ul>
 					{/* Login and Register */}
-					<div className="flex items-center gap-2">
+					<div className="flex items-center justify-end gap-2">
 						<Link
 							to="/auth/login"
 							className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
