@@ -1,0 +1,141 @@
+{
+	"common": {
+		"appName": "Miks",
+		"loading": "Chargement...",
+		"cancel": "Annuler",
+		"continue": "Continuer",
+		"back": "Retour",
+		"submit": "Envoyer",
+		"or": "ou"
+	},
+	"auth": {
+		"login": {
+			"title": "Connectez-vous à votre compte",
+			"description": "Saisissez vos identifiants pour accéder à Miks.",
+			"identifierLabel": "Email ou nom d'utilisateur",
+			"identifierPlaceholder": "vous@exemple.com",
+			"passwordLabel": "Mot de passe",
+			"passwordPlaceholder": "Votre mot de passe",
+			"forgotPassword": "Mot de passe oublié ?",
+			"submit": "Se connecter",
+			"submitting": "Connexion...",
+			"noAccount": "Pas encore de compte ?",
+			"signUp": "S'inscrire",
+			"errors": {
+				"invalidCredentials": "Identifiants invalides",
+				"emailNotVerified": "Veuillez vérifier votre email avant de vous connecter.",
+				"lockedOut": "Compte temporairement verrouillé. Réessayez plus tard.",
+				"networkError": "Impossible de joindre le serveur. Vérifiez votre connexion."
+			},
+			"twoFactor": {
+				"title": "Authentification à deux facteurs",
+				"description": "Saisissez le code à 6 chiffres de votre application d'authentification.",
+				"submit": "Vérifier le code",
+				"submitting": "Vérification...",
+				"invalidCode": "Code 2FA invalide. Réessayez.",
+				"resendHint": "Vous n'avez pas reçu le code ?"
+			}
+		},
+		"register": {
+			"title": "Créez votre compte",
+			"description": "Rejoignez Miks et digitalisez votre groupe coopératif",
+			"firstNameLabel": "Prénom",
+			"firstNamePlaceholder": "Jean",
+			"lastNameLabel": "Nom",
+			"lastNamePlaceholder": "Dupont",
+			"emailLabel": "Email",
+			"emailPlaceholder": "vous@exemple.com",
+			"passwordLabel": "Mot de passe",
+			"passwordPlaceholder": "Créez un mot de passe fort",
+			"confirmPasswordLabel": "Confirmer le mot de passe",
+			"cguLabel": "J'accepte les CGU",
+			"submit": "Créer le compte",
+			"submitting": "Création du compte...",
+			"haveAccount": "Déjà un compte ?",
+			"signIn": "Se connecter",
+			"errors": {
+				"emailTaken": "Un compte avec cet email existe déjà.",
+				"weakPassword": "Le mot de passe doit être fort (majuscule, minuscule, chiffre, symbole).",
+				"cguRequired": "Vous devez accepter les CGU pour vous inscrire.",
+				"generic": "L'inscription a échoué. Réessayez."
+			},
+			"passwordRules": {
+				"title": "Le mot de passe doit contenir :",
+				"length": "Au moins 8 caractères",
+				"uppercase": "Une majuscule",
+				"lowercase": "Une minuscule",
+				"number": "Un chiffre",
+				"special": "Un caractère spécial"
+			}
+		},
+		"verifyEmail": {
+			"title": "Vérifiez votre boîte mail",
+			"description": "Nous avons envoyé un code à 6 chiffres à {email}. Saisissez-le ci-dessous pour vérifier votre compte.",
+			"noSession": "Aucune session de vérification trouvée.",
+			"noSessionHelp": "Votre session a peut-être expiré ou vous êtes arrivé ici par un lien direct.",
+			"submit": "Vérifier le code",
+			"submitting": "Vérification...",
+			"resendSuccess": "Nouveau code envoyé !",
+			"resendFailure": "Impossible de renvoyer le code.",
+			"errors": {
+				"expired": "Code expiré.",
+				"invalid": "Code de vérification invalide."
+			},
+			"wrongEmail": "Mauvais email ?",
+			"startOver": "Recommencer",
+			"resendPrompt": "Vous n'avez pas reçu le code ?"
+		},
+		"forgotPassword": {
+			"title": "Réinitialisez votre mot de passe",
+			"description": "Saisissez votre email et nous vous enverrons un code de réinitialisation.",
+			"submit": "Envoyer le code",
+			"submitting": "Envoi...",
+			"sentTitle": "Vérifiez votre boîte mail",
+			"sentTo": "Email envoyé à {email}",
+			"sentHint": "Nous avons envoyé un code de réinitialisation à votre adresse. Cliquez sur le lien dans l'email ou saisissez le code manuellement.",
+			"enterManually": "Saisir le code manuellement",
+			"resend": "Vous ne l'avez pas reçu ? Renvoyer",
+			"resendCooldown": "Vous pouvez renvoyer dans {s}s",
+			"sendAnother": "Envoi d'un nouveau code...",
+			"error": "Une erreur est survenue. Réessayez."
+		},
+		"resetPassword": {
+			"title": "Choisissez un nouveau mot de passe",
+			"description": "Saisissez votre email, le code reçu et votre nouveau mot de passe.",
+			"descriptionFromLink": "Saisissez le code à 6 chiffres de votre email et votre nouveau mot de passe.",
+			"bannerHint": "Cliquez sur le lien dans l'email pour une expérience simplifiée, ou saisissez le code manuellement ci-dessous.",
+			"codeLabel": "Code de réinitialisation",
+			"codePlaceholder": "Code à 6 chiffres",
+			"newPasswordLabel": "Nouveau mot de passe",
+			"newPasswordPlaceholder": "Créez un mot de passe fort",
+			"confirmLabel": "Confirmer le nouveau mot de passe",
+			"submit": "Mettre à jour",
+			"submitting": "Mise à jour...",
+			"successTitle": "Mot de passe mis à jour",
+			"successMessage": "Votre mot de passe a été réinitialisé",
+			"successHelp": "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
+			"signIn": "Se connecter",
+			"errors": {
+				"expired": "Code de réinitialisation expiré.",
+				"invalid": "Code invalide.",
+				"generic": "Impossible de réinitialiser. Réessayez."
+			}
+		},
+		"logout": "Se déconnecter"
+	},
+	"validation": {
+		"required": "Ce champ est requis",
+		"email": "Adresse email invalide",
+		"minLength": "Minimum {n} caractères",
+		"passwordsDontMatch": "Les mots de passe ne correspondent pas"
+	},
+	"landing": {
+		"signIn": "Se connecter",
+		"signUp": "S'inscrire"
+	},
+	"errors": {
+		"generic": "Une erreur est survenue. Réessayez.",
+		"unauthorized": "Veuillez vous connecter pour continuer.",
+		"forbidden": "Vous n'avez pas accès à cette ressource."
+	}
+}

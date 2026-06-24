@@ -18,6 +18,7 @@ import {
 import { AlertCircleIcon, ShieldCheckIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { BsFacebook } from 'react-icons/bs'
 import { FcGoogle } from 'react-icons/fc'
 import { toast } from 'sonner'
@@ -32,6 +33,7 @@ export const Route = createFileRoute('/_auth/auth/login')({
 })
 
 function LoginPage() {
+	const { t } = useTranslation()
 	const navigate = useNavigate()
 	const setSession = useAuthStore((state) => state.setSession)
 	const [emailNotVerified, setEmailNotVerified] = useState(false)
@@ -64,7 +66,7 @@ function LoginPage() {
 				setEmailNotVerified(true)
 				return
 			}
-			toast.error(msg || 'Login failed. Please check your credentials.')
+			toast.error(msg || t('auth.login.errors.invalidCredentials'))
 		},
 	})
 
@@ -76,9 +78,8 @@ function LoginPage() {
 			toast.success('Welcome back!')
 			navigate({ to: '/', replace: true })
 		},
-		onError: (err: any) => {
-			const msg: string = err.response?.data?.message ?? ''
-			toast.error(msg || 'Invalid 2FA code. Please try again.')
+		onError: () => {
+			toast.error(t('auth.login.twoFactor.invalidCode'))
 		},
 	})
 
@@ -86,15 +87,15 @@ function LoginPage() {
 	if (challengeId) {
 		return (
 			<AuthCard
-				title="Two-factor authentication"
-				description="Enter the 6-digit code from your authenticator app."
+				title={t('auth.login.twoFactor.title')}
+				description={t('auth.login.twoFactor.description')}
 				footer={
 					<button
 						type="button"
 						className="text-sm text-muted-foreground hover:underline underline-offset-4"
 						onClick={() => setChallengeId(null)}
 					>
-						← Back to sign in
+						← {t('common.back')}
 					</button>
 				}
 			>
@@ -103,7 +104,7 @@ function LoginPage() {
 						<ShieldCheckIcon className="size-7 text-primary" />
 					</div>
 					<p className="text-sm text-muted-foreground">
-						Open your authenticator app and enter the current code.
+						{t('auth.login.twoFactor.description')}
 					</p>
 				</div>
 				<OtpForm
@@ -111,7 +112,7 @@ function LoginPage() {
 					submitting={twoFaMutation.isPending}
 					error={
 						twoFaMutation.isError
-							? 'Invalid code. Please check your authenticator app.'
+							? t('auth.login.twoFactor.invalidCode')
 							: undefined
 					}
 				/>
@@ -122,13 +123,13 @@ function LoginPage() {
 	// Step 1: email + password
 	return (
 		<AuthCard
-			title="Welcome back"
-			description="Sign in to your MIKS account"
+			title={t('auth.login.title')}
+			description={t('auth.login.description')}
 			footer={
 				<>
-					Don't have an account?{' '}
+					{t('auth.login.noAccount')}{' '}
 					<Link to="/auth/register" className="text-primary font-medium hover:underline">
-						Create one
+						{t('auth.login.signUp')}
 					</Link>
 				</>
 			}
@@ -138,7 +139,7 @@ function LoginPage() {
 					<AlertCircleIcon className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
 					<div className="space-y-1">
 						<p className="font-medium text-amber-800 dark:text-amber-300">
-							Email not verified
+							{t('auth.login.errors.emailNotVerified')}
 						</p>
 						<p className="text-amber-700 dark:text-amber-400">
 							Please check your inbox and enter the verification code.{' '}
@@ -158,27 +159,27 @@ function LoginPage() {
 				className="space-y-4"
 			>
 				<Input
-					label="Email or username"
+					label={t('auth.login.identifierLabel')}
 					autoComplete="email"
-					placeholder="example@miks.mg"
+					placeholder={t('auth.login.identifierPlaceholder')}
 					error={errors.identifier?.message}
 					{...register('identifier')}
 				/>
 				<PasswordInput
 					label={
 						<span className="flex w-full items-center justify-between">
-							<span>Password</span>
+							<span>{t('auth.login.passwordLabel')}</span>
 							<Link
 								to="/auth/forgot-password"
 								className="text-xs font-normal text-primary hover:underline"
 								tabIndex={-1}
 							>
-								Forgot password?
+								{t('auth.login.forgotPassword')}
 							</Link>
 						</span>
 					}
 					autoComplete="current-password"
-					placeholder="Enter your password"
+					placeholder={t('auth.login.passwordPlaceholder')}
 					error={errors.password?.message}
 					{...register('password')}
 				/>
@@ -187,33 +188,25 @@ function LoginPage() {
 					size="lg"
 					className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
 					isLoading={loginMutation.isPending}
-					loadingText="Signing in..."
+					loadingText={t('auth.login.submitting')}
 				>
-					Sign in
+					{t('auth.login.submit')}
 				</Button>
 			</form>
 
 			<div className="flex items-center gap-4">
 				<div className="flex-1 border-t border-muted" />
-				<span className="text-xs text-muted-foreground">or continue with</span>
+				<span className="text-xs text-muted-foreground">{t('common.or')}</span>
 				<div className="flex-1 border-t border-muted" />
 			</div>
 
 			<div className="grid grid-cols-2 gap-3">
-				<SocialButton
-					icon={<FcGoogle />}
-					provider="Google"
-					className="w-full opacity-50 cursor-not-allowed"
-					disabled
-					title="Coming soon"
-				/>
-				<SocialButton
-					icon={<BsFacebook color="#1877F2" />}
-					provider="Facebook"
-					className="w-full opacity-50 cursor-not-allowed"
-					disabled
-					title="Coming soon"
-				/>
+				<SocialButton provider="google" icon={<FcGoogle className="size-5" />}>
+					Google
+				</SocialButton>
+				<SocialButton provider="facebook" icon={<BsFacebook className="size-5 text-blue-600" />}>
+					Facebook
+				</SocialButton>
 			</div>
 		</AuthCard>
 	)

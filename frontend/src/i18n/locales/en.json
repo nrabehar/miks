@@ -1,0 +1,141 @@
+{
+	"common": {
+		"appName": "Miks",
+		"loading": "Loading...",
+		"cancel": "Cancel",
+		"continue": "Continue",
+		"back": "Back",
+		"submit": "Submit",
+		"or": "or"
+	},
+	"auth": {
+		"login": {
+			"title": "Sign in to your account",
+			"description": "Enter your credentials to access Miks.",
+			"identifierLabel": "Email or username",
+			"identifierPlaceholder": "you@example.com",
+			"passwordLabel": "Password",
+			"passwordPlaceholder": "Your password",
+			"forgotPassword": "Forgot your password?",
+			"submit": "Sign in",
+			"submitting": "Signing in...",
+			"noAccount": "Don't have an account?",
+			"signUp": "Sign up",
+			"errors": {
+				"invalidCredentials": "Invalid credentials",
+				"emailNotVerified": "Please verify your email before logging in.",
+				"lockedOut": "Account temporarily locked. Try again later.",
+				"networkError": "Could not reach the server. Check your connection."
+			},
+			"twoFactor": {
+				"title": "Two-factor authentication",
+				"description": "Enter the 6-digit code from your authenticator app.",
+				"submit": "Verify code",
+				"submitting": "Verifying...",
+				"invalidCode": "Invalid 2FA code. Please try again.",
+				"resendHint": "Didn't receive the code?"
+			}
+		},
+		"register": {
+			"title": "Create your account",
+			"description": "Join Miks and digitise your cooperative group",
+			"firstNameLabel": "First name",
+			"firstNamePlaceholder": "Jane",
+			"lastNameLabel": "Last name",
+			"lastNamePlaceholder": "Doe",
+			"emailLabel": "Email",
+			"emailPlaceholder": "you@example.com",
+			"passwordLabel": "Password",
+			"passwordPlaceholder": "Create a strong password",
+			"confirmPasswordLabel": "Confirm password",
+			"cguLabel": "I accept the CGU",
+			"submit": "Create account",
+			"submitting": "Creating account...",
+			"haveAccount": "Already have an account?",
+			"signIn": "Sign in",
+			"errors": {
+				"emailTaken": "An account with this email already exists.",
+				"weakPassword": "Password must be strong (uppercase, lowercase, number, symbol).",
+				"cguRequired": "You must accept the CGU to register.",
+				"generic": "Registration failed. Please try again."
+			},
+			"passwordRules": {
+				"title": "Password must contain:",
+				"length": "At least 8 characters",
+				"uppercase": "Uppercase letter",
+				"lowercase": "Lowercase letter",
+				"number": "Number",
+				"special": "Special character"
+			}
+		},
+		"verifyEmail": {
+			"title": "Check your inbox",
+			"description": "We sent a 6-digit code to {email}. Enter it below to verify your account.",
+			"noSession": "No verification session found.",
+			"noSessionHelp": "Your verification session may have expired or you came here from a direct link.",
+			"submit": "Verify code",
+			"submitting": "Verifying...",
+			"resendSuccess": "New code sent!",
+			"resendFailure": "Could not resend the code.",
+			"errors": {
+				"expired": "Code expired.",
+				"invalid": "Invalid verification code."
+			},
+			"wrongEmail": "Wrong email?",
+			"startOver": "Start over",
+			"resendPrompt": "Didn't receive the code?"
+		},
+		"forgotPassword": {
+			"title": "Reset your password",
+			"description": "Enter your email address and we'll send you a reset code.",
+			"submit": "Send reset code",
+			"submitting": "Sending...",
+			"sentTitle": "Check your inbox",
+			"sentTo": "Email sent to {email}",
+			"sentHint": "We sent a reset code to your email address. Click the link in the email or enter the code manually.",
+			"enterManually": "Enter code manually",
+			"resend": "Didn't receive it? Send again",
+			"resendCooldown": "You can resend in {s}s",
+			"sendAnother": "Sending another code...",
+			"error": "Something went wrong. Please try again."
+		},
+		"resetPassword": {
+			"title": "Choose a new password",
+			"description": "Enter your email, the code we sent you, and your new password.",
+			"descriptionFromLink": "Enter the 6-digit code from your email and your new password.",
+			"bannerHint": "Click the link from the reset email for a smoother experience, or enter the code manually below.",
+			"codeLabel": "Reset code",
+			"codePlaceholder": "6-digit code",
+			"newPasswordLabel": "New password",
+			"newPasswordPlaceholder": "Create a strong password",
+			"confirmLabel": "Confirm new password",
+			"submit": "Update password",
+			"submitting": "Updating...",
+			"successTitle": "Password updated",
+			"successMessage": "Your password has been reset",
+			"successHelp": "You can now sign in with your new password.",
+			"signIn": "Sign in",
+			"errors": {
+				"expired": "Reset code expired.",
+				"invalid": "Invalid code.",
+				"generic": "Could not reset password. Please try again."
+			}
+		},
+		"logout": "Sign out"
+	},
+	"validation": {
+		"required": "This field is required",
+		"email": "Invalid email address",
+		"minLength": "Minimum {n} characters",
+		"passwordsDontMatch": "Passwords do not match"
+	},
+	"landing": {
+		"signIn": "Sign in",
+		"signUp": "Sign up"
+	},
+	"errors": {
+		"generic": "Something went wrong. Please try again.",
+		"unauthorized": "Please sign in to continue.",
+		"forbidden": "You don't have access to this resource."
+	}
+}
