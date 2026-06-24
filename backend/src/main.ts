@@ -70,11 +70,7 @@ async function bootstrap() {
 	);
 
 	const port = configService.get<number>('app.port') ?? 3000;
-	// Bind on 0.0.0.0 in production so other containers (nginx reverse proxy)
-	// in the same Docker network can reach us. In dev we keep loopback for safety.
-	const host = configService.get<string>('app.host') ?? (
-		isProduction ? '0.0.0.0' : '127.0.0.1'
-	);
+	const host = configService.get<string>('app.host') ?? '127.0.0.1';
 
 	await app.listen(port, host);
 }
