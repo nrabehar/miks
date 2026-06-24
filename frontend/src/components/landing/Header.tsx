@@ -1,10 +1,14 @@
+import { type SupportedLanguage } from '#/i18n/config'
+import { useLanguage } from '#/i18n/useLanguage'
 import { Link } from '@tanstack/react-router'
 
 export const Header = () => {
+	const { language, setLanguage } = useLanguage()
+
 	return (
 		<nav className="fixed w-full top-0 z-50 bg-background/20 backdrop-blur-sm p-4">
 			<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="grid grid-cols-2 items-center gap-4 md:grid-cols-3">
+				<div className="grid grid-cols-2 items-center gap-4 md:grid-cols-4">
 					{/* Logo */}
 					<Link to="/" className="text-xl font-bold">
 						Miks
@@ -36,6 +40,24 @@ export const Header = () => {
 							</a>
 						</li>
 					</ul>
+					{/* Language switcher */}
+					<div className="hidden md:flex items-center justify-center gap-1">
+						{(['en', 'fr'] as const).map((lng) => (
+							<button
+								key={lng}
+								type="button"
+								onClick={() => setLanguage(lng as SupportedLanguage)}
+								className={`text-xs font-medium px-2 py-1 rounded transition-colors ${
+									language === lng
+										? 'bg-primary text-primary-foreground'
+										: 'text-muted-foreground hover:text-foreground'
+								}`}
+								aria-label={`Switch language to ${lng}`}
+							>
+								{lng.toUpperCase()}
+							</button>
+						))}
+					</div>
 					{/* Login and Register */}
 					<div className="flex items-center justify-end gap-2">
 						<Link
@@ -45,7 +67,7 @@ export const Header = () => {
 							Connexion
 						</Link>
 						<Link
-							to='/auth/register'
+							to="/auth/register"
 							className="bg-primary text-primary-foreground text-sm px-4 py-2 rounded-lg hover:bg-primary transition-colors font-medium shadow-sm"
 						>
 							Créer un Workspace

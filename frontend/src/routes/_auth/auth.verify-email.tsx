@@ -7,6 +7,7 @@ import { useAuthStore } from '#/stores/auth.store'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { MailIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/auth/verify-email')({
@@ -19,6 +20,7 @@ export const Route = createFileRoute('/_auth/auth/verify-email')({
 })
 
 function VerifyEmailPage() {
+	const { t } = useTranslation()
 	const navigate = useNavigate()
 	const registrationId = sessionStorage.getItem('miks_registration_id') ?? ''
 	const email = sessionStorage.getItem('miks_registration_email') ?? ''
@@ -37,9 +39,11 @@ function VerifyEmailPage() {
 		onError: (err: any) => {
 			const msg = err.response?.data?.message ?? ''
 			if (msg.toLowerCase().includes('expired')) {
-				toast.error('Code expired.', { description: 'Please request a new code.' })
+				toast.error(t('auth.verifyEmail.errors.expired'), {
+					description: 'Please request a new code.',
+				})
 			} else {
-				toast.error('Invalid verification code.', {
+				toast.error(t('auth.verifyEmail.errors.invalid'), {
 					description: 'Please check the code and try again.',
 				})
 			}
@@ -49,11 +53,11 @@ function VerifyEmailPage() {
 	const resendMutation = useMutation({
 		mutationFn: () => authApi.resendEmailCode(registrationId),
 		onSuccess: () =>
-			toast.success('New code sent!', {
+			toast.success(t('auth.verifyEmail.resendSuccess'), {
 				description: `Check your inbox at ${hiddenEmail || 'your email address'}.`,
 			}),
 		onError: () =>
-			toast.error('Could not resend the code.', {
+			toast.error(t('auth.verifyEmail.resendFailure'), {
 				description: 'Please wait a moment and try again.',
 			}),
 	})
@@ -61,22 +65,22 @@ function VerifyEmailPage() {
 	if (!registrationId) {
 		return (
 			<AuthCard
-				title="Verify your email"
-				description="No verification session found."
+				title={t('auth.verifyEmail.title')}
+				description={t('auth.verifyEmail.noSession')}
 			>
 				<div className="space-y-4 text-center">
 					<div className="mx-auto flex size-14 items-center justify-center rounded-full bg-muted">
 						<MailIcon className="size-6 text-muted-foreground" />
 					</div>
 					<p className="text-sm text-muted-foreground">
-						Your verification session may have expired or you came here from a direct link.
+						{t('auth.verifyEmail.noSessionHelp')}
 					</p>
 					<div className="flex flex-col gap-2">
 						<Button asChild size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-							<Link to="/auth/register">Create a new account</Link>
+							<Link to="/auth/register">{t('auth.register.title')}</Link>
 						</Button>
 						<Button asChild variant="outline" size="lg" className="w-full">
-							<Link to="/auth/login">Already verified? Sign in</Link>
+							<Link to="/auth/login">{t('auth.login.title')}</Link>
 						</Button>
 					</div>
 				</div>
@@ -86,19 +90,19 @@ function VerifyEmailPage() {
 
 	return (
 		<AuthCard
-			title="Check your inbox"
+			title={t('auth.verifyEmail.title')}
 			description={
 				<span>
-					We sent a 6-digit code to{' '}
-					{hiddenEmail ? <strong className="text-foreground">{hiddenEmail}</strong> : 'your email address'}.
-					{' '}Enter it below to verify your account.
+					{t('auth.verifyEmail.description', {
+						email: hiddenEmail || 'your email address',
+					})}
 				</span>
 			}
 			footer={
 				<>
-					Wrong email?{' '}
+					{t('auth.verifyEmail.wrongEmail')}{' '}
 					<Link to="/auth/register" className="text-primary font-medium hover:underline">
-						Start over
+						{t('auth.verifyEmail.startOver')}
 					</Link>
 				</>
 			}
@@ -110,11 +114,10 @@ function VerifyEmailPage() {
 				resendCooldown={60}
 				error={
 					submitMutation.isError
-						? 'Invalid or expired code. Please try again.'
+						? t('auth.verifyEmail.errors.invalid')
 						: undefined
 				}
 			/>
 		</AuthCard>
 	)
 }
-

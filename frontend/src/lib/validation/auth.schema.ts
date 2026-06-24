@@ -16,15 +16,21 @@ export const loginSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>
 
-export const registerSchema = z.object({
-	firstName: z.string().min(1, { message: 'First name is required' }),
-	lastName: z.string().min(1, { message: 'Last name is required' }),
-	email: z.email({ message: 'Invalid email address' }).max(255),
-	password: strongPasswordSchema,
-	cgu: z.boolean().refine((val) => val === true, {
-		message: 'You must accept the terms and conditions',
-	}),
-})
+export const registerSchema = z
+	.object({
+		firstName: z.string().min(1, { message: 'First name is required' }),
+		lastName: z.string().min(1, { message: 'Last name is required' }),
+		email: z.email({ message: 'Invalid email address' }).max(255),
+		password: strongPasswordSchema,
+		confirmPassword: z.string().min(1, { message: 'Please confirm your password' }),
+		cgu: z.boolean().refine((val) => val === true, {
+			message: 'You must accept the terms and conditions',
+		}),
+	})
+	.refine((data) => data.password === data.confirmPassword, {
+		message: 'Passwords do not match',
+		path: ['confirmPassword'],
+	});
 
 export type RegisterFormData = z.infer<typeof registerSchema>
 

@@ -10,6 +10,7 @@ import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-r
 import { CheckCircle2Icon } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -25,6 +26,7 @@ export const Route = createFileRoute('/_auth/auth/reset-password')({
 })
 
 function ResetPasswordPage() {
+	const { t } = useTranslation()
 	const navigate = useNavigate()
 	const { userId = '', token = '' } = useSearch({ from: '/_auth/auth/reset-password' })
 	const [success, setSuccess] = useState(false)
@@ -43,42 +45,47 @@ function ResetPasswordPage() {
 			authApi.resetPassword({ userId, code: data.code, newPassword: data.password }),
 		onSuccess: () => setSuccess(true),
 		onError: (err: any) => {
-			const msg: string = err.response?.data?.message ?? ''
+			const raw = err.response?.data?.message
+			const msg = Array.isArray(raw)
+				? raw.join(', ')
+				: typeof raw === 'string'
+					? raw
+					: ''
 			if (msg.toLowerCase().includes('expired')) {
-				toast.error('Reset code expired.', {
+				toast.error(t('auth.resetPassword.errors.expired'), {
 					description: 'Please request a new password reset.',
 					action: {
-						label: 'Reset again',
+						label: t('auth.forgotPassword.title'),
 						onClick: () => navigate({ to: '/auth/forgot-password' }),
 					},
 				})
 			} else if (msg.toLowerCase().includes('invalid')) {
-				toast.error('Invalid code.', {
+				toast.error(t('auth.resetPassword.errors.invalid'), {
 					description: 'Please check the code from your email.',
 				})
 			} else {
-				toast.error(msg || 'Could not reset password. Please try again.')
+				toast.error(msg || t('auth.resetPassword.errors.generic'))
 			}
 		},
 	})
 
 	if (success) {
 		return (
-			<AuthCard title="Password updated">
+			<AuthCard title={t('auth.resetPassword.successTitle')}>
 				<div className="space-y-6 text-center">
 					<div className="flex flex-col items-center gap-3">
 						<div className="flex size-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-950">
 							<CheckCircle2Icon className="size-8 text-green-600 dark:text-green-400" />
 						</div>
 						<div className="space-y-1">
-							<p className="font-medium">Your password has been reset</p>
+							<p className="font-medium">{t('auth.resetPassword.successMessage')}</p>
 							<p className="text-sm text-muted-foreground">
-								You can now sign in with your new password.
+								{t('auth.resetPassword.successHelp')}
 							</p>
 						</div>
 					</div>
 					<Button asChild size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-						<Link to="/auth/login">Sign in</Link>
+						<Link to="/auth/login">{t('auth.resetPassword.signIn')}</Link>
 					</Button>
 				</div>
 			</AuthCard>
@@ -87,15 +94,11 @@ function ResetPasswordPage() {
 
 	return (
 		<AuthCard
-			title="Choose a new password"
-			description={
-				userId
-					? 'Enter the 6-digit code from your email and your new password.'
-					: 'Enter your email, the code we sent you, and your new password.'
-			}
+			title={t('auth.resetPassword.title')}
+			description={userId ? t('auth.resetPassword.descriptionFromLink') : t('auth.resetPassword.description')}
 			footer={
 				<Link to="/auth/login" className="text-primary font-medium hover:underline">
-					Back to sign in
+					{t('common.back')}
 				</Link>
 			}
 		>
@@ -107,13 +110,13 @@ function ResetPasswordPage() {
 			>
 				{!userId && (
 					<div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
-						Click the link from the reset email for a smoother experience, or enter the code manually below.
+						{t('auth.resetPassword.bannerHint')}
 					</div>
 				)}
 
 				<Input
-					label="Reset code"
-					placeholder="6-digit code"
+					label={t('auth.resetPassword.codeLabel')}
+					placeholder={t('auth.resetPassword.codePlaceholder')}
 					inputMode="numeric"
 					maxLength={6}
 					className="text-center font-mono tracking-widest text-lg"
@@ -122,17 +125,17 @@ function ResetPasswordPage() {
 				/>
 
 				<PasswordInput
-					label="New password"
+					label={t('auth.resetPassword.newPasswordLabel')}
 					autoComplete="new-password"
-					placeholder="Create a strong password"
+					placeholder={t('auth.resetPassword.newPasswordPlaceholder')}
 					error={errors.password?.message}
 					{...register('password')}
 				/>
 
 				<PasswordInput
-					label="Confirm new password"
+					label={t('auth.resetPassword.confirmLabel')}
 					autoComplete="new-password"
-					placeholder="Repeat your password"
+					placeholder={t('auth.resetPassword.newPasswordPlaceholder')}
 					error={errors.confirmPassword?.message}
 					{...register('confirmPassword')}
 				/>
@@ -142,9 +145,9 @@ function ResetPasswordPage() {
 					size="lg"
 					className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
 					isLoading={mutation.isPending}
-					loadingText="Updating..."
+					loadingText={t('auth.resetPassword.submitting')}
 				>
-					Update password
+					{t('auth.resetPassword.submit')}
 				</Button>
 			</form>
 		</AuthCard>

@@ -11,6 +11,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { MailCheckIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/auth/forgot-password')({
@@ -18,6 +19,7 @@ export const Route = createFileRoute('/_auth/auth/forgot-password')({
 })
 
 function ForgotPasswordPage() {
+	const { t } = useTranslation()
 	const navigate = useNavigate()
 	const [submittedEmail, setSubmittedEmail] = useState<string | null>(null)
 
@@ -33,17 +35,17 @@ function ForgotPasswordPage() {
 	const mutation = useMutation({
 		mutationFn: (email: string) => authApi.forgotPassword(email),
 		onSuccess: (_, email) => setSubmittedEmail(email),
-		onError: () => toast.error('Something went wrong. Please try again.'),
+		onError: () => toast.error(t('auth.forgotPassword.error')),
 	})
 
 	if (submittedEmail) {
 		const masked = maskEmail(submittedEmail)
 		return (
 			<AuthCard
-				title="Check your inbox"
+				title={t('auth.forgotPassword.sentTitle')}
 				footer={
 					<Link to="/auth/login" className="text-primary font-medium hover:underline">
-						Back to sign in
+						{t('auth.login.title')}
 					</Link>
 				}
 			>
@@ -53,10 +55,11 @@ function ForgotPasswordPage() {
 							<MailCheckIcon className="size-8 text-primary" />
 						</div>
 						<div className="space-y-1.5">
-							<p className="font-medium">Email sent to {masked}</p>
+							<p className="font-medium">
+								{t('auth.forgotPassword.sentTo', { email: masked })}
+							</p>
 							<p className="text-sm text-muted-foreground">
-								We sent a reset code to your email address.
-								Click the link in the email or enter the code manually.
+								{t('auth.forgotPassword.sentHint')}
 							</p>
 						</div>
 					</div>
@@ -71,18 +74,18 @@ function ForgotPasswordPage() {
 							})
 						}
 					>
-						Enter code manually
+						{t('auth.forgotPassword.enterManually')}
 					</Button>
 
 					<ResendButton
 						storageKey={`miks_forgot_resend_${submittedEmail}`}
 						cooldownSeconds={60}
-						label="Didn't receive it? Send again"
-						cooldownLabel="You can resend in {s}s"
+						label={t('auth.forgotPassword.resend')}
+						cooldownLabel={t('auth.forgotPassword.resendCooldown')}
 						disabled={mutation.isPending}
 						onResend={async () => {
 							mutation.mutate(submittedEmail)
-							toast.info('Sending another code...')
+							toast.info(t('auth.forgotPassword.sendAnother'))
 						}}
 					/>
 				</div>
@@ -92,11 +95,11 @@ function ForgotPasswordPage() {
 
 	return (
 		<AuthCard
-			title="Reset your password"
-			description="Enter your email address and we'll send you a reset code."
+			title={t('auth.forgotPassword.title')}
+			description={t('auth.forgotPassword.description')}
 			footer={
 				<Link to="/auth/login" className="text-primary font-medium hover:underline">
-					Back to sign in
+					{t('common.back')}
 				</Link>
 			}
 		>
@@ -105,10 +108,10 @@ function ForgotPasswordPage() {
 				className="space-y-4"
 			>
 				<Input
-					label="Email address"
+					label={t('auth.register.emailLabel')}
 					type="email"
 					autoComplete="email"
-					placeholder="example@miks.mg"
+					placeholder={t('auth.register.emailPlaceholder')}
 					error={errors.email?.message}
 					{...register('email')}
 				/>
@@ -117,12 +120,11 @@ function ForgotPasswordPage() {
 					size="lg"
 					className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
 					isLoading={mutation.isPending}
-					loadingText="Sending..."
+					loadingText={t('auth.forgotPassword.submitting')}
 				>
-					Send reset code
+					{t('auth.forgotPassword.submit')}
 				</Button>
 			</form>
 		</AuthCard>
 	)
 }
-
