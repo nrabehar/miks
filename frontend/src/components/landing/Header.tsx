@@ -3,31 +3,21 @@ import { useLanguage } from '#/i18n/useLanguage'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDownIcon, GlobeIcon, MenuIcon, XIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
-const NAV_LINKS = [
-	{
-		label: 'Product',
-		href: '#features',
-		description: 'Tout pour gérer une coopérative',
-	},
-	{
-		label: 'How it works',
-		href: '#how',
-		description: 'Opérationnel en 5 minutes',
-	},
-	{
-		label: 'Security',
-		href: '#security',
-		description: 'Double signature, audit immuable',
-	},
-	{
-		label: 'Pricing',
-		href: '#pricing',
-		description: 'Gratuit pour commencer',
-	},
+interface NavLink {
+	key: string
+	href: string
+	descriptionKey: string
+}
+
+const NAV_LINK_KEYS: readonly NavLink[] = [
+	{ key: 'product', href: '#features', descriptionKey: 'product' },
+	{ key: 'howItWorks', href: '#how', descriptionKey: 'howItWorks' },
+	{ key: 'security', href: '#security', descriptionKey: 'security' },
+	{ key: 'pricing', href: '#pricing', descriptionKey: 'pricing' },
 ] as const
 
 export const Header = () => {
@@ -43,6 +33,16 @@ export const Header = () => {
 		window.addEventListener('scroll', onScroll, { passive: true })
 		return () => window.removeEventListener('scroll', onScroll)
 	}, [])
+
+	const navItems = useMemo(
+		() =>
+			NAV_LINK_KEYS.map((link) => ({
+				...link,
+				label: t(`landing.nav.${link.key}`),
+				description: t(`landing.nav.${link.descriptionKey}`),
+			})),
+		[t],
+	)
 
 	return (
 		<motion.header
@@ -67,7 +67,7 @@ export const Header = () => {
 					<motion.div
 						whileHover={{ rotate: 12, scale: 1.05 }}
 						transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-						className="relative flex size-9 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br shadow-lg shadow-primary/30"
+						className="relative flex size-9 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-primary/30"
 						style={{
 							backgroundImage:
 								'linear-gradient(135deg, var(--primary) 0%, color-mix(in oklab, var(--primary) 60%, white) 100%)',
@@ -90,13 +90,13 @@ export const Header = () => {
 					</div>
 				</Link>
 
-				{/* Desktop nav with dropdowns */}
+				{/* Desktop nav */}
 				<nav className="hidden items-center gap-1 md:flex">
-					{NAV_LINKS.map((link) => (
+					{navItems.map((link) => (
 						<div
-							key={link.label}
+							key={link.key}
 							className="relative"
-							onMouseEnter={() => setActiveDropdown(link.label)}
+							onMouseEnter={() => setActiveDropdown(link.key)}
 							onMouseLeave={() => setActiveDropdown(null)}
 						>
 							<a
@@ -104,10 +104,10 @@ export const Header = () => {
 								className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 							>
 								{link.label}
-								<ChevronDownIcon className="size-3 opacity-50 transition-transform group-hover:rotate-180" />
+								<ChevronDownIcon className="size-3 opacity-50" />
 							</a>
 							<AnimatePresence>
-								{activeDropdown === link.label && (
+								{activeDropdown === link.key && (
 									<motion.div
 										initial={{ opacity: 0, y: -4 }}
 										animate={{ opacity: 1, y: 0 }}
@@ -131,9 +131,8 @@ export const Header = () => {
 					))}
 				</nav>
 
-				{/* Right side */}
 				<div className="flex items-center gap-2">
-					{/* Language switcher (desktop) */}
+					{/* Language switcher */}
 					<div className="hidden items-center gap-0.5 rounded-full border border-border/60 bg-background/60 p-0.5 sm:flex">
 						<GlobeIcon className="ml-1.5 size-3 text-muted-foreground" />
 						{languages.map((lng) => (
@@ -155,13 +154,13 @@ export const Header = () => {
 						))}
 					</div>
 
-					{/* Auth buttons (desktop) */}
 					<Link
 						to="/auth/login"
 						className="hidden rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground md:inline-flex"
 					>
-						{t('auth.login.title')}
+						{t('landing.signIn')}
 					</Link>
+
 					<motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
 						<Link
 							to="/auth/register"
@@ -176,7 +175,7 @@ export const Header = () => {
 								transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
 								className="absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent"
 							/>
-							<span className="relative">{t('auth.register.title')}</span>
+							<span className="relative">{t('landing.signUp')}</span>
 							<svg
 								className="relative size-3.5 transition-transform group-hover:translate-x-0.5"
 								viewBox="0 0 24 24"
@@ -191,7 +190,6 @@ export const Header = () => {
 						</Link>
 					</motion.div>
 
-					{/* Mobile menu button */}
 					<button
 						type="button"
 						onClick={() => setMobileOpen((v) => !v)}
@@ -226,7 +224,6 @@ export const Header = () => {
 				</div>
 			</div>
 
-			{/* Mobile menu */}
 			<AnimatePresence>
 				{mobileOpen && (
 					<motion.div
@@ -237,9 +234,9 @@ export const Header = () => {
 						className="overflow-hidden border-t border-border/60 bg-background/95 backdrop-blur-xl md:hidden"
 					>
 						<nav className="space-y-1 px-4 py-4">
-							{NAV_LINKS.map((link) => (
+							{navItems.map((link) => (
 								<a
-									key={link.label}
+									key={link.key}
 									href={link.href}
 									onClick={() => setMobileOpen(false)}
 									className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
@@ -253,12 +250,9 @@ export const Header = () => {
 								onClick={() => setMobileOpen(false)}
 								className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
 							>
-								{t('auth.login.title')}
+								{t('landing.signIn')}
 							</Link>
 							<div className="flex items-center gap-2 px-3 py-2.5">
-								<span className="text-xs font-medium text-muted-foreground">
-									Language:
-								</span>
 								{languages.map((lng) => (
 									<button
 										key={lng}

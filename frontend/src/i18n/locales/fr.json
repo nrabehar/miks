@@ -131,7 +131,108 @@
 	},
 	"landing": {
 		"signIn": "Se connecter",
-		"signUp": "S'inscrire"
+		"signUp": "S'inscrire",
+		"nav": {
+			"product": "Produit",
+			"howItWorks": "Comment ça marche",
+			"security": "Sécurité",
+			"pricing": "Tarifs"
+		},
+		"hero": {
+			"badge": "L'infrastructure des coopératives autonomes",
+			"title1": "Investissez à plusieurs,",
+			"title2": "en toute transparence.",
+			"subtitle": "Centralisez la caisse de votre groupe. Automatisez les cotisations, sécurisez les décaissements, calculez les parts en temps réel.",
+			"cta": "Créer un Workspace",
+			"ctaSecondary": "Voir la sécurité",
+			"trustLine": "Gratuit · Aucune carte requise · Prêt en 5 min"
+		},
+		"trustBand": {
+			"aes": "AES-256",
+			"doubleSignature": "Double signature",
+			"audit": "Audit immuable",
+			"rbac": "Accès par rôle"
+		},
+		"stats": {
+			"cooperatives": "Coopératives actives",
+			"savings": "Épargne gérée",
+			"uptime": "Disponibilité",
+			"setup": "Setup complet"
+		},
+		"features": {
+			"badge": "Fonctionnalités",
+			"title": "Tout ce qu'il faut pour gérer une coopérative",
+			"subtitle": "Des outils pensés pour les groupes informels : simples à prendre en main, rigoureux sur la sécurité.",
+			"items": {
+				"autoContributions": {
+					"title": "Cotisations automatiques",
+					"description": "Définissez les règles une fois : Miks prélève, ventile et calcule les parts. Plus jamais de calcul à la main."
+				},
+				"vaults": {
+					"title": "Coffres multiples",
+					"description": "Liquidité, Investissement, Sécurité. Chaque euro sait où il doit aller — et Miks le vérifie."
+				},
+				"doubleSignature": {
+					"title": "Double signature",
+					"description": "Aucun mouvement financier sans validation à deux. Par email, code OTP, ou les deux."
+				},
+				"realTimeShares": {
+					"title": "Parts en temps réel",
+					"description": "Le tableau de bord affiche la part exacte de chaque membre à chaque seconde."
+				},
+				"audit": {
+					"title": "Audit immuable",
+					"description": "Chaque action est journalisée, horodatée, signée. Aucun administrateur ne peut la modifier."
+				},
+				"governance": {
+					"title": "Gouvernance partagée",
+					"description": "Rôles fins : trésorier, président, membre, observateur. Permissions configurables par workspace."
+				},
+				"reports": {
+					"title": "Rapports automatiques",
+					"description": "Rapports mensuels, exports CSV, projections. Tout ce qu'il faut pour la AG de fin d'année."
+				}
+			},
+			"learnMore": "En savoir plus"
+		},
+		"howItWorks": {
+			"badge": "Comment ça marche",
+			"title": "Opérationnel en 5 minutes",
+			"subtitle": "Trois étapes. Zéro paperasse. Zéro formation.",
+			"steps": {
+				"workspace": {
+					"title": "Créez votre workspace",
+					"description": "Nom du groupe, devise, règles de cotisation. Miks configure tout pour vous en moins de 60 secondes."
+				},
+				"invite": {
+					"title": "Invitez vos membres",
+					"description": "Par lien ou email. Chaque membre crée son compte, vérifie son identité, et reçoit sa part initiale."
+				},
+				"operate": {
+					"title": "Pilotez en temps réel",
+					"description": "Cotisations, décaissements, alertes. Tout le monde voit la même chose au même moment."
+				}
+			}
+		},
+		"testimonials": {
+			"badge": "Témoignages",
+			"title": "Ils nous font confiance",
+			"1": {
+				"quote": "Miks a remplacé 3 tableurs et un cahier physique. On a arrêté de se disputer sur les parts."
+			},
+			"2": {
+				"quote": "La double signature nous a évité une fraude de 200 000 FCFA. Le suspect n'a jamais pu valider."
+			},
+			"3": {
+				"quote": "Mes 24 membres voient tous la même chose. Finies les \"tu me dois combien\" en boucle."
+			}
+		},
+		"finalCta": {
+			"title": "Prêt à reprendre le contrôle de votre épargne collective ?",
+			"description": "Rejoignez les centaines de coopératives qui font confiance à Miks pour sécuriser leur avenir financier.",
+			"cta": "Créer mon workspace",
+			"trustLine": "Gratuit · Aucune carte requise · Setup en 5 min"
+		}
 	},
 	"errors": {
 		"generic": "Une erreur est survenue. Réessayez.",

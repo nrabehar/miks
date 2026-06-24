@@ -1,30 +1,32 @@
 import { Fingerprint, Lock, ScrollText, ShieldCheck } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 const indicators = [
-	{ icon: ShieldCheck, label: 'AES-256' },
-	{ icon: Fingerprint, label: 'Double-Signature' },
-	{ icon: ScrollText, label: 'Audit immuable' },
-	{ icon: Lock, label: 'Accès par rôle' },
-]
+	{ icon: ShieldCheck, key: 'aes' },
+	{ icon: Fingerprint, key: 'doubleSignature' },
+	{ icon: ScrollText, key: 'audit' },
+	{ icon: Lock, key: 'rbac' },
+] as const
 
 export const TrustBand = () => {
+	const { t } = useTranslation()
 	return (
 		<section className="bg-primary/5">
-			<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+			<div className="mx-auto max-w-5xl px-4 py-5 sm:px-6 lg:px-8">
 				<div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-					{indicators.map(({ icon: Icon, label }, i) => (
-						<div key={label} className="flex items-center gap-2.5">
-							<div className="w-7 h-7 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
+					{indicators.map(({ icon: Icon, key }, i) => (
+						<div key={key} className="flex items-center gap-2.5">
+							<div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent/15">
 								<Icon
 									style={{ width: 15, height: 15 }}
 									className="text-accent"
 								/>
 							</div>
 							<span className="text-sm font-medium text-muted-foreground">
-								{label}
+								{t(`landing.trustBand.${key}`)}
 							</span>
 							{i < indicators.length - 1 && (
-								<span className="ml-8 hidden sm:block w-px h-4 bg-accent/10" />
+								<span className="ml-8 hidden h-4 w-px bg-accent/10 sm:block" />
 							)}
 						</div>
 					))}

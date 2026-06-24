@@ -131,7 +131,108 @@
 	},
 	"landing": {
 		"signIn": "Sign in",
-		"signUp": "Sign up"
+		"signUp": "Sign up",
+		"nav": {
+			"product": "Product",
+			"howItWorks": "How it works",
+			"security": "Security",
+			"pricing": "Pricing"
+		},
+		"hero": {
+			"badge": "The infrastructure for autonomous cooperatives",
+			"title1": "Invest together,",
+			"title2": "with full transparency.",
+			"subtitle": "Centralize your group's treasury. Automate contributions, secure disbursements, compute shares in real time.",
+			"cta": "Create a Workspace",
+			"ctaSecondary": "See security",
+			"trustLine": "Free · No credit card required · Live in 5 min"
+		},
+		"trustBand": {
+			"aes": "AES-256",
+			"doubleSignature": "Double signature",
+			"audit": "Immutable audit",
+			"rbac": "Role-based access"
+		},
+		"stats": {
+			"cooperatives": "Active cooperatives",
+			"savings": "Savings managed",
+			"uptime": "Uptime",
+			"setup": "Full setup"
+		},
+		"features": {
+			"badge": "Features",
+			"title": "Everything you need to run a cooperative",
+			"subtitle": "Tools designed for informal groups: easy to adopt, rigorous on security.",
+			"items": {
+				"autoContributions": {
+					"title": "Automatic contributions",
+					"description": "Set the rules once — Miks debits, allocates and computes shares. No more spreadsheet acrobatics."
+				},
+				"vaults": {
+					"title": "Multiple vaults",
+					"description": "Liquidity, Investment, Security. Every euro knows where it should go — and Miks makes sure it does."
+				},
+				"doubleSignature": {
+					"title": "Double signature",
+					"description": "No money moves without two validations. By email, OTP code, or both."
+				},
+				"realTimeShares": {
+					"title": "Real-time shares",
+					"description": "The dashboard shows each member's exact share, down to the second."
+				},
+				"audit": {
+					"title": "Immutable audit",
+					"description": "Every action is logged, timestamped, signed. No admin can edit history."
+				},
+				"governance": {
+					"title": "Shared governance",
+					"description": "Fine-grained roles: treasurer, chair, member, observer. Permissions per workspace."
+				},
+				"reports": {
+					"title": "Automatic reports",
+					"description": "Monthly reports, CSV exports, projections. Everything for your year-end general assembly."
+				}
+			},
+			"learnMore": "Learn more"
+		},
+		"howItWorks": {
+			"badge": "How it works",
+			"title": "Operational in 5 minutes",
+			"subtitle": "Three steps. Zero paperwork. Zero training.",
+			"steps": {
+				"workspace": {
+					"title": "Create your workspace",
+					"description": "Group name, currency, contribution rules. Miks configures everything in under 60 seconds."
+				},
+				"invite": {
+					"title": "Invite your members",
+					"description": "By link or email. Each member creates an account, verifies their identity, and receives their initial share."
+				},
+				"operate": {
+					"title": "Operate in real time",
+					"description": "Contributions, disbursements, alerts. Everyone sees the same thing at the same moment."
+				}
+			}
+		},
+		"testimonials": {
+			"badge": "Testimonials",
+			"title": "They trust us",
+			"1": {
+				"quote": "Miks replaced 3 spreadsheets and a paper notebook. We stopped arguing about shares."
+			},
+			"2": {
+				"quote": "Double signature saved us from a 200K FCFA fraud attempt. The suspect could never validate."
+			},
+			"3": {
+				"quote": "All 24 of my members see the same thing. No more 'how much do you owe me' loops."
+			}
+		},
+		"finalCta": {
+			"title": "Ready to take control of your collective savings?",
+			"description": "Join the hundreds of cooperatives that trust Miks to secure their financial future.",
+			"cta": "Create my workspace",
+			"trustLine": "Free · No credit card required · Setup in 5 min"
+		}
 	},
 	"errors": {
 		"generic": "Something went wrong. Please try again.",

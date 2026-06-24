@@ -4,11 +4,11 @@ import {
 	ChevronRight,
 	type LucideIcon,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export interface Feature {
 	icon: LucideIcon
-	title: string
-	description: string
+	i18nKey: string
 }
 
 interface FeaturesGridProps {
@@ -16,6 +16,7 @@ interface FeaturesGridProps {
 }
 
 export const FeaturesGrid = ({ features }: FeaturesGridProps) => {
+	const { t } = useTranslation()
 	return (
 		<section className="py-24 sm:py-32">
 			<div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -27,21 +28,20 @@ export const FeaturesGrid = ({ features }: FeaturesGridProps) => {
 					className="mx-auto max-w-2xl text-center"
 				>
 					<div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-						Features
+						{t('landing.features.badge')}
 					</div>
 					<h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-						Tout ce qu'il faut pour gérer une coopérative
+						{t('landing.features.title')}
 					</h2>
 					<p className="mt-4 text-lg text-muted-foreground">
-						Des outils pensés pour les groupes informels : simples à prendre
-						en main, rigoureux sur la sécurité.
+						{t('landing.features.subtitle')}
 					</p>
 				</motion.div>
 
 				<div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 					{features.map((feature, i) => (
 						<motion.div
-							key={feature.title}
+							key={feature.i18nKey}
 							initial={{ opacity: 0, y: 20 }}
 							whileInView={{ opacity: 1, y: 0 }}
 							viewport={{ once: true, amount: 0.3 }}
@@ -54,13 +54,13 @@ export const FeaturesGrid = ({ features }: FeaturesGridProps) => {
 								<feature.icon className="size-6" />
 							</div>
 							<h3 className="text-lg font-semibold text-foreground">
-								{feature.title}
+								{t(`landing.features.items.${feature.i18nKey}.title`)}
 							</h3>
 							<p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-								{feature.description}
+								{t(`landing.features.items.${feature.i18nKey}.description`)}
 							</p>
 							<div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-								En savoir plus
+								{t('landing.features.learnMore')}
 								<ArrowRight className="size-3" />
 							</div>
 						</motion.div>
@@ -71,13 +71,18 @@ export const FeaturesGrid = ({ features }: FeaturesGridProps) => {
 	)
 }
 
+interface Step {
+	i18nKey: string
+}
+
 interface HowItWorksProps {
-	steps: { title: string; description: string }[]
+	steps: Step[]
 }
 
 export const HowItWorks = ({ steps }: HowItWorksProps) => {
+	const { t } = useTranslation()
 	return (
-		<section className="bg-muted/30 py-24 sm:py-32">
+		<section id="how" className="bg-muted/30 py-24 sm:py-32">
 			<div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
@@ -87,20 +92,20 @@ export const HowItWorks = ({ steps }: HowItWorksProps) => {
 					className="mx-auto max-w-2xl text-center"
 				>
 					<div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-						Comment ça marche
+						{t('landing.howItWorks.badge')}
 					</div>
 					<h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-						Opérationnel en 5 minutes
+						{t('landing.howItWorks.title')}
 					</h2>
 					<p className="mt-4 text-lg text-muted-foreground">
-						Trois étapes, zéro paperasse, zéro formation.
+						{t('landing.howItWorks.subtitle')}
 					</p>
 				</motion.div>
 
 				<div className="mt-16 grid gap-8 md:grid-cols-3">
 					{steps.map((step, i) => (
 						<motion.div
-							key={step.title}
+							key={step.i18nKey}
 							initial={{ opacity: 0, y: 30 }}
 							whileInView={{ opacity: 1, y: 0 }}
 							viewport={{ once: true, amount: 0.4 }}
@@ -108,13 +113,15 @@ export const HowItWorks = ({ steps }: HowItWorksProps) => {
 							className="relative"
 						>
 							<div className="flex items-start gap-4">
-								<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/30">
+								<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground shadow-lg shadow-primary/30">
 									{i + 1}
 								</div>
 								<div className="pt-1">
-									<h3 className="text-lg font-semibold">{step.title}</h3>
+									<h3 className="text-lg font-semibold">
+										{t(`landing.howItWorks.steps.${step.i18nKey}.title`)}
+									</h3>
 									<p className="mt-2 text-sm text-muted-foreground">
-										{step.description}
+										{t(`landing.howItWorks.steps.${step.i18nKey}.description`)}
 									</p>
 								</div>
 							</div>

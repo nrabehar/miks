@@ -1,18 +1,16 @@
 import { motion } from 'framer-motion'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, Sparkles } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface FinalCtaProps {
-	title: string
-	description: string
-	ctaLabel: string
 	ctaTo: string
 }
 
-export const FinalCta = ({ title, description, ctaLabel, ctaTo }: FinalCtaProps) => {
+export const FinalCta = ({ ctaTo }: FinalCtaProps) => {
+	const { t } = useTranslation()
 	return (
 		<section className="relative overflow-hidden py-24 sm:py-32">
-			{/* Background */}
 			<div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary via-primary/90 to-primary/70" />
 			<div
 				className="absolute inset-0 -z-10 opacity-30"
@@ -22,10 +20,7 @@ export const FinalCta = ({ title, description, ctaLabel, ctaTo }: FinalCtaProps)
 				}}
 			/>
 			<motion.div
-				animate={{
-					scale: [1, 1.2, 1],
-					opacity: [0.3, 0.5, 0.3],
-				}}
+				animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
 				transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
 				className="absolute -right-20 -top-20 -z-10 size-80 rounded-full bg-white/10 blur-3xl"
 			/>
@@ -39,22 +34,22 @@ export const FinalCta = ({ title, description, ctaLabel, ctaTo }: FinalCtaProps)
 				>
 					<Sparkles className="mx-auto size-10 text-white/80" />
 					<h2 className="mt-6 text-3xl font-bold tracking-tight text-white sm:text-5xl">
-						{title}
+						{t('landing.finalCta.title')}
 					</h2>
 					<p className="mx-auto mt-4 max-w-xl text-lg text-white/80">
-						{description}
+						{t('landing.finalCta.description')}
 					</p>
 					<div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
 						<Link
 							to={ctaTo}
 							className="group inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-base font-semibold text-primary shadow-2xl shadow-black/20 transition-all hover:scale-105 hover:shadow-3xl active:scale-100"
 						>
-							{ctaLabel}
+							{t('landing.finalCta.cta')}
 							<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
 						</Link>
 					</div>
 					<p className="mt-6 text-sm text-white/70">
-						Gratuit · Aucune carte requise · Setup en 5 min
+						{t('landing.finalCta.trustLine')}
 					</p>
 				</motion.div>
 			</div>

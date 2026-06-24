@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 interface Testimonial {
-	quote: string
+	quoteKey: string
 	author: string
 	role: string
 	initial: string
@@ -12,6 +13,7 @@ interface TestimonialsBandProps {
 }
 
 export const TestimonialsBand = ({ testimonials }: TestimonialsBandProps) => {
+	const { t } = useTranslation()
 	return (
 		<section className="py-24 sm:py-32">
 			<div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -23,17 +25,17 @@ export const TestimonialsBand = ({ testimonials }: TestimonialsBandProps) => {
 					className="mx-auto max-w-2xl text-center"
 				>
 					<div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-						Témoignages
+						{t('landing.testimonials.badge')}
 					</div>
 					<h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-						Ils nous font confiance
+						{t('landing.testimonials.title')}
 					</h2>
 				</motion.div>
 
 				<div className="mt-16 grid gap-6 md:grid-cols-3">
-					{testimonials.map((t, i) => (
+					{testimonials.map((tm, i) => (
 						<motion.figure
-							key={t.author}
+							key={tm.author}
 							initial={{ opacity: 0, y: 20 }}
 							whileInView={{ opacity: 1, y: 0 }}
 							viewport={{ once: true, amount: 0.4 }}
@@ -48,15 +50,15 @@ export const TestimonialsBand = ({ testimonials }: TestimonialsBandProps) => {
 								<path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10H14.017zM0 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151C7.546 6.068 5.983 8.789 5.983 11H10v10H0z" />
 							</svg>
 							<blockquote className="flex-1 text-sm leading-relaxed text-foreground">
-								{t.quote}
+								{t(tm.quoteKey)}
 							</blockquote>
 							<figcaption className="mt-6 flex items-center gap-3">
 								<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 font-semibold text-primary-foreground">
-									{t.initial}
+									{tm.initial}
 								</div>
 								<div>
-									<div className="text-sm font-semibold">{t.author}</div>
-									<div className="text-xs text-muted-foreground">{t.role}</div>
+									<div className="text-sm font-semibold">{tm.author}</div>
+									<div className="text-xs text-muted-foreground">{tm.role}</div>
 								</div>
 							</figcaption>
 						</motion.figure>
