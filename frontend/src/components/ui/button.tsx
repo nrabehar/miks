@@ -53,7 +53,7 @@ const buttonVariants = cva(
 	},
 )
 
-function Button({
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button({
 	className,
 	variant = 'default',
 	size = 'default',
@@ -86,7 +86,8 @@ function Button({
 				: children}
 		</Comp>
 	)
-}
+});
+Button.displayName = 'Button';
 
 export { Button, buttonVariants }
 

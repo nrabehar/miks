@@ -232,6 +232,75 @@
 			"description": "Rejoignez les centaines de coopératives qui font confiance à Miks pour sécuriser leur avenir financier.",
 			"cta": "Créer mon workspace",
 			"trustLine": "Gratuit · Aucune carte requise · Setup en 5 min"
+		},
+		"pricing": {
+			"badge": "Tarifs",
+			"title": "Une tarification simple et transparente",
+			"subtitle": "Commencez gratuitement. Évoluez quand votre coopérative grandit.",
+			"monthly": "Mensuel",
+			"yearly": "Annuel",
+			"popular": "Le plus populaire",
+			"plans": {
+				"free": {
+					"name": "Gratuit",
+					"tagline": "Pour les coopératives qui démarrent",
+					"price": "0 €",
+					"period": "/ pour toujours",
+					"cta": "Commencer gratuitement"
+				},
+				"cooperative": {
+					"name": "Coopérative",
+					"tagline": "Pour les groupes actifs jusqu'à 100 membres",
+					"price": "19 €",
+					"period": "/ mois",
+					"cta": "Essai gratuit 14 jours"
+				},
+				"federation": {
+					"name": "Fédération",
+					"tagline": "Pour les réseaux et configurations multi-espaces",
+					"price": "Sur devis",
+					"period": "",
+					"cta": "Nous contacter"
+				}
+			},
+			"features": {
+				"upTo10": "Jusqu'à 10 membres",
+				"upTo100": "Jusqu'à 100 membres",
+				"unlimited": "Membres illimités",
+				"basicReports": "Rapports mensuels basiques",
+				"advancedReports": "Rapports avancés + exports CSV",
+				"multiWorkspace": "Multiples espaces de travail",
+				"prioritySupport": "Support email prioritaire",
+				"sso": "SSO & SAML",
+				"auditExport": "Export complet des logs d'audit"
+			}
+		},
+		"faq": {
+			"badge": "FAQ",
+			"title": "Des questions ? Nous avons les réponses.",
+			"subtitle": "Si vous ne trouvez pas ce que vous cherchez, contactez-nous.",
+			"items": {
+				"dataSecurity": {
+					"question": "Où sont stockées mes données ?",
+					"answer": "Toutes les données sont stockées sur des bases PostgreSQL hébergées dans des data centers en Europe (Scaleway). Les sauvegardes sont chiffrées et répliquées sur 3 zones de disponibilité."
+				},
+				"doubleSignature": {
+					"question": "Que signifie exactement « double signature » ?",
+					"answer": "Chaque mouvement d'argent (cotisation ou décaissement) nécessite la validation de deux membres distincts par email + OTP. Aucun ne peut agir seul, même avec un accès admin."
+				},
+				"pricing": {
+					"question": "Puis-je essayer Miks gratuitement ?",
+					"answer": "Oui. Le plan Gratuit supporte jusqu'à 10 membres pour toujours. Pour les groupes plus grands, vous bénéficiez d'un essai de 14 jours du plan Coopérative sans carte bancaire."
+				},
+				"migration": {
+					"question": "Puis-je importer mes données existantes ?",
+					"answer": "Oui. Nous supportons l'import CSV pour les listes de membres, l'historique des transactions et les parts sociales. Notre équipe accompagne la migration gratuitement sur les plans Coopérative et Fédération."
+				},
+				"language": {
+					"question": "Quelles langues sont supportées ?",
+					"answer": "L'interface est disponible en anglais et en français aujourd'hui. Nous ajoutons de nouvelles langues au fil de la croissance de notre communauté — la vôtre sera peut-être la prochaine."
+				}
+			}
 		}
 	},
 	"errors": {

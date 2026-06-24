@@ -232,6 +232,75 @@
 			"description": "Join the hundreds of cooperatives that trust Miks to secure their financial future.",
 			"cta": "Create my workspace",
 			"trustLine": "Free · No credit card required · Setup in 5 min"
+		},
+		"pricing": {
+			"badge": "Pricing",
+			"title": "Simple, transparent pricing",
+			"subtitle": "Start free. Upgrade when your cooperative grows.",
+			"monthly": "Monthly",
+			"yearly": "Yearly",
+			"popular": "Most popular",
+			"plans": {
+				"free": {
+					"name": "Free",
+					"tagline": "For new cooperatives testing the waters",
+					"price": "€0",
+					"period": "/ forever",
+					"cta": "Start free"
+				},
+				"cooperative": {
+					"name": "Cooperative",
+					"tagline": "For active groups up to 100 members",
+					"price": "€19",
+					"period": "/ month",
+					"cta": "Start 14-day trial"
+				},
+				"federation": {
+					"name": "Federation",
+					"tagline": "For networks and multi-workspace setups",
+					"price": "Custom",
+					"period": "",
+					"cta": "Contact sales"
+				}
+			},
+			"features": {
+				"upTo10": "Up to 10 members",
+				"upTo100": "Up to 100 members",
+				"unlimited": "Unlimited members",
+				"basicReports": "Basic monthly reports",
+				"advancedReports": "Advanced reports + CSV exports",
+				"multiWorkspace": "Multiple workspaces",
+				"prioritySupport": "Priority email support",
+				"sso": "SSO & SAML",
+				"auditExport": "Full audit log export"
+			}
+		},
+		"faq": {
+			"badge": "FAQ",
+			"title": "Questions? We have answers.",
+			"subtitle": "If you can't find what you're looking for, ping us.",
+			"items": {
+				"dataSecurity": {
+					"question": "Where is my data stored?",
+					"answer": "All data is stored on PostgreSQL databases hosted in EU-based data centers (Scaleway). Backups are encrypted and replicated across 3 availability zones."
+				},
+				"doubleSignature": {
+					"question": "What does \"double signature\" mean exactly?",
+					"answer": "Every money movement (cotisation or disbursement) requires two distinct members to validate the action via email + OTP. Neither can act alone, even with admin access."
+				},
+				"pricing": {
+					"question": "Can I try Miks for free?",
+					"answer": "Yes. The Free plan supports up to 10 members forever. For larger groups, you get a 14-day trial of the Cooperative plan without any credit card."
+				},
+				"migration": {
+					"question": "Can I import my existing data?",
+					"answer": "Yes. We support CSV imports for member lists, historical transactions, and shares. Our team helps with the migration at no cost on the Cooperative and Federation plans."
+				},
+				"language": {
+					"question": "Which languages are supported?",
+					"answer": "The interface is available in English and French today. We add new languages as our user base grows — your language might be next."
+				}
+			}
 		}
 	},
 	"errors": {
