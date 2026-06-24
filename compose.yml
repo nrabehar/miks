@@ -9,7 +9,7 @@ services:
       command: nginx -g 'daemon off;'
       environment:
         - NODE_ENV=${NODE_ENV:-development}
-        - VITE_API_URL=${API_URL:-http://localhost:3000}
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
       depends_on:
         - backend
       networks:
