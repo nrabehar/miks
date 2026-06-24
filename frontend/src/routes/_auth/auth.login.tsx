@@ -6,7 +6,7 @@ import { PasswordInput } from '#/components/ui/password-input'
 import { SocialButton } from '#/components/ui/social-button'
 import { authApi } from '#/lib/api'
 import { loginSchema } from '#/lib/validation/auth.schema'
-import { useAuthStore } from '#/stores/auth.store'
+import { useAuthStore, isAuthenticated } from '#/stores/auth.store'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import {
@@ -25,7 +25,7 @@ import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/auth/login')({
 	beforeLoad: () => {
-		if (useAuthStore.getState().status === 'authenticated') {
+		if (isAuthenticated(useAuthStore.getState())) {
 			throw redirect({ to: '/' })
 		}
 	},

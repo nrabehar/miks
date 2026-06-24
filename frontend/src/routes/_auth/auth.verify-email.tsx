@@ -3,7 +3,7 @@ import { OtpForm } from '#/components/auth/otp-form'
 import { Button } from '#/components/ui/button'
 import { authApi } from '#/lib/api'
 import { maskEmail } from '#/lib/utils/mask-email'
-import { useAuthStore } from '#/stores/auth.store'
+import { useAuthStore, isAuthenticated } from '#/stores/auth.store'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { MailIcon } from 'lucide-react'
@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/auth/verify-email')({
 	beforeLoad: () => {
-		if (useAuthStore.getState().status === 'authenticated') {
+		if (isAuthenticated(useAuthStore.getState())) {
 			throw redirect({ to: '/' })
 		}
 	},
