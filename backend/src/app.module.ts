@@ -7,6 +7,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { KeyvCacheableMemory } from 'cacheable';
 import { Keyv } from 'keyv';
 import { appConfig, authConfig, databaseConfig, emailConfig } from './core/config';
+import { AppController } from './app.controller';
 import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
@@ -49,7 +50,7 @@ import { AuthModule } from './modules/auth/auth.module';
 
 		AuthModule,
 	],
-	controllers: [],
+	controllers: [AppController],
 	providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
