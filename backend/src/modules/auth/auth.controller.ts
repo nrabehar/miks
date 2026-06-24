@@ -19,6 +19,7 @@ import { ResendEmailDto } from './dtos/resend-email.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { UserLoginDto } from './dtos/user-login.dto';
 import { UserRegisterDto } from './dtos/user-register.dto';
+import { Verify2FADto } from './dtos/verify-2fa.dto';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
 
 @Controller('auth')
@@ -113,6 +114,32 @@ export class AuthController {
 
 		this.setRefreshCookie(res, refreshToken);
 		return res.status(HttpStatus.OK).json({ requires2FA: false, user, accessToken });
+	}
+
+	@Public()
+	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
+	@Post('2fa/verify')
+	@HttpCode(HttpStatus.OK)
+	async verify2FA(
+		@Req() req: Request,
+		@Res() res: Response,
+		@Body() data: Verify2FADto,
+	) {
+		const ipAddress = req.ip ?? req.socket.remoteAddress ?? 'unknown';
+		const userAgent = req.headers['user-agent'];
+
+		const { user, accessToken, refreshToken } =
+			await this.userAuthService.verify2FALogin(
+				data.challengeId,
+				data.code,
+				ipAddress,
+				userAgent,
+			);
+
+		this.setRefreshCookie(res, refreshToken);
+		return res
+			.status(HttpStatus.OK)
+			.json({ user, accessToken, requires2FA: false });
 	}
 
 	@Public()

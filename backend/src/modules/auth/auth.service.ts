@@ -271,6 +271,77 @@ export class AuthService {
 		};
 	}
 
+	/**
+	 * Completes a 2FA-protected login. The challenge was previously issued
+	 * from `login()` (returns `requires2FA: true, challengeId: user.id`).
+	 * Validates the 6-digit TOTP code and, on success, creates the session
+	 * and returns the same shape as a non-2FA login.
+	 */
+	async verify2FALogin(
+		challengeId: string,
+		code: string,
+		ipAddress?: string,
+		userAgent?: string,
+		location?: string,
+	): Promise<UserLoginResult> {
+		const user = await this.usersService.findById(challengeId);
+		if (!user) {
+			await this.audit.log('auth.2fa.failed', 'failure', {
+				metadata: { challengeId, reason: 'unknown_challenge' },
+				ipAddress,
+				userAgent,
+			});
+			throw new UnauthorizedException('Invalid 2FA challenge');
+		}
+
+		if (!user.twoFaEnabled || !user.twoFaSecret) {
+			await this.audit.log('auth.2fa.failed', 'failure', {
+				userId: user.id,
+				metadata: { reason: '2fa_not_enabled' },
+				ipAddress,
+				userAgent,
+			});
+			throw new UnauthorizedException('2FA is not enabled for this account');
+		}
+
+		const valid = await this.tokenService.validate2FAToken(user.id, code);
+		if (!valid) {
+			this.logger.warn(`Invalid 2FA code for user ${user.id}`);
+			await this.audit.log('auth.2fa.failed', 'failure', {
+				userId: user.id,
+				ipAddress,
+				userAgent,
+			});
+			throw new UnauthorizedException('Invalid 2FA code');
+		}
+
+		const tokens = this.tokenService.generateJwtToken({ sub: user.id });
+		await this.sessionService.createSession({
+			userId: user.id,
+			jti: tokens.refreshJti,
+			refreshToken: tokens.refreshToken,
+			familyId: tokens.familyId,
+			ipAddress: ipAddress ?? null,
+			userAgent: userAgent ?? null,
+			location: location ?? null,
+			expiresAt: tokens.refreshExpiresAt,
+		});
+		await this.usersService.markLogin(user.id);
+
+		await this.audit.log('auth.2fa.success', 'success', {
+			userId: user.id,
+			ipAddress,
+			userAgent,
+		});
+		this.logger.log(`2FA login successful for user ${user.username}`);
+
+		return {
+			user: this.mapUser(user),
+			accessToken: tokens.accessToken,
+			refreshToken: tokens.refreshToken,
+		};
+	}
+
 	async refresh(
 		refreshToken: string,
 		ipAddress?: string,
