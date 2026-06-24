@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 
 export const Route = createFileRoute('/_auth/auth/reset-password')({
+	staticData: { title: 'Choose a new password' },
 	validateSearch: z.object({
 		userId: z.string().optional(),
 		token: z

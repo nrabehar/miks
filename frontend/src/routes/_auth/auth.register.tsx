@@ -18,6 +18,7 @@ import { FcGoogle } from 'react-icons/fc'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/auth/register')({
+	staticData: { title: 'Create account' },
 	component: RegisterPage,
 })
 

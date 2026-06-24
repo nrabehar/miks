@@ -24,6 +24,7 @@ import { FcGoogle } from 'react-icons/fc'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/auth/login')({
+	staticData: { title: 'Sign in' },
 	beforeLoad: () => {
 		if (isAuthenticated(useAuthStore.getState())) {
 			throw redirect({ to: '/' })

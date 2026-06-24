@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/auth/verify-email')({
+	staticData: { title: 'Verify your email' },
 	beforeLoad: () => {
 		if (isAuthenticated(useAuthStore.getState())) {
 			throw redirect({ to: '/' })

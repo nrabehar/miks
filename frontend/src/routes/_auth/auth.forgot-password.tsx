@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/auth/forgot-password')({
+	staticData: { title: 'Reset your password' },
 	component: ForgotPasswordPage,
 })
 
