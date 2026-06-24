@@ -6,12 +6,15 @@ import { TokenService } from '$/tokens/token.service';
 import { AccountsService } from '$/users/accounts/accounts.service';
 import { UsersService } from '$/users/users.service';
 import {
+	BadRequestException,
 	Injectable,
 	Logger,
+	NotFoundException,
 	UnauthorizedException,
 } from '@nestjs/common';
 import { VerificationContext } from '../email/types/verification.type';
-import type { UserLoginResult, UserRefreshResult } from './auth.type';
+import type { AuthUserDto, UserLoginResult, UserRefreshResult } from './auth.type';
+import { EmailService } from './email/email.service';
 import { SessionService } from './sessions/session.service';
 
 const REFRESH_TOKEN_COOKIE = 'refreshToken';
@@ -27,6 +30,7 @@ export class AuthService {
 		private readonly tokenService: TokenService,
 		private readonly sessionService: SessionService,
 		private readonly mailService: MailService,
+		private readonly emailService: EmailService,
 	) {}
 
 	async register(
@@ -35,7 +39,7 @@ export class AuthService {
 		lastName: string,
 		password: string,
 		lang: string = 'fr',
-	): Promise<void> {
+	): Promise<{ registrationId: string; emailSent: boolean }> {
 		if (!email || !firstName || !lastName || !password) {
 			throw new UnauthorizedException({
 				email: 'Email, first name, last name and password are required',
@@ -55,13 +59,75 @@ export class AuthService {
 				lang,
 				expirationTime: '15 min',
 			});
-			// TODO: Generate and store a default avatar in background — never throws.
 			this.logger.log(`User registered successfully: ${firstName} ${lastName}`);
+			return { registrationId: user.id, emailSent: true };
 		} catch (error) {
 			const message = getErrorMessage(error);
 			this.logger.error(`Failed to register user: ${message}`);
 			throw error;
 		}
+	}
+
+	async verifyEmail(registrationId: string, code: string): Promise<void> {
+		const confirmed = await this.emailService.confirmUserEmail(registrationId, code);
+		if (!confirmed) {
+			throw new BadRequestException('Invalid or expired verification code');
+		}
+	}
+
+	async resendEmailCode(registrationId: string, lang: string = 'fr'): Promise<void> {
+		const user = await this.usersService.findById(registrationId);
+		if (!user) throw new NotFoundException('User not found');
+
+		if (user.emailVerified) {
+			throw new BadRequestException('Email is already verified');
+		}
+
+		const token = await this.tokenService.createToken(user.id, 15);
+		await this.mailService.sendVerificationCode({
+			to: user.email,
+			name: `${user.firstName} ${user.lastName}`,
+			code: token,
+			context: VerificationContext.EMAIL_CONFIRMATION,
+			lang,
+			expirationTime: '15 min',
+		});
+	}
+
+	async forgotPassword(email: string, lang: string = 'fr'): Promise<void> {
+		const user = await this.usersService.findByIdentifier(email);
+		if (!user) {
+			// Silently succeed to avoid email enumeration
+			return;
+		}
+
+		const token = await this.tokenService.createToken(user.id, 15);
+		const frontendUrl = 'https://miks.dedyn.io';
+		const resetLink = `${frontendUrl}/auth/reset-password?userId=${user.id}&token=${token}`;
+
+		await this.mailService.sendVerificationCode({
+			to: user.email,
+			name: `${user.firstName} ${user.lastName}`,
+			code: token,
+			context: VerificationContext.PASSWORD_RESET,
+			lang,
+			expirationTime: '15 min',
+			resetLink,
+		});
+
+		this.logger.log(`Password reset email sent to ${email}`);
+	}
+
+	async resetPassword(userId: string, code: string, newPassword: string): Promise<void> {
+		const valid = await this.tokenService.validateToken(userId, code, 15);
+		if (!valid) {
+			throw new BadRequestException('Invalid or expired reset code');
+		}
+
+		// Prevent code reuse within the TOTP window
+		await this.tokenService.markTokenUsed(userId, code, 15);
+		await this.accountsService.updatePassword(userId, newPassword);
+		this.logger.log(`Password reset successfully for user ${userId}`);
 	}
 
 	async login(
@@ -72,9 +138,7 @@ export class AuthService {
 		location?: string,
 	): Promise<UserLoginResult> {
 		if (!identifier || !password) {
-			throw new UnauthorizedException(
-				'Identifier and password are required',
-			);
+			throw new UnauthorizedException('Identifier and password are required');
 		}
 
 		const user = await this.usersService.findByIdentifier(identifier);
@@ -85,10 +149,7 @@ export class AuthService {
 			throw new UnauthorizedException('Invalid credentials');
 		}
 
-		const isValid = await this.accountsService.validateCredentials(
-			user.id,
-			password,
-		);
+		const isValid = await this.accountsService.validateCredentials(user.id, password);
 		if (!isValid) {
 			this.logger.warn(
 				`Login attempt failed: Invalid password for ${identifier} ${ipAddress ? `from IP ${ipAddress}` : ''}`,
@@ -97,12 +158,8 @@ export class AuthService {
 		}
 
 		if (!user.emailVerified) {
-			this.logger.warn(
-				`Login attempt failed: Email not verified for ${identifier}`,
-			);
-			throw new UnauthorizedException(
-				'Please verify your email before logging in.',
-			);
+			this.logger.warn(`Login attempt failed: Email not verified for ${identifier}`);
+			throw new UnauthorizedException('Please verify your email before logging in.');
 		}
 
 		const tokens = this.tokenService.generateJwtToken({ sub: user.id });
@@ -124,17 +181,12 @@ export class AuthService {
 		this.logger.log(`User logged in successfully: ${user.username}`);
 
 		return {
-			user,
+			user: this.mapUser(user),
 			accessToken: tokens.accessToken,
 			refreshToken: tokens.refreshToken,
 		};
 	}
 
-	/**
-	 * Issues a fresh token pair and rotates the refresh session in the DB.
-	 * Detects stolen refresh token reuse (via SessionService.rotateRefresh)
-	 * and revokes the entire family if it happens.
-	 */
 	async refresh(
 		refreshToken: string,
 		ipAddress?: string,
@@ -147,10 +199,7 @@ export class AuthService {
 
 		let payload: JwtPayload;
 		try {
-			payload = this.tokenService.decodeJwtToken(
-				refreshToken,
-				'RefreshSecret',
-			);
+			payload = this.tokenService.decodeJwtToken(refreshToken, 'RefreshSecret');
 		} catch {
 			throw new UnauthorizedException('Invalid refresh token');
 		}
@@ -159,14 +208,12 @@ export class AuthService {
 			throw new UnauthorizedException('Malformed refresh token');
 		}
 
-		const newTokens = this.tokenService.generateJwtToken(
-			{ sub: payload.sub },
-			payload.familyId,
-		);
+		const newTokens = this.tokenService.generateJwtToken({ sub: payload.sub }, payload.familyId);
 
 		const session = await this.sessionService.rotateRefresh({
 			oldJti: payload.jti,
 			userId: payload.sub,
+			refreshToken,
 			newJti: newTokens.refreshJti,
 			newRefreshToken: newTokens.refreshToken,
 			familyId: payload.familyId,
@@ -187,42 +234,40 @@ export class AuthService {
 	}
 
 	async logout(refreshToken: string): Promise<void> {
-		if (!refreshToken) {
-			return;
-		}
+		if (!refreshToken) return;
 		try {
-			const payload = this.tokenService.decodeJwtToken(
-				refreshToken,
-				'RefreshSecret',
-			);
+			const payload = this.tokenService.decodeJwtToken(refreshToken, 'RefreshSecret');
 			if (payload.jti) {
 				await this.sessionService.revokeByJti(payload.jti);
-				this.logger.log(
-					`Session logged out (jti=${payload.jti}, user=${payload.sub})`,
-				);
+				this.logger.log(`Session logged out (jti=${payload.jti}, user=${payload.sub})`);
 			}
 		} catch (error) {
-			// Swallow — logout is best-effort. If the token is malformed we
-			// simply clear the cookie client-side.
 			this.logger.debug(
 				`Logout: could not decode refresh token: ${(error as Error).message}`,
 			);
 		}
 	}
 
-	static readonly REFRESH_TOKEN_COOKIE = REFRESH_TOKEN_COOKIE;
-	static readonly REFRESH_TOKEN_MAX_AGE_MS = REFRESH_TOKEN_MAX_AGE_MS;
+	mapUser(user: User): AuthUserDto {
+		return {
+			id: user.id,
+			email: user.email,
+			phone: user.phone ?? undefined,
+			displayName: user.username ?? undefined,
+			emailVerified: user.emailVerified,
+			phoneVerified: user.phoneVerified,
+			twoFaEnabled: user.enabled2FA,
+		};
+	}
 
 	async sendWelcomeEmail(user: User) {
-		await this.mailService.sendEmail(
-			user.email,
-			'welcome',
-			'subjects.welcome',
-			{
-				lang: 'fr',
-				name: user.username,
-				dashboardLink: 'https://miks.dedyn.io/dashboard',
-			},
-		);
+		await this.mailService.sendEmail(user.email, 'welcome', 'subjects.welcome', {
+			lang: 'fr',
+			name: user.username,
+			dashboardLink: 'https://miks.dedyn.io/dashboard',
+		});
 	}
+
+	static readonly REFRESH_TOKEN_COOKIE = REFRESH_TOKEN_COOKIE;
+	static readonly REFRESH_TOKEN_MAX_AGE_MS = REFRESH_TOKEN_MAX_AGE_MS;
 }

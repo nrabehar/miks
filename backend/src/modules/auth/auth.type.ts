@@ -1,7 +1,17 @@
 import { User } from "#prisma/client";
 
+export interface AuthUserDto {
+	id: string;
+	email: string;
+	phone?: string;
+	displayName?: string;
+	emailVerified: boolean;
+	phoneVerified: boolean;
+	twoFaEnabled: boolean;
+}
+
 export interface UserLoginResult {
-	user: User;
+	user: AuthUserDto;
 	accessToken: string;
 	refreshToken: string;
 }

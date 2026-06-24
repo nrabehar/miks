@@ -24,25 +24,19 @@ apiClient.interceptors.request.use(
 let refreshPromise: Promise<string | null> | null = null
 
 const performRefresh = async (): Promise<string | null> => {
-	const refreshToken = useAuthStore.getState().refreshToken
-	if (!refreshToken) return null
-
 	try {
 		const { data } = await axios.post(
 			`${apiClient.defaults.baseURL}/auth/refresh`,
-			{ refreshToken },
-			{ headers: { 'Content-Type': 'application/json' } },
+			{},
+			{ headers: { 'Content-Type': 'application/json' }, withCredentials: true },
 		)
 		const state = useAuthStore.getState()
 		if (state.user) {
-			state.setSession({
-				accessToken: data.accessToken,
-				refreshToken: data.refreshToken ?? refreshToken,
-				user: state.user,
-			})
+			state.setSession({ accessToken: data.accessToken, user: state.user })
 		}
 		return data.accessToken as string
-	} catch (error) {
+	} catch {
+		useAuthStore.getState().clearSession()
 		return null
 	}
 }

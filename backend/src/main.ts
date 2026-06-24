@@ -7,19 +7,31 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
 	const configService = app.get(ConfigService);
 
+	app.use(helmet({
+		contentSecurityPolicy: {
+			directives: {
+				defaultSrc: ["'self'"],
+				scriptSrc: ["'self'"],
+				styleSrc: ["'self'", "'unsafe-inline'"],
+				imgSrc: ["'self'", 'data:', 'https:'],
+				connectSrc: ["'self'"],
+			},
+		},
+	}));
+
 	app.use(
 		cookieParser.default(configService.get<string>('app.cookieSecret')),
 	);
 
+	const isProduction = configService.get<string>('app.nodeEnv') === 'production';
 	const allowedOrigins = [
-		'http://localhost:81',
-		'http://localhost:3001',
-		'http://localhost:5173',
+		...(isProduction ? [] : ['http://localhost:81', 'http://localhost:3001', 'http://localhost:5173']),
 		configService.get<string>('app.frontendUrl'),
 	].filter(Boolean);
 

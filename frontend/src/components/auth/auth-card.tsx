@@ -2,7 +2,7 @@ import { cn } from "#/lib/utils"
 
 interface AuthCardProps extends React.HTMLAttributes<HTMLDivElement> {
 	title: string
-	description?: string
+	description?: React.ReactNode
 	children: React.ReactNode
 	footer?: React.ReactNode
 }

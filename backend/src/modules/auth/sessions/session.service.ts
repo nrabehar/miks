@@ -43,6 +43,8 @@ export interface CreateSessionInput {
 export interface RotateRefreshInput {
 	oldJti: string;
 	userId: string;
+	/** The raw refresh token being presented — verified against stored hash to detect token theft. */
+	refreshToken: string;
 	newJti: string;
 	newRefreshToken: string;
 	familyId: string;
@@ -257,6 +259,21 @@ export class SessionService {
 			throw new UnauthorizedException(
 				'Refresh token reuse detected — all sessions revoked',
 			);
+		}
+
+		// Verify the raw token matches the stored hash — detects stolen tokens
+		// that bypass JTI reuse but present a different token payload.
+		if (old.tokenHash) {
+			const hashMatch = await argon2.verify(old.tokenHash, input.refreshToken);
+			if (!hashMatch) {
+				await this.revokeFamily(old.familyId ?? '');
+				this.logger.warn(
+					`Refresh token hash mismatch for user ${input.userId} — revoking family ${old.familyId}`,
+				);
+				throw new UnauthorizedException(
+					'Refresh token invalid — all sessions revoked',
+				);
+			}
 		}
 
 		// Family must match (a token from a different family can never refresh).

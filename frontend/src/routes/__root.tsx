@@ -1,5 +1,5 @@
 import { ThemeProvider } from '#/components/provider/theme.provider'
-import { ClerkProvider } from '@clerk/react'
+import { Toaster } from '#/components/ui/sonner'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Outlet, createRootRoute } from '@tanstack/react-router'
@@ -15,7 +15,7 @@ const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
 			retry: false,
-			staleTime: 5 * 60 * 1000, // 5 minutes
+			staleTime: 5 * 60 * 1000,
 		},
 	},
 })
@@ -28,15 +28,10 @@ function RootComponent() {
 					reducedMotion="user"
 					transition={{ duration: 0.4 }}
 				>
-					<ClerkProvider
-						publishableKey={
-							import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-						}
-					>
-						<ThemeProvider>
-							<Outlet />
-						</ThemeProvider>
-					</ClerkProvider>
+					<ThemeProvider>
+						<Outlet />
+						<Toaster position="top-right" richColors closeButton />
+					</ThemeProvider>
 					<TanStackDevtools
 						config={{
 							position: 'bottom-right',

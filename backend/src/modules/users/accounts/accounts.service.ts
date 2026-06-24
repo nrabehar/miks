@@ -65,6 +65,19 @@ export class AccountsService {
 		});
 	}
 
+	async updatePassword(userId: string, newPassword: string) {
+		const { hash, salt } = await this.hashPassword(newPassword);
+
+		await this.prisma.account.update({
+			where: {
+				providerId_accountId: { providerId: 'credentials', accountId: userId },
+			},
+			data: { password: hash, passwordSalt: salt },
+		});
+
+		this.logger.log(`Password updated for user: ${userId}`);
+	}
+
 	async upsertOAuthAccount(
 		userId: string,
 		providerId: string,

@@ -17,12 +17,7 @@ type AuthStore = {
 	user: AuthUser | null
 	status: AuthStatus
 	accessToken: string | null
-	refreshToken: string | null
-	setSession: (s: {
-		user: AuthUser
-		accessToken: string
-		refreshToken: string
-	}) => void
+	setSession: (s: { user: AuthUser; accessToken: string }) => void
 	setUser: (u: AuthUser) => void
 	clearSession: () => void
 }
@@ -31,33 +26,18 @@ export const useAuthStore = create<AuthStore>()(
 	persist(
 		(set) => ({
 			accessToken: null,
-			refreshToken: null,
 			user: null,
 			status: 'anonymous',
-			setSession: ({ user, accessToken, refreshToken }) =>
-				set({
-					user,
-					accessToken,
-					refreshToken,
-					status: 'authenticated',
-				}),
+			setSession: ({ user, accessToken }) =>
+				set({ user, accessToken, status: 'authenticated' }),
 			setUser: (user) => set({ user }),
 			clearSession: () =>
-				set({
-					user: null,
-					accessToken: null,
-					refreshToken: null,
-					status: 'anonymous',
-				}),
+				set({ user: null, accessToken: null, status: 'anonymous' }),
 		}),
 		{
 			name: 'miks-auth',
-			partialize: (s) => ({
-				accessToken: s.accessToken,
-				refreshToken: s.refreshToken,
-				user: s.user,
-				status: s.status,
-			}),
+			// accessToken stays in memory only — never persisted to localStorage (XSS mitigation)
+			partialize: (s) => ({ user: s.user, status: s.status }),
 		},
 	),
 )

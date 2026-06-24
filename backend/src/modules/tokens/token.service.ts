@@ -1,3 +1,4 @@
+import { RedisService } from '#/core/redis/redis.service';
 import { PrismaService } from '#/core/prisma/prisma.service';
 import {
     Injectable,
@@ -10,6 +11,8 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import * as speakeasy from 'speakeasy';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
+
+const USED_TOKEN_PREFIX = 'token:used:';
 
 export type JwtKeyType = 'Secret' | 'RefreshSecret';
 
@@ -31,6 +34,7 @@ export class TokenService {
 		private readonly prisma: PrismaService,
 		private readonly configService: ConfigService,
 		private readonly jwtService: JwtService,
+		private readonly redisService: RedisService,
 	) {}
 
 	async createToken(userId: string, expiresMinutes: number = 15) {
@@ -78,11 +82,19 @@ export class TokenService {
 		userId: string,
 		token: string,
 		expiresMinutes: number = 15,
-	) {
+	): Promise<boolean> {
 		const user = await this.prisma.user.findUnique({
 			where: { id: userId },
 		});
 		if (!user || !user.tokenSecret) return false;
+
+		const usedKey = `${USED_TOKEN_PREFIX}${userId}:${token}`;
+		try {
+			const alreadyUsed = await this.redisService.get<string>(usedKey);
+			if (alreadyUsed) return false;
+		} catch {
+			// Redis unavailable — fall through and validate TOTP normally
+		}
 
 		return speakeasy.totp.verify({
 			secret: user.tokenSecret,
@@ -91,6 +103,16 @@ export class TokenService {
 			token,
 			window: 1,
 		});
+	}
+
+	async markTokenUsed(userId: string, token: string, expiresMinutes: number = 15): Promise<void> {
+		const usedKey = `${USED_TOKEN_PREFIX}${userId}:${token}`;
+		const ttlMs = (expiresMinutes + 1) * 60 * 1000;
+		try {
+			await this.redisService.set(usedKey, '1', ttlMs);
+		} catch {
+			this.logger.warn(`Could not mark token as used for user ${userId} — Redis unavailable`);
+		}
 	}
 
 	async validate2FAToken(userId: string, token: string) {
