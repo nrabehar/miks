@@ -41,6 +41,7 @@ services:
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://localhost:8443/api/auth/oauth/google/callback}
     networks:
       - miks_net
+      - dokploy-network
     restart: unless-stopped
 
 networks:
