@@ -191,21 +191,22 @@ export class AuthService {
 			throw new UnauthorizedException('Invalid credentials');
 		}
 
-		// Account lockout check (progressive)
-		if (user.lockedUntil && user.lockedUntil > new Date()) {
+		// Account lockout check (Redis primary, DB fallback)
+		const lock = await this.usersService.isLockedOut(user.id);
+		if (lock.locked) {
 			this.logger.warn(
-				`Login attempt blocked: locked account ${identifier} until ${user.lockedUntil.toISOString()}`,
+				`Login attempt blocked: locked account ${identifier} until ${lock.lockedUntil?.toISOString()}`,
 			);
 			await this.audit.log('auth.login.locked', 'blocked', {
 				userId: user.id,
 				ipAddress,
 				userAgent,
 				metadata: {
-					lockedUntil: user.lockedUntil.toISOString(),
+					lockedUntil: lock.lockedUntil?.toISOString(),
 				},
 			});
 			throw new UnauthorizedException(
-				`Account temporarily locked. Try again after ${user.lockedUntil.toISOString()}.`,
+				`Account temporarily locked. Try again after ${lock.lockedUntil?.toISOString()}.`,
 			);
 		}
 

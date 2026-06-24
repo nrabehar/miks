@@ -1,11 +1,12 @@
+import { RedisService } from '#/core/redis/redis.service';
 import { PrismaService } from '#/core/prisma/prisma.service';
 import { Session, User } from '#/generated/prisma';
 import {
-    BadRequestException,
-    Injectable,
-    Logger,
-    NotFoundException,
-    UnauthorizedException,
+	BadRequestException,
+	Injectable,
+	Logger,
+	NotFoundException,
+	UnauthorizedException,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { UAParser } from 'ua-parser-js';
@@ -58,10 +59,47 @@ export interface RotateRefreshInput {
 export class SessionService {
 	private readonly logger = new Logger(SessionService.name);
 
+	private static readonly VALID_CACHE_PREFIX = 'session:valid:';
+	private static readonly VALID_CACHE_TTL_MS = 60_000;
+
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly blacklist: SessionBlacklistService,
+		private readonly redis: RedisService,
 	) {}
+
+	private async markValid(jti: string, expiresAt: Date): Promise<void> {
+		const ttlMs = Math.max(1000, expiresAt.getTime() - Date.now());
+		const cappedMs = Math.min(ttlMs, SessionService.VALID_CACHE_TTL_MS);
+		try {
+			await this.redis.set(
+				SessionService.VALID_CACHE_PREFIX + jti,
+				'1',
+				cappedMs,
+			);
+		} catch {
+			/* non-fatal */
+		}
+	}
+
+	private async readValidCache(jti: string): Promise<boolean | null> {
+		try {
+			const v = await this.redis.get<string>(
+				SessionService.VALID_CACHE_PREFIX + jti,
+			);
+			return v ? true : null;
+		} catch {
+			return null;
+		}
+	}
+
+	private async invalidateValidCache(jti: string): Promise<void> {
+		try {
+			await this.redis.del(SessionService.VALID_CACHE_PREFIX + jti);
+		} catch {
+			/* non-fatal */
+		}
+	}
 
 	async createSession(input: CreateSessionInput): Promise<SessionWithUser> {
 		if (!input.userId || !input.jti) {
@@ -91,6 +129,9 @@ export class SessionService {
 				include: { user: true },
 			});
 
+			// Pre-warm the validity cache for this brand new session
+			await this.markValid(input.jti, input.expiresAt);
+
 			this.logger.log(
 				`Session created for user ${session.user.username ?? session.user.email} (jti=${input.jti})`,
 			);
@@ -103,11 +144,16 @@ export class SessionService {
 	}
 
 	/**
-	 * Validates a session by jti. First consults Redis blacklist (fast deny),
-	 * then Postgres (source of truth). Touches `lastUsedAt` opportunistically.
+	 * Validates a session by jti. Order:
+	 *  1. Redis validity cache (60s TTL, hot path) — bypasses DB entirely
+	 *  2. Redis blacklist (fast deny for revoked tokens)
+	 *  3. Postgres (source of truth)
 	 */
 	async validateSession(jti: string): Promise<boolean> {
 		if (!jti) return false;
+
+		const cached = await this.readValidCache(jti);
+		if (cached === true) return true;
 
 		if (await this.blacklist.isRevoked(jti)) {
 			return false;
@@ -121,6 +167,8 @@ export class SessionService {
 		if (!session) return false;
 		if (session.revokedAt) return false;
 		if (session.expiresAt.getTime() <= Date.now()) return false;
+
+		await this.markValid(jti, session.expiresAt);
 
 		// Fire-and-forget lastUsedAt bump; ignore failures.
 		this.prisma.session
@@ -236,8 +284,6 @@ export class SessionService {
 	 * Rotates a refresh token. Detects reuse of an already-revoked jti and
 	 * revokes the entire family on hit (OWASP best practice against stolen
 	 * refresh tokens).
-	 *
-	 * Returns the new session row.
 	 */
 	async rotateRefresh(input: RotateRefreshInput): Promise<SessionWithUser> {
 		const old = await this.prisma.session.findUnique({
@@ -252,8 +298,6 @@ export class SessionService {
 			throw new UnauthorizedException('Session does not belong to user');
 		}
 
-		// Reuse detection: someone is trying to refresh with a token that was
-		// already rotated or revoked. Treat as compromise.
 		if (old.revokedAt) {
 			await this.revokeFamily(old.familyId ?? '');
 			throw new UnauthorizedException(
@@ -261,8 +305,6 @@ export class SessionService {
 			);
 		}
 
-		// Verify the raw token matches the stored hash — detects stolen tokens
-		// that bypass JTI reuse but present a different token payload.
 		if (old.tokenHash) {
 			const hashMatch = await argon2.verify(old.tokenHash, input.refreshToken);
 			if (!hashMatch) {
@@ -276,10 +318,7 @@ export class SessionService {
 			}
 		}
 
-		// Family must match (a token from a different family can never refresh).
 		if (!old.familyId || old.familyId !== input.familyId) {
-			// Treat mismatch as suspicious too — revoke the existing one and
-			// the family it belongs to.
 			await this.revokeByJti(old.jti);
 			if (old.familyId) {
 				await this.revokeFamily(old.familyId);
@@ -288,13 +327,13 @@ export class SessionService {
 		}
 
 		return this.prisma.$transaction(async (tx) => {
-			// Revoke the old session
 			await tx.session.update({
 				where: { id: old.id },
 				data: { revokedAt: new Date() },
 			});
 
-			// Push old jti to blacklist for remaining access-token lifetime
+			await this.invalidateValidCache(old.jti);
+
 			const remainingAccessSeconds = Math.max(
 				1,
 				Math.floor((old.expiresAt.getTime() - Date.now()) / 1000),
@@ -320,6 +359,8 @@ export class SessionService {
 				},
 				include: { user: true },
 			});
+
+			await this.markValid(input.newJti, input.refreshExpiresAt);
 
 			this.logger.log(
 				`Session rotated for user ${next.user.username ?? next.user.email} (new jti=${input.newJti})`,
@@ -357,16 +398,15 @@ export class SessionService {
 	}
 
 	private async revokeSessionInternal(session: Session): Promise<void> {
-		const now = new Date();
 		await this.prisma.session.update({
 			where: { id: session.id },
-			data: { revokedAt: session.revokedAt ?? now },
+			data: { revokedAt: new Date() },
 		});
-
-		const remainingSeconds = Math.max(
+		await this.invalidateValidCache(session.jti);
+		const remaining = Math.max(
 			1,
 			Math.floor((session.expiresAt.getTime() - Date.now()) / 1000),
 		);
-		await this.blacklist.revoke(session.jti, remainingSeconds);
+		await this.blacklist.revoke(session.jti, remaining);
 	}
 }
