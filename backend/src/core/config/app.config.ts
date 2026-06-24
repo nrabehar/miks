@@ -3,8 +3,8 @@ import { registerAs } from '@nestjs/config';
 export interface AppConfig {
 	nodeEnv: 'development' | 'production' | 'test';
 	port: number;
+	host: string;
 	frontendUrl: string;
-	cookieSecret: string;
 }
 
 export default registerAs('app', (): AppConfig => {
@@ -12,7 +12,7 @@ export default registerAs('app', (): AppConfig => {
 	return {
 		nodeEnv,
 		port: Number(process.env.PORT) || 3000,
+		host: process.env.HOST || '0.0.0.0',
 		frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
-		cookieSecret: process.env.COOKIE_SECRET || 'default_cookie_secret',
 	};
 });

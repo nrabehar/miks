@@ -26,7 +26,7 @@ async function bootstrap() {
 	}));
 
 	app.use(
-		cookieParser.default(configService.get<string>('app.cookieSecret')),
+		cookieParser.default(configService.get<string>('auth.cookieSecret')),
 	);
 
 	const isProduction = configService.get<string>('app.nodeEnv') === 'production';
