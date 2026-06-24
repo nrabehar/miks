@@ -19,6 +19,9 @@ model User {
   lastLoginAt  DateTime?
   lastActiveAt DateTime?
 
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   avatarUrl String? @default("")
   bio       String? @default("")
   language  String? @default("en")

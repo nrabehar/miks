@@ -83,6 +83,8 @@ export class UsersService {
 					lastLoginAt: now,
 					lastActiveAt: now,
 					isOnline: true,
+					failedLoginAttempts: 0,
+					lockedUntil: null,
 				},
 			});
 		} catch (error) {
@@ -92,5 +94,30 @@ export class UsersService {
 				`Failed to update login metadata for user ${id}: ${(error as Error).message}`,
 			);
 		}
+	}
+
+	/**
+	 * Increment the failed login counter and lock the account if it crosses
+	 * the threshold. Returns the new counter value and lockout end date.
+	 */
+	async registerFailedLogin(
+		id: string,
+	): Promise<{ attempts: number; lockedUntil: Date | null }> {
+		const MAX_ATTEMPTS = 5;
+		const LOCKOUT_MS = 15 * 60 * 1000;
+
+		const user = await this.prisma.user.findUnique({ where: { id } });
+		if (!user) throw new NotFoundException('User not found');
+
+		const next = (user.failedLoginAttempts ?? 0) + 1;
+		const lockedUntil =
+			next >= MAX_ATTEMPTS ? new Date(Date.now() + LOCKOUT_MS) : null;
+
+		await this.prisma.user.update({
+			where: { id },
+			data: { failedLoginAttempts: next, lockedUntil },
+		});
+
+		return { attempts: next, lockedUntil };
 	}
 }

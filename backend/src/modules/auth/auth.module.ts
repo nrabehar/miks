@@ -1,3 +1,4 @@
+import { AuditModule } from '#/modules/audit/audit.module';
 import { MailModule } from '#/modules/email/mail.module';
 import { UsersModule } from '$/users/users.module';
 import { Module } from '@nestjs/common';
@@ -8,7 +9,14 @@ import { EmailModule } from './email/email.module';
 import { SessionModule } from './sessions/session.module';
 
 @Module({
-	imports: [MailModule, TokenModule, UsersModule, SessionModule, EmailModule],
+	imports: [
+		AuditModule,
+		MailModule,
+		TokenModule,
+		UsersModule,
+		SessionModule,
+		EmailModule,
+	],
 	controllers: [AuthController],
 	providers: [AuthService],
 })

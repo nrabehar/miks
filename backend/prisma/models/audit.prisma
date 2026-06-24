@@ -1,0 +1,16 @@
+model AuditLog {
+    id        String   @id @default(uuid())
+    userId    String?
+    event     String
+    outcome   String
+    ipAddress String?
+    userAgent String?
+    metadata  Json?
+    createdAt DateTime @default(now())
+
+    @@index([userId])
+    @@index([event])
+    @@index([userId, createdAt])
+    @@index([createdAt])
+    @@map("audit_logs")
+}

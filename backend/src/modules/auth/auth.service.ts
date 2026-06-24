@@ -1,3 +1,4 @@
+import { AuditService } from '#/modules/audit/audit.service';
 import { getErrorMessage } from '#/core/utils';
 import { User } from '#/generated/prisma';
 import { JwtPayload } from '#/modules/auth/strategies/jwt.strategy';
@@ -31,7 +32,16 @@ export class AuthService {
 		private readonly sessionService: SessionService,
 		private readonly mailService: MailService,
 		private readonly emailService: EmailService,
+		private readonly audit: AuditService,
 	) {}
+
+	private auditCtx(userId?: string | null, ipAddress?: string, userAgent?: string) {
+		return {
+			userId: userId ?? null,
+			ipAddress: ipAddress ?? null,
+			userAgent: userAgent ?? null,
+		};
+	}
 
 	async register(
 		email: string,
@@ -59,10 +69,17 @@ export class AuthService {
 				lang,
 				expirationTime: '15 min',
 			});
+			await this.audit.log('auth.register', 'success', {
+				userId: user.id,
+				metadata: { email: user.email },
+			});
 			this.logger.log(`User registered successfully: ${firstName} ${lastName}`);
 			return { registrationId: user.id, emailSent: true };
 		} catch (error) {
 			const message = getErrorMessage(error);
+			this.audit.log('auth.register', 'failure', {
+				metadata: { email, reason: message },
+			});
 			this.logger.error(`Failed to register user: ${message}`);
 			throw error;
 		}
@@ -71,8 +88,14 @@ export class AuthService {
 	async verifyEmail(registrationId: string, code: string): Promise<void> {
 		const confirmed = await this.emailService.confirmUserEmail(registrationId, code);
 		if (!confirmed) {
+			await this.audit.log('auth.email.verified', 'failure', {
+				userId: registrationId,
+			});
 			throw new BadRequestException('Invalid or expired verification code');
 		}
+		await this.audit.log('auth.email.verified', 'success', {
+			userId: registrationId,
+		});
 	}
 
 	async resendEmailCode(registrationId: string, lang: string = 'fr'): Promise<void> {
@@ -92,12 +115,19 @@ export class AuthService {
 			lang,
 			expirationTime: '15 min',
 		});
+		await this.audit.log('auth.email.resend', 'success', {
+			userId: user.id,
+			metadata: { email: user.email },
+		});
 	}
 
 	async forgotPassword(email: string, lang: string = 'fr'): Promise<void> {
 		const user = await this.usersService.findByIdentifier(email);
 		if (!user) {
 			// Silently succeed to avoid email enumeration
+			await this.audit.log('auth.password.reset_request', 'info', {
+				metadata: { email, found: false },
+			});
 			return;
 		}
 
@@ -115,18 +145,25 @@ export class AuthService {
 			resetLink,
 		});
 
+		await this.audit.log('auth.password.reset_request', 'success', {
+			userId: user.id,
+			metadata: { email: user.email },
+		});
 		this.logger.log(`Password reset email sent to ${email}`);
 	}
 
 	async resetPassword(userId: string, code: string, newPassword: string): Promise<void> {
 		const valid = await this.tokenService.validateToken(userId, code, 15);
 		if (!valid) {
+			await this.audit.log('auth.password.reset_success', 'failure', { userId });
 			throw new BadRequestException('Invalid or expired reset code');
 		}
 
 		// Prevent code reuse within the TOTP window
 		await this.tokenService.markTokenUsed(userId, code, 15);
 		await this.accountsService.updatePassword(userId, newPassword);
+		await this.audit.log('auth.password.reset_success', 'success', { userId });
+		await this.audit.log('auth.password.changed', 'success', { userId });
 		this.logger.log(`Password reset successfully for user ${userId}`);
 	}
 
@@ -137,6 +174,7 @@ export class AuthService {
 		userAgent?: string,
 		location?: string,
 	): Promise<UserLoginResult> {
+		const ctx = this.auditCtx(null, ipAddress, userAgent);
 		if (!identifier || !password) {
 			throw new UnauthorizedException('Identifier and password are required');
 		}
@@ -146,7 +184,29 @@ export class AuthService {
 			this.logger.warn(
 				`Login attempt failed: Invalid identifier ${identifier} ${ipAddress ? `from IP ${ipAddress}` : ''}`,
 			);
+			await this.audit.log('auth.login.failed', 'failure', {
+				...ctx,
+				metadata: { identifier, reason: 'unknown_user' },
+			});
 			throw new UnauthorizedException('Invalid credentials');
+		}
+
+		// Account lockout check (progressive)
+		if (user.lockedUntil && user.lockedUntil > new Date()) {
+			this.logger.warn(
+				`Login attempt blocked: locked account ${identifier} until ${user.lockedUntil.toISOString()}`,
+			);
+			await this.audit.log('auth.login.locked', 'blocked', {
+				userId: user.id,
+				ipAddress,
+				userAgent,
+				metadata: {
+					lockedUntil: user.lockedUntil.toISOString(),
+				},
+			});
+			throw new UnauthorizedException(
+				`Account temporarily locked. Try again after ${user.lockedUntil.toISOString()}.`,
+			);
 		}
 
 		const isValid = await this.accountsService.validateCredentials(user.id, password);
@@ -154,11 +214,29 @@ export class AuthService {
 			this.logger.warn(
 				`Login attempt failed: Invalid password for ${identifier} ${ipAddress ? `from IP ${ipAddress}` : ''}`,
 			);
+			const { attempts, lockedUntil } =
+				await this.usersService.registerFailedLogin(user.id);
+			await this.audit.log('auth.login.failed', 'failure', {
+				userId: user.id,
+				ipAddress,
+				userAgent,
+				metadata: {
+					reason: 'bad_password',
+					attempts,
+					lockedUntil: lockedUntil?.toISOString(),
+				},
+			});
 			throw new UnauthorizedException('Invalid credentials');
 		}
 
 		if (!user.emailVerified) {
 			this.logger.warn(`Login attempt failed: Email not verified for ${identifier}`);
+			await this.audit.log('auth.login.failed', 'failure', {
+				userId: user.id,
+				ipAddress,
+				userAgent,
+				metadata: { reason: 'email_not_verified' },
+			});
 			throw new UnauthorizedException('Please verify your email before logging in.');
 		}
 
@@ -178,6 +256,11 @@ export class AuthService {
 			await this.usersService.markLogin(user.id);
 		}
 
+		await this.audit.log(
+			user.twoFaEnabled ? 'auth.2fa.challenge' : 'auth.login.success',
+			'success',
+			{ userId: user.id, ipAddress, userAgent },
+		);
 		this.logger.log(`User logged in successfully: ${user.username}`);
 
 		return {
@@ -239,6 +322,9 @@ export class AuthService {
 			const payload = this.tokenService.decodeJwtToken(refreshToken, 'RefreshSecret');
 			if (payload.jti) {
 				await this.sessionService.revokeByJti(payload.jti);
+				await this.audit.log('auth.logout', 'success', {
+					userId: payload.sub,
+				});
 				this.logger.log(`Session logged out (jti=${payload.jti}, user=${payload.sub})`);
 			}
 		} catch (error) {

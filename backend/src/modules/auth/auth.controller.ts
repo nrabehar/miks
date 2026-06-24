@@ -115,6 +115,8 @@ export class AuthController {
 		return res.status(HttpStatus.OK).json({ requires2FA: false, user, accessToken });
 	}
 
+	@Public()
+	@Throttle({ 'auth-login': { ttl: 60_000, limit: 30 } })
 	@Post('refresh')
 	@HttpCode(HttpStatus.OK)
 	async refresh(@Req() req: Request, @Res() res: Response) {
