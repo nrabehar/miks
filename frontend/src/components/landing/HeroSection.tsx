@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { ArrowRight, Shield, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { DashboardMock } from './DashboardMock'
 
 export const HeroSection = () => {
 	const { t } = useTranslation()
@@ -116,6 +117,8 @@ export const HeroSection = () => {
 					</motion.p>
 				</div>
 			</div>
+
+			<DashboardMock />
 
 			<div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-background" />
 		</section>
