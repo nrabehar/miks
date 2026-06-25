@@ -2,10 +2,20 @@ import { type SupportedLanguage } from '#/i18n/config'
 import { useLanguage } from '#/i18n/useLanguage'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDownIcon, GlobeIcon, MenuIcon, XIcon } from 'lucide-react'
+import {
+	ChevronDownIcon,
+	GlobeIcon,
+	MenuIcon,
+	MonitorIcon,
+	MoonIcon,
+	SunIcon,
+	XIcon,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/theme.store'
+import { useActiveSection } from '@/hook/useActiveSection'
 
 interface NavLink {
 	key: string
@@ -20,12 +30,18 @@ const NAV_LINK_KEYS: readonly NavLink[] = [
 	{ key: 'pricing', href: '#pricing', descriptionKey: 'pricing' },
 ] as const
 
+const SECTION_IDS = ['features', 'how', 'security', 'pricing', 'faq']
+
 export const Header = () => {
 	const { language, setLanguage, languages } = useLanguage()
 	const { t } = useTranslation()
+	const theme = useThemeStore((s) => s.theme)
+	const resolvedTheme = useThemeStore((s) => s.resolved)
+	const setTheme = useThemeStore((s) => s.setTheme)
 	const [scrolled, setScrolled] = useState(false)
 	const [mobileOpen, setMobileOpen] = useState(false)
 	const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+	const activeSection = useActiveSection(SECTION_IDS)
 
 	useEffect(() => {
 		const onScroll = () => setScrolled(window.scrollY > 20)
@@ -43,6 +59,14 @@ export const Header = () => {
 			})),
 		[t],
 	)
+
+	const cycleTheme = () => {
+		const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
+		setTheme(next)
+	}
+
+	const ThemeIcon =
+		theme === 'system' ? MonitorIcon : resolvedTheme === 'dark' ? MoonIcon : SunIcon
 
 	return (
 		<motion.header
@@ -92,46 +116,87 @@ export const Header = () => {
 
 				{/* Desktop nav */}
 				<nav className="hidden items-center gap-1 md:flex">
-					{navItems.map((link) => (
-						<div
-							key={link.key}
-							className="relative"
-							onMouseEnter={() => setActiveDropdown(link.key)}
-							onMouseLeave={() => setActiveDropdown(null)}
-						>
-							<a
-								href={link.href}
-								className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+					{navItems.map((link) => {
+						const isActive = activeSection === link.href.slice(1)
+						return (
+							<div
+								key={link.key}
+								className="relative"
+								onMouseEnter={() => setActiveDropdown(link.key)}
+								onMouseLeave={() => setActiveDropdown(null)}
 							>
-								{link.label}
-								<ChevronDownIcon className="size-3 opacity-50" />
-							</a>
-							<AnimatePresence>
-								{activeDropdown === link.key && (
-									<motion.div
-										initial={{ opacity: 0, y: -4 }}
-										animate={{ opacity: 1, y: 0 }}
-										exit={{ opacity: 0, y: -4 }}
-										transition={{ duration: 0.15 }}
-										className="absolute left-1/2 top-full mt-1 w-56 -translate-x-1/2 rounded-xl border border-border/60 bg-popover p-2 shadow-xl"
-									>
-										<a
-											href={link.href}
-											className="block rounded-lg p-3 transition-colors hover:bg-muted"
+								<a
+									href={link.href}
+									className={cn(
+										'relative inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted',
+										isActive
+											? 'text-foreground'
+											: 'text-muted-foreground hover:text-foreground',
+									)}
+								>
+									{link.label}
+									<ChevronDownIcon className="size-3 opacity-50" />
+									{isActive && (
+										<motion.span
+											layoutId="navActiveDot"
+											className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-primary"
+											transition={{
+												type: 'spring',
+												stiffness: 380,
+												damping: 30,
+											}}
+										/>
+									)}
+								</a>
+								<AnimatePresence>
+									{activeDropdown === link.key && (
+										<motion.div
+											initial={{ opacity: 0, y: -4 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: -4 }}
+											transition={{ duration: 0.15 }}
+											className="absolute left-1/2 top-full mt-1 w-56 -translate-x-1/2 rounded-xl border border-border/60 bg-popover p-2 shadow-xl"
 										>
-											<div className="text-sm font-medium">{link.label}</div>
-											<div className="text-xs text-muted-foreground">
-												{link.description}
-											</div>
-										</a>
-									</motion.div>
-								)}
-							</AnimatePresence>
-						</div>
-					))}
+											<a
+												href={link.href}
+												className="block rounded-lg p-3 transition-colors hover:bg-muted"
+											>
+												<div className="text-sm font-medium">{link.label}</div>
+												<div className="text-xs text-muted-foreground">
+													{link.description}
+												</div>
+											</a>
+										</motion.div>
+									)}
+								</AnimatePresence>
+							</div>
+						)
+					})}
 				</nav>
 
 				<div className="flex items-center gap-2">
+					{/* Theme toggle */}
+					<button
+						type="button"
+						onClick={cycleTheme}
+						className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+						aria-label={`Theme: ${theme} (click to switch)`}
+						title={`Theme: ${theme}`}
+					>
+						<AnimatePresence mode="wait" initial={false}>
+							<motion.span
+								key={theme}
+								initial={{ rotate: -90, opacity: 0 }}
+								animate={{ rotate: 0, opacity: 1 }}
+								exit={{ rotate: 90, opacity: 0 }}
+								transition={{ duration: 0.15 }}
+								className="inline-flex"
+							>
+								<ThemeIcon className="size-4" />
+							</motion.span>
+						</AnimatePresence>
+					</button>
+
 					{/* Language switcher */}
 					<div className="hidden items-center gap-0.5 rounded-full border border-border/60 bg-background/60 p-0.5 sm:flex">
 						<GlobeIcon className="ml-1.5 size-3 text-muted-foreground" />

@@ -10,6 +10,7 @@ import { TestimonialsBand } from '#/components/landing/TestimonialsBand'
 import { FinalCta } from '#/components/landing/FinalCta'
 import { PricingSection } from '#/components/landing/PricingSection'
 import { FaqSection } from '#/components/landing/FaqSection'
+import { SecuritySection } from '#/components/landing/SecuritySection'
 import { ScrollProgress } from '#/components/landing/ScrollProgress'
 import { CursorFollower } from '#/components/landing/CursorFollower'
 import { createFileRoute } from '@tanstack/react-router'
@@ -121,6 +122,7 @@ function Home() {
 				<FeaturesGrid features={features} />
 			</div>
 			<HowItWorks steps={steps} />
+			<SecuritySection />
 			<PricingSection plans={plans} />
 			<FaqSection items={faqItems} />
 			<TestimonialsBand testimonials={testimonials} />

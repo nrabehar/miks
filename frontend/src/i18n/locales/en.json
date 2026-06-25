@@ -301,6 +301,33 @@
 					"answer": "The interface is available in English and French today. We add new languages as our user base grows — your language might be next."
 				}
 			}
+		},
+		"security": {
+			"badge": "Security",
+			"title": "Bank-grade security, by design",
+			"subtitle": "Every layer of Miks is built around a single principle: no one person, not even an admin, can move money alone.",
+			"items": {
+				"doubleSignature": {
+					"title": "Double signature",
+					"description": "Every outflow requires validation by two distinct members via email + OTP. The initiator is never a validator."
+				},
+				"encryption": {
+					"title": "End-to-end encryption",
+					"description": "All traffic is TLS 1.3. Passwords are hashed with Argon2id. Sensitive data at rest is encrypted with AES-256."
+				},
+				"euHosting": {
+					"title": "European hosting",
+					"description": "Data and backups live in EU data centers (Scaleway), GDPR-compliant by default. No third-country transfers."
+				},
+				"dataIsolation": {
+					"title": "Workspace isolation",
+					"description": "Each workspace has its own dedicated row-level permissions. There is no cross-workspace query path."
+				},
+				"roles": {
+					"title": "Granular roles",
+					"description": "Treasurer, validator, member, observer — fine-tune who can do what. Role changes are audit-logged."
+				}
+			}
 		}
 	},
 	"errors": {

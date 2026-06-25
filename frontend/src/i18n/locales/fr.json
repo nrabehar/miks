@@ -301,6 +301,33 @@
 					"answer": "L'interface est disponible en anglais et en français aujourd'hui. Nous ajoutons de nouvelles langues au fil de la croissance de notre communauté — la vôtre sera peut-être la prochaine."
 				}
 			}
+		},
+		"security": {
+			"badge": "Sécurité",
+			"title": "Sécurité de niveau bancaire, par conception",
+			"subtitle": "Chaque couche de Miks repose sur un principe : personne, même un administrateur, ne peut bouger de l'argent seul.",
+			"items": {
+				"doubleSignature": {
+					"title": "Double signature",
+					"description": "Chaque sortie d'argent requiert la validation de deux membres distincts par email + OTP. L'initiateur n'est jamais validateur."
+				},
+				"encryption": {
+					"title": "Chiffrement de bout en bout",
+					"description": "Tout le trafic est en TLS 1.3. Les mots de passe sont hachés avec Argon2id. Les données sensibles au repos sont chiffrées en AES-256."
+				},
+				"euHosting": {
+					"title": "Hébergement européen",
+					"description": "Données et sauvegardes dans des data centers UE (Scaleway), conformes RGPD par défaut. Aucun transfert hors UE."
+				},
+				"dataIsolation": {
+					"title": "Isolation des espaces",
+					"description": "Chaque espace a ses propres permissions au niveau ligne. Aucun chemin de requête inter-espaces."
+				},
+				"roles": {
+					"title": "Rôles granulaires",
+					"description": "Trésorier, validateur, membre, observateur — affinez qui peut faire quoi. Les changements de rôle sont journalisés."
+				}
+			}
 		}
 	},
 	"errors": {
