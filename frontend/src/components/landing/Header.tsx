@@ -17,6 +17,7 @@ import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/theme.store'
 import { useActiveSection } from '@/hook/useActiveSection'
+import { MiksLogo } from '@/components/brand/logo'
 
 interface NavLink {
 	key: string
@@ -95,22 +96,11 @@ export const Header = () => {
 						className="flex shrink-0 items-center gap-2 rounded-full pl-1.5 pr-3 transition-opacity hover:opacity-80"
 					>
 						<motion.div
-							whileHover={{ rotate: 12, scale: 1.05 }}
+							whileHover={{ rotate: 8, scale: 1.05 }}
 							transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-							className="relative flex size-8 items-center justify-center overflow-hidden rounded-full shadow-md shadow-primary/30"
-							style={{
-								backgroundImage:
-									'linear-gradient(135deg, var(--primary) 0%, color-mix(in oklab, var(--primary) 60%, white) 100%)',
-							}}
+							className="flex size-8 items-center justify-center"
 						>
-							<motion.div
-								animate={{ rotate: 360 }}
-								transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-								className="absolute inset-0 bg-gradient-conic from-white/0 via-white/40 to-white/0"
-							/>
-							<span className="relative text-xs font-extrabold text-primary-foreground">
-								M
-							</span>
+							<MiksLogo className="h-7 w-auto" />
 						</motion.div>
 						<span className="hidden text-sm font-semibold tracking-tight sm:inline">
 							Miks
