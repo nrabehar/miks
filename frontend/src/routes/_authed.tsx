@@ -1,6 +1,6 @@
 import { authApi } from '#/lib/api/auth.api'
 import { apiClient } from '#/lib/api/client'
-import { cn } from '#/lib/utils/utils'
+import { cn } from '#/lib/utils'
 import { isAuthenticated, useAuthStore, type AuthUser } from '#/stores/auth.store'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
