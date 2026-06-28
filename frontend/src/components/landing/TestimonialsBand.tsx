@@ -15,7 +15,7 @@ interface TestimonialsBandProps {
 export const TestimonialsBand = ({ testimonials }: TestimonialsBandProps) => {
 	const { t } = useTranslation()
 	return (
-		<section className="py-24 sm:py-32">
+		<section className="border-y border-border/50 bg-muted/50 py-16 sm:py-20">
 			<div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}

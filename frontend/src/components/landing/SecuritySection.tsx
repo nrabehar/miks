@@ -24,7 +24,7 @@ const securityItems: SecurityItem[] = [
 export const SecuritySection = () => {
 	const { t } = useTranslation()
 	return (
-		<section id="security" className="py-24 sm:py-32">
+		<section id="security" className="py-16 sm:py-20">
 			<div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}

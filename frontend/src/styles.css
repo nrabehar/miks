@@ -214,6 +214,8 @@
 	}
 	html {
 		@apply font-sans w-full h-full;
+		/* Skill: ux-guidelines — smooth scroll HIGH severity */
+		scroll-behavior: smooth;
 	}
 }
 

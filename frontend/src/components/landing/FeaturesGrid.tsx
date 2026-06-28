@@ -38,7 +38,7 @@ const ICON_COLORS = [
 export const FeaturesGrid = ({ features }: FeaturesGridProps) => {
 	const { t } = useTranslation()
 	return (
-		<section className="py-24 sm:py-32">
+		<section className="py-16 sm:py-20">
 			<div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
@@ -133,7 +133,7 @@ interface HowItWorksProps {
 export const HowItWorks = ({ steps }: HowItWorksProps) => {
 	const { t } = useTranslation()
 	return (
-		<section id="how" className="bg-muted/30 py-24 sm:py-32">
+		<section id="how" className="border-y border-border/50 bg-muted/50 py-16 sm:py-20">
 			<div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
