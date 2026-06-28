@@ -73,10 +73,10 @@ export const Header = () => {
 			<motion.header
 				initial={false}
 				animate={{
-					width: scrolled ? 'min(900px, calc(100% - 32px))' : 'min(1100px, calc(100% - 16px))',
-					y: scrolled ? 12 : 8,
+					width: scrolled ? 'min(920px, calc(100% - 32px))' : 'min(1100px, calc(100% - 16px))',
+					y: scrolled ? 6 : 10,
 				}}
-				transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+				transition={{ type: 'spring', stiffness: 300, damping: 35 }}
 				className="fixed left-1/2 top-0 z-50 -translate-x-1/2"
 			>
 				<motion.div
@@ -87,7 +87,7 @@ export const Header = () => {
 					}}
 					transition={{ duration: 0.2 }}
 					className={cn(
-						'flex h-12 items-center justify-between gap-2 rounded-full border border-border/40 px-2 backdrop-blur-2xl backdrop-saturate-150 transition-colors',
+						'grid h-12 grid-cols-[auto_1fr_auto] items-center gap-2 rounded-full border border-border/40 px-2 backdrop-blur-2xl backdrop-saturate-150 transition-colors',
 						scrolled ? 'bg-background/85' : 'bg-background/65',
 					)}
 				>
@@ -108,8 +108,8 @@ export const Header = () => {
 						</span>
 					</Link>
 
-					{/* Centered nav (desktop) */}
-					<nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 md:flex">
+					{/* Centered nav (desktop) — flex-1 column so it never overlaps logo or actions */}
+					<nav className="hidden min-w-0 items-center justify-center gap-0.5 overflow-hidden md:flex">
 						{navItems.map((link) => {
 							const isActive = activeSection === link.href.slice(1)
 							return (
