@@ -7,6 +7,7 @@ import {
 	ArrowRightIcon,
 	BuildingIcon,
 	CheckIcon,
+	ChevronRightIcon,
 	PlusIcon,
 	ShieldAlertIcon,
 	ShieldCheckIcon,
@@ -22,7 +23,6 @@ export const Route = createFileRoute('/_authed/dashboard')({
 	component: DashboardPage,
 })
 
-// Animation variants
 const FADE_UP = {
 	hidden: { opacity: 0, y: 16 },
 	show: (i: number) => ({
@@ -50,7 +50,7 @@ function DashboardPage() {
 			setNewName('')
 			setShowCreate(false)
 			queryClient.invalidateQueries({ queryKey: ['workspaces'] })
-			toast.success(`Workspace « ${ws.name} » créé`)
+			toast.success(`Workspace « ${ws.name} » créé`)
 		},
 		onError: (err: any) => {
 			const msg = err.response?.data?.message ?? 'Une erreur est survenue'
@@ -61,6 +61,7 @@ function DashboardPage() {
 	const totalMembers = workspaces.reduce((s, w) => s + w.workspaceMembers.length, 0)
 	const greeting = getGreeting()
 	const firstName = user?.displayName?.split(' ')[0] ?? user?.email?.split('@')[0] ?? 'vous'
+	const hasWorkspaces = workspaces.length > 0
 
 	const handleOpenCreate = () => {
 		setShowCreate(true)
@@ -72,19 +73,17 @@ function DashboardPage() {
 	}
 
 	return (
-		<div className="mx-auto max-w-5xl space-y-10 px-4 py-8 sm:px-6 lg:px-8">
-			{/* En-tête */}
+		<div className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+
+			{/* Header */}
 			<motion.div custom={0} variants={FADE_UP} initial="hidden" animate="show">
 				<p className="text-sm font-medium text-muted-foreground">{greeting}</p>
-				<h1 className="mt-0.5 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+				<h1 className="mt-0.5 text-2xl font-bold tracking-tight sm:text-3xl">
 					{firstName} 👋
 				</h1>
-				<p className="mt-1 text-sm text-muted-foreground">
-					Bienvenue sur votre tableau de bord Miks.
-				</p>
 			</motion.div>
 
-			{/* Alerte 2FA si désactivée */}
+			{/* 2FA security alert */}
 			<AnimatePresence>
 				{!user?.twoFaEnabled && (
 					<motion.div
@@ -95,15 +94,15 @@ function DashboardPage() {
 					>
 						<div
 							role="alert"
-							className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/60 dark:bg-amber-950/30"
+							className="flex items-start gap-3 rounded-xl border border-amber-200/60 bg-amber-50/80 p-4 dark:border-amber-800/40 dark:bg-amber-950/20"
 						>
-							<ShieldAlertIcon className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+							<ShieldAlertIcon className="mt-0.5 size-4.5 shrink-0 text-amber-600 dark:text-amber-400" />
 							<div className="min-w-0 flex-1">
 								<p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
 									Sécurisez votre compte
 								</p>
-								<p className="mt-0.5 text-sm text-amber-700 dark:text-amber-400">
-									Activez l'authentification à deux facteurs pour protéger vos workspaces.
+								<p className="mt-0.5 text-xs text-amber-700/80 dark:text-amber-400/80">
+									Activez la 2FA pour protéger vos workspaces contre les accès non autorisés.
 								</p>
 							</div>
 						</div>
@@ -111,45 +110,91 @@ function DashboardPage() {
 				)}
 			</AnimatePresence>
 
-			{/* Statistiques */}
-			<motion.section
-				custom={1}
-				variants={FADE_UP}
-				initial="hidden"
-				animate="show"
-				aria-labelledby="stats-heading"
-			>
-				<h2 id="stats-heading" className="sr-only">Statistiques</h2>
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-					<StatCard
-						icon={<BuildingIcon className="size-5" />}
+			{/* KPI strip */}
+			<motion.div custom={1} variants={FADE_UP} initial="hidden" animate="show">
+				<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<KpiCard
 						label="Workspaces"
 						value={isLoading ? null : workspaces.length}
-						color="blue"
+						icon={<BuildingIcon className="size-4" />}
+						colorClass="text-primary bg-primary/10"
 					/>
-					<StatCard
-						icon={<UsersIcon className="size-5" />}
-						label="Membres total"
+					<KpiCard
+						label="Membres"
 						value={isLoading ? null : totalMembers}
-						color="violet"
+						icon={<UsersIcon className="size-4" />}
+						colorClass="text-violet-600 dark:text-violet-400 bg-violet-500/10"
 					/>
-					<StatCard
-						icon={
-							user?.twoFaEnabled ? (
-								<ShieldCheckIcon className="size-5" />
-							) : (
-								<ShieldAlertIcon className="size-5" />
-							)
-						}
+					<KpiCard
+						label="Groupes actifs"
+						value={isLoading ? null : workspaces.filter((w) => w.workspaceMembers.length > 1).length}
+						icon={<TrendingUpIcon className="size-4" />}
+						colorClass="text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+					/>
+					<KpiCard
 						label="Sécurité 2FA"
 						value={user?.twoFaEnabled ? 'Active' : 'Inactive'}
-						color={user?.twoFaEnabled ? 'green' : 'amber'}
+						icon={user?.twoFaEnabled
+							? <ShieldCheckIcon className="size-4" />
+							: <ShieldAlertIcon className="size-4" />}
+						colorClass={user?.twoFaEnabled
+							? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+							: 'text-amber-600 dark:text-amber-400 bg-amber-500/10'}
 						isText
 					/>
 				</div>
-			</motion.section>
+			</motion.div>
 
-			{/* Section Workspaces */}
+			{/* Onboarding — only if no workspaces */}
+			<AnimatePresence>
+				{!isLoading && !hasWorkspaces && (
+					<motion.section
+						initial={{ opacity: 0, y: 12 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -12 }}
+						transition={{ duration: 0.3 }}
+						aria-labelledby="onboarding-heading"
+					>
+						<div className="overflow-hidden rounded-2xl border border-primary/20 bg-primary/4">
+							<div className="border-b border-primary/12 bg-primary/6 px-6 py-4">
+								<h2 id="onboarding-heading" className="text-sm font-semibold text-primary">
+									Démarrer en 3 étapes
+								</h2>
+								<p className="mt-0.5 text-xs text-muted-foreground">
+									Votre groupe coopératif opérationnel en moins de 5 minutes.
+								</p>
+							</div>
+							<div className="divide-y divide-border/40">
+								{ONBOARDING_STEPS.map((step, i) => (
+									<div key={step.label} className="flex items-start gap-4 px-6 py-4">
+										<div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+											i === 0 ? 'bg-primary text-primary-foreground' : 'border-2 border-border text-muted-foreground'
+										}`}>
+											{i + 1}
+										</div>
+										<div className="min-w-0 flex-1">
+											<p className={`text-sm font-semibold ${i === 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+												{step.label}
+											</p>
+											<p className="mt-0.5 text-xs text-muted-foreground">{step.description}</p>
+										</div>
+										{i === 0 && (
+											<button
+												onClick={handleOpenCreate}
+												className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all cursor-pointer"
+											>
+												Commencer
+											</button>
+										)}
+									</div>
+								))}
+							</div>
+						</div>
+					</motion.section>
+				)}
+			</AnimatePresence>
+
+			{/* Workspaces section */}
 			<motion.section
 				custom={2}
 				variants={FADE_UP}
@@ -159,23 +204,20 @@ function DashboardPage() {
 				className="space-y-4"
 			>
 				<div className="flex items-center justify-between">
-					<h2
-						id="workspaces-heading"
-						className="text-lg font-semibold tracking-tight text-foreground"
-					>
+					<h2 id="workspaces-heading" className="text-base font-semibold tracking-tight text-foreground">
 						Mes workspaces
 					</h2>
 					<button
 						onClick={handleOpenCreate}
-						className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all duration-150 cursor-pointer"
+						className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all cursor-pointer"
 						aria-label="Créer un workspace"
 					>
-						<PlusIcon className="size-4" aria-hidden="true" />
-						<span>Nouveau</span>
+						<PlusIcon className="size-3.5" />
+						Nouveau
 					</button>
 				</div>
 
-				{/* Formulaire de création inline */}
+				{/* Create form */}
 				<AnimatePresence>
 					{showCreate && (
 						<motion.div
@@ -187,9 +229,7 @@ function DashboardPage() {
 							className="overflow-hidden"
 						>
 							<div className="flex gap-2 rounded-xl border border-border bg-card p-3 shadow-sm">
-								<label htmlFor="new-workspace-name" className="sr-only">
-									Nom du workspace
-								</label>
+								<label htmlFor="new-workspace-name" className="sr-only">Nom du workspace</label>
 								<input
 									id="new-workspace-name"
 									ref={inputRef}
@@ -203,29 +243,22 @@ function DashboardPage() {
 									placeholder="Ex : Tontine Liberté 2025"
 									maxLength={60}
 									className="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 transition-shadow"
-									aria-required="true"
-									aria-describedby="new-workspace-hint"
 								/>
-								<p id="new-workspace-hint" className="sr-only">
-									Minimum 3 caractères, maximum 60. Appuyez sur Entrée pour confirmer.
-								</p>
 								<button
 									onClick={handleSubmitCreate}
 									disabled={createMutation.isPending || newName.trim().length < 3}
 									className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-									aria-label="Confirmer la création"
 								>
 									{createMutation.isPending ? (
 										<span className="size-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
 									) : (
 										<CheckIcon className="size-4" />
 									)}
-									<span>Créer</span>
+									Créer
 								</button>
 								<button
 									onClick={() => { setShowCreate(false); setNewName('') }}
 									className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
-									aria-label="Annuler"
 								>
 									<XIcon className="size-4" />
 								</button>
@@ -234,93 +267,58 @@ function DashboardPage() {
 					)}
 				</AnimatePresence>
 
-				{/* Liste des workspaces */}
 				{isLoading ? (
 					<WorkspacesSkeleton />
 				) : workspaces.length === 0 ? (
 					<EmptyWorkspaces onCreateClick={handleOpenCreate} />
 				) : (
-					<div className="grid gap-3 sm:grid-cols-2">
+					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 						{workspaces.map((ws, i) => (
 							<WorkspaceCard key={ws.id} workspace={ws} index={i} />
 						))}
 					</div>
 				)}
 			</motion.section>
-
-			{/* Actions rapides */}
-			<motion.section
-				custom={3}
-				variants={FADE_UP}
-				initial="hidden"
-				animate="show"
-				aria-labelledby="actions-heading"
-				className="space-y-3"
-			>
-				<h2
-					id="actions-heading"
-					className="text-lg font-semibold tracking-tight text-foreground"
-				>
-					Actions rapides
-				</h2>
-				<div className="grid gap-3 sm:grid-cols-2">
-					<ActionCard
-						icon={<TrendingUpIcon className="size-5 text-blue-500 dark:text-blue-400" />}
-						title="Créer un workspace"
-						description="Lancez votre premier groupe coopératif et invitez des membres."
-						onClick={handleOpenCreate}
-					/>
-					{!user?.twoFaEnabled && (
-						<ActionCard
-							icon={<ShieldCheckIcon className="size-5 text-amber-500" />}
-							title="Activer la 2FA"
-							description="Renforcez la sécurité de votre compte avec un second facteur."
-							onClick={() => toast.info('Configuration 2FA — bientôt disponible')}
-						/>
-					)}
-				</div>
-			</motion.section>
 		</div>
 	)
 }
 
-// ─── Sous-composants ────────────────────────────────────────────────────────
+// ─── Onboarding steps ────────────────────────────────────────────────────────
 
-type StatColor = 'blue' | 'violet' | 'green' | 'amber'
+const ONBOARDING_STEPS = [
+	{ label: 'Créer votre workspace', description: 'Donnez un nom à votre groupe coopératif.' },
+	{ label: 'Inviter vos membres', description: 'Ajoutez les membres par email — ils reçoivent une invitation directe.' },
+	{ label: 'Saisir les cotisations', description: 'Enregistrez vos premières cotisations pour activer l\'Equity Engine.' },
+]
 
-const COLOR_MAP: Record<StatColor, string> = {
-	blue: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40',
-	violet: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40',
-	green: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40',
-	amber: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40',
-}
+// ─── KPI Card ─────────────────────────────────────────────────────────────────
 
-function StatCard({
+function KpiCard({
 	icon,
 	label,
 	value,
-	color,
+	colorClass,
 	isText = false,
 }: {
 	icon: React.ReactNode
 	label: string
 	value: number | string | null
-	color: StatColor
+	colorClass: string
 	isText?: boolean
 }) {
 	return (
-		<div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
-			<div className={`flex h-10 w-10 items-center justify-center rounded-lg ${COLOR_MAP[color]}`}>
+		<div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+			<div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${colorClass}`}>
 				{icon}
 			</div>
-			<div>
-				<p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+			<div className="min-w-0">
+				<p className="truncate text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 					{label}
 				</p>
 				{value === null ? (
-					<div className="mt-1.5 h-7 w-16 animate-pulse rounded bg-muted" />
+					<div className="mt-1 h-5 w-10 animate-pulse rounded bg-muted" />
 				) : (
-					<p className={`mt-0.5 ${isText ? 'text-lg' : 'text-2xl'} font-bold tabular-nums text-foreground`}>
+					<p className={`mt-0.5 font-bold tabular-nums text-foreground ${isText ? 'text-sm' : 'text-xl'}`}>
 						{value}
 					</p>
 				)}
@@ -329,8 +327,12 @@ function StatCard({
 	)
 }
 
+// ─── Workspace Card ───────────────────────────────────────────────────────────
+
 function WorkspaceCard({ workspace, index }: { workspace: Workspace; index: number }) {
 	const memberCount = workspace.workspaceMembers.length
+	const myMember = workspace.workspaceMembers.find(() => true)
+	const role = myMember?.role ?? 'member'
 	const initials = workspace.name
 		.split(' ')
 		.slice(0, 2)
@@ -338,61 +340,63 @@ function WorkspaceCard({ workspace, index }: { workspace: Workspace; index: numb
 		.join('')
 		.toUpperCase()
 
+	const roleColors: Record<string, string> = {
+		admin: 'text-amber-600 dark:text-amber-400 bg-amber-500/10',
+		member: 'text-blue-600 dark:text-blue-400 bg-blue-500/10',
+		observer: 'text-muted-foreground bg-muted/60',
+	}
+
 	return (
 		<motion.article
 			custom={index}
 			variants={FADE_UP}
 			initial="hidden"
 			animate="show"
-			className="group relative flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md hover:border-border/60 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/30"
+			className="group relative flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/30"
 		>
 			<div className="flex items-start gap-3">
-				<div
-					className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary"
-					aria-hidden="true"
-				>
+				<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
 					{initials}
 				</div>
 				<div className="min-w-0 flex-1">
-					<h3 className="truncate font-semibold text-foreground leading-snug">{workspace.name}</h3>
+					<h3 className="truncate font-semibold text-foreground leading-snug text-sm">
+						{workspace.name}
+					</h3>
 					<p className="text-xs text-muted-foreground">/{workspace.slug}</p>
 				</div>
+				<span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${roleColors[role] ?? roleColors.member}`}>
+					{role}
+				</span>
 			</div>
 
-			<div className="flex items-center justify-between border-t border-border pt-3">
-				<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-					<UsersIcon className="size-3.5" aria-hidden="true" />
-					<span>
-						{memberCount} membre{memberCount !== 1 ? 's' : ''}
-					</span>
+			<div className="flex items-center justify-between border-t border-border/60 pt-3">
+				<div className="flex items-center gap-1 text-xs text-muted-foreground">
+					<UsersIcon className="size-3.5" />
+					{memberCount} membre{memberCount !== 1 ? 's' : ''}
 				</div>
-				<Link
-					to="/workspace/$id"
-					params={{ id: workspace.id }}
-					className="flex items-center gap-0.5 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-150 focus:opacity-100"
-					aria-label={`Ouvrir ${workspace.name}`}
-				>
-					Ouvrir
-					<ArrowRightIcon className="size-3" aria-hidden="true" />
-				</Link>
+				<span className="flex items-center gap-0.5 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+					Gérer
+					<ChevronRightIcon className="size-3" />
+				</span>
 			</div>
-			{/* Full-card link overlay */}
+
 			<Link
 				to="/workspace/$id"
 				params={{ id: workspace.id }}
-				className="absolute inset-0 rounded-xl focus:outline-none"
-				tabIndex={-1}
-				aria-hidden="true"
+				className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+				aria-label={`Ouvrir ${workspace.name}`}
 			/>
 		</motion.article>
 	)
 }
 
+// ─── Empty & Skeleton ─────────────────────────────────────────────────────────
+
 function WorkspacesSkeleton() {
 	return (
-		<div className="grid gap-3 sm:grid-cols-2" aria-busy="true" aria-label="Chargement">
+		<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
 			{[0, 1, 2].map((i) => (
-				<div key={i} className="h-29 animate-pulse rounded-xl bg-muted" />
+				<div key={i} className="h-28 animate-pulse rounded-xl bg-muted" />
 			))}
 		</div>
 	)
@@ -402,50 +406,22 @@ function EmptyWorkspaces({ onCreateClick }: { onCreateClick: () => void }) {
 	return (
 		<div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
 			<div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-				<BuildingIcon className="size-7 text-primary" aria-hidden="true" />
+				<BuildingIcon className="size-7 text-primary" />
 			</div>
 			<div className="space-y-1">
 				<p className="font-semibold text-foreground">Aucun workspace pour l'instant</p>
 				<p className="text-sm text-muted-foreground max-w-xs">
-					Créez votre premier groupe coopératif pour commencer à gérer vos membres et vos contributions.
+					Créez votre premier groupe coopératif pour commencer à gérer cotisations et membres.
 				</p>
 			</div>
 			<button
 				onClick={onCreateClick}
-				className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all duration-150 cursor-pointer"
+				className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all cursor-pointer"
 			>
-				<PlusIcon className="size-4" aria-hidden="true" />
+				<PlusIcon className="size-4" />
 				Créer un workspace
 			</button>
 		</div>
-	)
-}
-
-function ActionCard({
-	icon,
-	title,
-	description,
-	onClick,
-}: {
-	icon: React.ReactNode
-	title: string
-	description: string
-	onClick: () => void
-}) {
-	return (
-		<button
-			onClick={onClick}
-			className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-sm hover:shadow-md hover:border-border/60 transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 w-full"
-		>
-			<div className="mt-0.5 shrink-0">{icon}</div>
-			<div className="min-w-0 flex-1">
-				<p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-150">
-					{title}
-				</p>
-				<p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">{description}</p>
-			</div>
-			<ArrowRightIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground/40 group-hover:text-primary transition-colors duration-150" aria-hidden="true" />
-		</button>
 	)
 }
 
