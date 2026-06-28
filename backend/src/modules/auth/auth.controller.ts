@@ -3,12 +3,14 @@ import { Public } from '#/common/decorators/public.decorator';
 import {
     Body,
     Controller,
+    Get,
     HttpCode,
     HttpStatus,
     Post,
     Req,
     Res,
     UnauthorizedException,
+    UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
@@ -19,8 +21,10 @@ import { ResendEmailDto } from './dtos/resend-email.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { UserLoginDto } from './dtos/user-login.dto';
 import { UserRegisterDto } from './dtos/user-register.dto';
+import { Toggle2FADto } from './dtos/toggle-2fa.dto';
 import { Verify2FADto } from './dtos/verify-2fa.dto';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -170,6 +174,67 @@ export class AuthController {
 
 		res.clearCookie(AuthService.REFRESH_TOKEN_COOKIE, this.cookieOptions);
 		res.status(HttpStatus.NO_CONTENT).send();
+	}
+
+	// ─── 2FA Management ─────────────────────────────────────────────────────────
+
+	/**
+	 * Generate a new 2FA TOTP secret for the authenticated user.
+	 * The response includes the otpauth URL for QR-code rendering and the raw
+	 * base32 secret (for manual entry). No changes are persisted until the user
+	 * calls POST /auth/2fa/enable with a valid code.
+	 */
+	@UseGuards(JwtAuthGuard)
+	@Post('2fa/setup')
+	@HttpCode(HttpStatus.OK)
+	async setup2FA(@Req() req: Request) {
+		const sub = this.extractSub(req);
+		return this.userAuthService.setup2FA(sub);
+	}
+
+	/** Enable 2FA after scanning the QR code — verifies a live TOTP code first */
+	@UseGuards(JwtAuthGuard)
+	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
+	@Post('2fa/enable')
+	@HttpCode(HttpStatus.OK)
+	async enable2FA(@Req() req: Request, @Body() body: Toggle2FADto) {
+		const sub = this.extractSub(req);
+		await this.userAuthService.enable2FA(sub, body.code);
+		return { ok: true };
+	}
+
+	/** Disable 2FA — requires a valid TOTP code to prevent accidental lockout */
+	@UseGuards(JwtAuthGuard)
+	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
+	@Post('2fa/disable')
+	@HttpCode(HttpStatus.OK)
+	async disable2FA(@Req() req: Request, @Body() body: Toggle2FADto) {
+		const sub = this.extractSub(req);
+		await this.userAuthService.disable2FA(sub, body.code);
+		return { ok: true };
+	}
+
+	// ─── Current User ───────────────────────────────────────────────────────────
+
+	/**
+	 * Returns the currently-authenticated user (resolved from the JWT in
+	 * `Authorization: Bearer …`). Used by the frontend to re-hydrate the
+	 * auth store on page reload — since the access token is kept in memory
+	 * only, this endpoint lets us recover the user object without forcing
+	 * a login.
+	 */
+	@UseGuards(JwtAuthGuard)
+	@Get('me')
+	async me(@Req() req: Request) {
+		const sub = this.extractSub(req);
+		const user = await this.userAuthService.getMe(sub);
+		return user;
+	}
+
+	private extractSub(req: Request): string {
+		const sub = (req as Request & { user?: { sub?: string } }).user?.sub;
+		if (!sub) throw new UnauthorizedException('Invalid token payload');
+		return sub;
 	}
 
 	private setRefreshCookie(res: Response, refreshToken: string): void {

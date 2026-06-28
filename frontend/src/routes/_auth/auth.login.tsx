@@ -59,7 +59,7 @@ function LoginPage() {
 			}
 			setSession({ user: data.user, accessToken: data.accessToken })
 			toast.success('Welcome back!')
-			navigate({ to: '/', replace: true })
+			navigate({ to: '/dashboard', replace: true })
 		},
 		onError: (err: any) => {
 			const msg: string = err.response?.data?.message ?? ''
@@ -77,7 +77,7 @@ function LoginPage() {
 		onSuccess: (data) => {
 			setSession({ user: data.user, accessToken: data.accessToken })
 			toast.success('Welcome back!')
-			navigate({ to: '/', replace: true })
+			navigate({ to: '/dashboard', replace: true })
 		},
 		onError: () => {
 			toast.error(t('auth.login.twoFactor.invalidCode'))

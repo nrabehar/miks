@@ -14,7 +14,10 @@ export type AuditEvent =
 	| 'auth.password.reset_success'
 	| 'auth.password.changed'
 	| 'auth.email.verified'
-	| 'auth.email.resend';
+	| 'auth.email.resend'
+	| 'auth.2fa.enable'
+	| 'auth.2fa.disable'
+	| 'auth.2fa.setup';
 
 export type AuditOutcome = 'success' | 'failure' | 'blocked' | 'info';
 

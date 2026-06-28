@@ -9,6 +9,7 @@ import { Keyv } from 'keyv';
 import { appConfig, authConfig, databaseConfig, emailConfig } from './core/config';
 import { AppController } from './app.controller';
 import { AuthModule } from './modules/auth/auth.module';
+import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
 @Module({
 	imports: [
@@ -49,6 +50,7 @@ import { AuthModule } from './modules/auth/auth.module';
 		}),
 
 		AuthModule,
+		WorkspacesModule,
 	],
 	controllers: [AppController],
 	providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

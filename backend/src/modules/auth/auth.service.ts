@@ -1,6 +1,6 @@
-import { AuditService } from '#/modules/audit/audit.service';
 import { getErrorMessage } from '#/core/utils';
 import { User } from '#/generated/prisma';
+import { AuditService } from '#/modules/audit/audit.service';
 import { JwtPayload } from '#/modules/auth/strategies/jwt.strategy';
 import { MailService } from '#/modules/email/mail.service';
 import { TokenService } from '$/tokens/token.service';
@@ -416,6 +416,56 @@ export class AuthService {
 			phoneVerified: user.phoneVerified,
 			twoFaEnabled: user.twoFaEnabled,
 		};
+	}
+
+	/**
+	 * Returns the public auth-user DTO for the given user id. Used by the
+	 * `GET /auth/me` endpoint to rehydrate the frontend auth store on page
+	 * reload. Throws 404 if the user no longer exists.
+	 */
+	async getMe(userId: string): Promise<AuthUserDto> {
+		const user = await this.usersService.findById(userId);
+		if (!user) {
+			throw new NotFoundException('User not found');
+		}
+		return this.mapUser(user);
+	}
+
+	/**
+	 * Generates a new 2FA secret for the user and returns the QR code URL.
+	 * Call this before enabling 2FA — the user must scan the QR code and
+	 * verify a code before 2FA is activated.
+	 */
+	async setup2FA(userId: string): Promise<{ otpauthUrl: string; secret: string }> {
+		const result = await this.tokenService.create2FASecret(userId);
+		return { otpauthUrl: result.qrUrl ?? '', secret: result.secret };
+	}
+
+	async enable2FA(userId: string, code: string): Promise<void> {
+		const valid = await this.tokenService.validate2FAToken(userId, code);
+		if (!valid) {
+			await this.audit.log('auth.2fa.enable', 'failure', { userId });
+			throw new BadRequestException('Invalid 2FA code — please try again');
+		}
+		await this.usersService.update(userId, { twoFaEnabled: true });
+		await this.audit.log('auth.2fa.enable', 'success', { userId });
+		this.logger.log(`2FA enabled for user ${userId}`);
+	}
+
+	async disable2FA(userId: string, code: string): Promise<void> {
+		const user = await this.usersService.findById(userId);
+		if (!user) throw new NotFoundException('User not found');
+		if (!user.twoFaEnabled) {
+			throw new BadRequestException('2FA is not enabled on this account');
+		}
+		const valid = await this.tokenService.validate2FAToken(userId, code);
+		if (!valid) {
+			await this.audit.log('auth.2fa.disable', 'failure', { userId });
+			throw new BadRequestException('Invalid 2FA code — please try again');
+		}
+		await this.usersService.update(userId, { twoFaEnabled: false, twoFaSecret: null });
+		await this.audit.log('auth.2fa.disable', 'success', { userId });
+		this.logger.log(`2FA disabled for user ${userId}`);
 	}
 
 	async sendWelcomeEmail(user: User) {
