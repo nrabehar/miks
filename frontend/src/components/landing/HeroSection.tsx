@@ -7,118 +7,134 @@ import { DashboardMock } from './DashboardMock'
 export const HeroSection = () => {
 	const { t } = useTranslation()
 	return (
-		<section className="relative flex min-h-screen items-center overflow-hidden pt-20">
+		<section className="relative overflow-hidden pt-16 pb-12 lg:min-h-screen lg:flex lg:items-center">
 			{/* Background gradient mesh */}
 			<div
 				className="absolute inset-0 -z-20"
 				style={{
 					backgroundImage:
-						'radial-gradient(at 20% 20%, rgba(10,194,106,0.15) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(19,27,77,0.1) 0px, transparent 50%), radial-gradient(at 100% 50%, rgba(10,194,106,0.08) 0px, transparent 50%)',
+						'radial-gradient(at 15% 25%, rgba(10,194,106,0.12) 0px, transparent 55%), radial-gradient(at 85% 10%, rgba(19,27,77,0.08) 0px, transparent 50%), radial-gradient(at 95% 55%, rgba(10,194,106,0.07) 0px, transparent 50%)',
 				}}
 			/>
 			{/* Grid pattern */}
 			<div
-				className="absolute inset-0 -z-10 opacity-[0.4] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"
+				className="absolute inset-0 -z-10 opacity-[0.35] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]"
 				style={{
 					backgroundImage:
 						'linear-gradient(rgba(19,27,77,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(19,27,77,0.06) 1px, transparent 1px)',
 					backgroundSize: '56px 56px',
 				}}
 			/>
-			{/* Floating orbs */}
-			<motion.div
-				animate={{ y: [0, -30, 0], scale: [1, 1.1, 1] }}
-				transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-				className="absolute right-10 top-32 -z-10 size-72 rounded-full bg-primary/20 blur-3xl"
-			/>
-			<motion.div
-				animate={{ y: [0, 30, 0], scale: [1, 1.15, 1] }}
-				transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-				className="absolute -left-20 bottom-20 -z-10 size-80 rounded-full bg-primary/15 blur-3xl"
-			/>
 
-			<div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-				<div className="mx-auto max-w-3xl text-center">
-					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.5 }}
-						className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary backdrop-blur"
-					>
-						<Sparkles className="size-3.5" />
-						{t('landing.hero.badge')}
-					</motion.div>
+			{/* Blobs — CSS animation (GPU-composited, no JS overhead) */}
+			<div className="animate-blob-up absolute right-8 top-28 -z-10 size-80 rounded-full bg-primary/15 blur-3xl" />
+			<div className="animate-blob-down absolute -left-16 bottom-16 -z-10 size-72 rounded-full bg-accent/8 blur-3xl" />
 
-					<motion.h1
-						initial={{ opacity: 0, y: 30 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.6, delay: 0.1 }}
-						className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl"
-					>
-						{t('landing.hero.title1')}{' '}
-						<span className="relative inline-block text-primary">
-							{t('landing.hero.title2')}
-							<motion.svg
-								viewBox="0 0 300 12"
-								fill="none"
-								className="absolute -bottom-2 left-0 w-full"
+			{/* Two-column layout */}
+			<div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 lg:py-8">
+				<div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-12">
+
+					{/* ── Left column: text content ── */}
+					<div className="max-w-xl">
+						<motion.div
+							initial={{ opacity: 0, y: 16 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.45 }}
+							className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary backdrop-blur"
+						>
+							<Sparkles className="size-3.5" />
+							{t('landing.hero.badge')}
+						</motion.div>
+
+						<motion.h1
+							initial={{ opacity: 0, y: 24 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.55, delay: 0.08 }}
+							className="text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
+						>
+							{t('landing.hero.title1')}{' '}
+							<span className="relative inline-block text-primary">
+								{t('landing.hero.title2')}
+								<motion.svg
+									viewBox="0 0 300 12"
+									fill="none"
+									className="absolute -bottom-2 left-0 w-full"
+								>
+									<motion.path
+										d="M2 9c60-7 120-7 180-3s60 4 116 0"
+										stroke="currentColor"
+										strokeWidth="3"
+										strokeLinecap="round"
+										initial={{ pathLength: 0 }}
+										animate={{ pathLength: 1 }}
+										transition={{ duration: 1.2, delay: 0.8 }}
+									/>
+								</motion.svg>
+							</span>
+						</motion.h1>
+
+						<motion.p
+							initial={{ opacity: 0, y: 16 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.2 }}
+							className="mt-6 text-lg leading-relaxed text-muted-foreground sm:text-xl"
+						>
+							{t('landing.hero.subtitle')}
+						</motion.p>
+
+						<motion.div
+							initial={{ opacity: 0, y: 16 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.32 }}
+							className="mt-8 flex flex-wrap items-center gap-3"
+						>
+							<Link
+								to="/auth/register"
+								className="group inline-flex items-center gap-2.5 rounded-full bg-primary px-7 py-3.5 font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 active:scale-100"
 							>
-								<motion.path
-									d="M2 9c60-7 120-7 180-3s60 4 116 0"
-									stroke="currentColor"
-									strokeWidth="3"
-									strokeLinecap="round"
-									initial={{ pathLength: 0 }}
-									animate={{ pathLength: 1 }}
-									transition={{ duration: 1.2, delay: 0.8 }}
-								/>
-							</motion.svg>
-						</span>
-					</motion.h1>
+								{t('landing.hero.cta')}
+								<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+							</Link>
+							<a
+								href="#features"
+								className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/50 px-5 py-3.5 text-sm font-medium text-foreground backdrop-blur transition-colors hover:bg-muted"
+							>
+								<Shield className="size-4 text-primary" />
+								{t('landing.hero.ctaSecondary')}
+							</a>
+						</motion.div>
 
-					<motion.p
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.6, delay: 0.25 }}
-						className="mx-auto mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl"
-					>
-						{t('landing.hero.subtitle')}
-					</motion.p>
+						<motion.p
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							transition={{ duration: 0.6, delay: 0.5 }}
+							className="mt-5 text-xs text-muted-foreground"
+						>
+							{t('landing.hero.trustLine')}
+						</motion.p>
+					</div>
 
+					{/* ── Right column: Dashboard mock (desktop only) ── */}
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.6, delay: 0.4 }}
-						className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
+						initial={{ opacity: 0, x: 32 }}
+						animate={{ opacity: 1, x: 0 }}
+						transition={{ duration: 0.75, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+						className="hidden lg:block"
 					>
-						<Link
-							to="/auth/register"
-							className="group inline-flex items-center gap-2.5 rounded-full bg-primary px-7 py-3.5 font-medium text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 active:scale-100"
-						>
-							{t('landing.hero.cta')}
-							<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-						</Link>
-						<a
-							href="#features"
-							className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/50 px-5 py-3.5 text-sm text-foreground backdrop-blur transition-colors hover:bg-muted"
-						>
-							<Shield className="size-4 text-primary" />
-							{t('landing.hero.ctaSecondary')}
-						</a>
+						<DashboardMock className="mt-0 max-w-full" />
 					</motion.div>
-
-					<motion.p
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						transition={{ duration: 0.6, delay: 0.6 }}
-						className="mt-5 text-xs text-muted-foreground"
-					>
-						{t('landing.hero.trustLine')}
-					</motion.p>
 				</div>
-			</div>
 
-			<DashboardMock />
+				{/* Dashboard mock — mobile (below text) */}
+				<motion.div
+					initial={{ opacity: 0, y: 24 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.65, delay: 0.45 }}
+					className="mt-10 lg:hidden"
+				>
+					<DashboardMock className="mt-0" />
+				</motion.div>
+			</div>
 
 			<div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-background" />
 		</section>

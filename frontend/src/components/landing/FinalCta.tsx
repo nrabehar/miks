@@ -19,11 +19,8 @@ export const FinalCta = ({ ctaTo }: FinalCtaProps) => {
 						'radial-gradient(circle at 30% 50%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%)',
 				}}
 			/>
-			<motion.div
-				animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-				transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-				className="absolute -right-20 -top-20 -z-10 size-80 rounded-full bg-white/10 blur-3xl"
-			/>
+			{/* CSS animation instead of Framer Motion repeat: Infinity */}
+			<div className="animate-blob-pulse absolute -right-20 -top-20 -z-10 size-80 rounded-full bg-white/10 blur-3xl" />
 
 			<div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
 				<motion.div

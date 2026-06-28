@@ -1,3 +1,4 @@
+import { cn } from '#/lib/utils/utils'
 import { motion } from 'framer-motion'
 import {
 	ArrowRight,
@@ -15,6 +16,25 @@ interface FeaturesGridProps {
 	features: Feature[]
 }
 
+/**
+ * Bento grid layout for 7 features:
+ * Row 1: [card0 lg:col-span-2] [card1 lg:col-span-1]
+ * Row 2: [card2] [card3] [card4]
+ * Row 3: [card5 lg:col-span-1] [card6 lg:col-span-2]
+ * Each row sums to 3 cols → no orphan cards.
+ */
+const CARD_SPANS = [2, 1, 1, 1, 1, 1, 2] as const
+
+const ICON_COLORS = [
+	'bg-primary/12 text-primary',
+	'bg-accent/12 text-accent',
+	'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400',
+	'bg-primary/12 text-primary',
+	'bg-violet-500/12 text-violet-600 dark:text-violet-400',
+	'bg-accent/12 text-accent',
+	'bg-primary/12 text-primary',
+]
+
 export const FeaturesGrid = ({ features }: FeaturesGridProps) => {
 	const { t } = useTranslation()
 	return (
@@ -27,7 +47,7 @@ export const FeaturesGrid = ({ features }: FeaturesGridProps) => {
 					transition={{ duration: 0.6 }}
 					className="mx-auto max-w-2xl text-center"
 				>
-					<div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+					<div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3 py-1 text-xs font-semibold text-primary">
 						{t('landing.features.badge')}
 					</div>
 					<h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -38,33 +58,64 @@ export const FeaturesGrid = ({ features }: FeaturesGridProps) => {
 					</p>
 				</motion.div>
 
-				<div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-					{features.map((feature, i) => (
-						<motion.div
-							key={feature.i18nKey}
-							initial={{ opacity: 0, y: 20 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true, amount: 0.3 }}
-							transition={{ duration: 0.5, delay: i * 0.08 }}
-							whileHover={{ y: -4 }}
-							className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5"
-						>
-							<div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 opacity-0 transition-opacity group-hover:opacity-100 group-hover:from-primary/5 group-hover:to-primary/10" />
-							<div className="mb-4 inline-flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
-								<feature.icon className="size-6" />
-							</div>
-							<h3 className="text-lg font-semibold text-foreground">
-								{t(`landing.features.items.${feature.i18nKey}.title`)}
-							</h3>
-							<p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-								{t(`landing.features.items.${feature.i18nKey}.description`)}
-							</p>
-							<div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-								{t('landing.features.learnMore')}
-								<ArrowRight className="size-3" />
-							</div>
-						</motion.div>
-					))}
+				{/* Bento grid — 3 cols on lg, 2 on sm, 1 on mobile */}
+				<div className="mt-16 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{features.map((feature, i) => {
+						const span = CARD_SPANS[i] ?? 1
+						const isFeatured = span === 2
+						return (
+							<motion.div
+								key={feature.i18nKey}
+								initial={{ opacity: 0, y: 20 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								viewport={{ once: true, amount: 0.25 }}
+								transition={{ duration: 0.45, delay: (i % 3) * 0.07 }}
+								whileHover={{ y: -3 }}
+								className={cn(
+									'group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all duration-200 hover:shadow-lg',
+									isFeatured
+										? 'hover:border-primary/40 hover:shadow-primary/6 sm:col-span-2 lg:col-span-2'
+										: 'hover:border-border/80',
+								)}
+							>
+								{/* Gradient overlay on hover */}
+								<div
+									className={cn(
+										'pointer-events-none absolute inset-0 -z-10 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100',
+										isFeatured
+											? 'bg-linear-to-br from-primary/6 to-primary/12'
+											: 'bg-linear-to-br from-muted/60 to-muted/20',
+									)}
+								/>
+
+								<div
+									className={cn(
+										'mb-4 inline-flex items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110',
+										isFeatured ? 'size-14' : 'size-12',
+										ICON_COLORS[i] ?? ICON_COLORS[0],
+									)}
+								>
+									<feature.icon className={cn(isFeatured ? 'size-7' : 'size-6')} />
+								</div>
+
+								<h3
+									className={cn(
+										'font-semibold text-foreground',
+										isFeatured ? 'text-xl' : 'text-lg',
+									)}
+								>
+									{t(`landing.features.items.${feature.i18nKey}.title`)}
+								</h3>
+								<p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+									{t(`landing.features.items.${feature.i18nKey}.description`)}
+								</p>
+								<div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+									{t('landing.features.learnMore')}
+									<ArrowRight className="size-3" />
+								</div>
+							</motion.div>
+						)
+					})}
 				</div>
 			</div>
 		</section>
@@ -91,7 +142,7 @@ export const HowItWorks = ({ steps }: HowItWorksProps) => {
 					transition={{ duration: 0.6 }}
 					className="mx-auto max-w-2xl text-center"
 				>
-					<div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+					<div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/8 px-3 py-1 text-xs font-semibold text-accent">
 						{t('landing.howItWorks.badge')}
 					</div>
 					<h2 className="text-3xl font-bold tracking-tight sm:text-4xl">

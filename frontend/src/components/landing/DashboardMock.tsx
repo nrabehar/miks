@@ -1,12 +1,12 @@
+import { cn } from '#/lib/utils/utils'
 import { motion } from 'framer-motion'
 import { ArrowDownRight, ArrowUpRight, WalletIcon } from 'lucide-react'
 
 /**
- * A small, self-contained SVG mock of the Miks dashboard.
- * Renders inside an off-center card with a parallax-tilt on hover.
- * No data, no props — pure decoration.
+ * A small, self-contained mock of the Miks dashboard.
+ * Pure decoration — no data, no props except optional className.
  */
-export const DashboardMock = () => {
+export const DashboardMock = ({ className }: { className?: string }) => {
 	const balanceBars = [40, 65, 50, 80, 60, 90, 75, 95, 70, 88, 92, 100]
 
 	return (
@@ -15,7 +15,7 @@ export const DashboardMock = () => {
 			animate={{ opacity: 1, y: 0, rotateX: 0 }}
 			transition={{ duration: 0.9, delay: 0.6, ease: 'easeOut' }}
 			style={{ perspective: 1200 }}
-			className="relative mx-auto mt-20 max-w-3xl"
+			className={cn('relative mx-auto mt-20 max-w-3xl', className)}
 		>
 			<motion.div
 				whileHover={{ rotateX: 4, rotateY: -4, scale: 1.01 }}
@@ -176,7 +176,7 @@ export const DashboardMock = () => {
 				</div>
 			</motion.div>
 
-			{/* Decorative glow underneath */}
+			{/* Decorative glow */}
 			<div
 				className="pointer-events-none absolute inset-x-1/4 -bottom-12 h-24 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl"
 				aria-hidden

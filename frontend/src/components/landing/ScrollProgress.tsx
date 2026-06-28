@@ -2,11 +2,11 @@ import { motion, useScroll, useSpring } from 'framer-motion'
 
 /**
  * Top-of-page scroll progress bar — scales X from 0 to 1 as the user
- * scrolls through the page.
+ * scrolls through the page. Uses scrollYProgress (vertical scroll).
  */
 export const ScrollProgress = () => {
-	const { scrollXProgress } = useScroll()
-	const scaleX = useSpring(scrollXProgress, {
+	const { scrollYProgress } = useScroll()
+	const scaleX = useSpring(scrollYProgress, {
 		damping: 25,
 		stiffness: 120,
 		mass: 0.3,
