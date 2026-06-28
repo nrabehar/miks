@@ -136,7 +136,8 @@
 			"product": "Product",
 			"process": "Process",
 			"security": "Security",
-			"pricing": "Pricing"
+			"pricing": "Pricing",
+			"faq": "FAQ"
 		},
 		"hero": {
 			"badge": "The infrastructure for autonomous cooperatives",

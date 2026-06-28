@@ -1,12 +1,19 @@
 model Workspace {
-    id   String @id @default(cuid())
-    name String
+    id          String  @id @default(cuid())
+    name        String
+    slug        String  @unique
+    description String?
+    logoUrl     String?
+    currency    String  @default("MGA")
 
-    slug String @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-    createdAt        DateTime          @default(now())
-    updatedAt        DateTime          @updatedAt
     workspaceMembers WorkspaceMember[]
+    vaultConfig      VaultConfig?
+    ledgerEntries    LedgerEntry[]
+    cotisations      Cotisation[]
+    inviteTokens     InviteToken[]
 
     @@index([slug])
     @@map("workspaces")
@@ -25,9 +32,13 @@ model WorkspaceMember {
 
     exitRequestedAt DateTime?
 
-    role      String
+    role    String
+    pinHash String?
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    cotisations Cotisation[]
 
     @@unique([workspaceId, userId])
     @@map("workspace_members")

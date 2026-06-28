@@ -136,7 +136,8 @@
 			"product": "Produit",
 			"process": "Processus",
 			"security": "Sécurité",
-			"pricing": "Tarifs"
+			"pricing": "Tarifs",
+			"faq": "FAQ"
 		},
 		"hero": {
 			"badge": "L'infrastructure des coopératives autonomes",

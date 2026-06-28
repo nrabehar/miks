@@ -1,7 +1,7 @@
 import { workspacesApi, type Workspace } from '#/lib/api/workspaces.api'
 import { useAuthStore } from '#/stores/auth.store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
 	ArrowRightIcon,
@@ -344,7 +344,7 @@ function WorkspaceCard({ workspace, index }: { workspace: Workspace; index: numb
 			variants={FADE_UP}
 			initial="hidden"
 			animate="show"
-			className="group relative flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md hover:border-border/60 transition-all duration-200 cursor-pointer focus-within:ring-2 focus-within:ring-primary/30"
+			className="group relative flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md hover:border-border/60 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/30"
 		>
 			<div className="flex items-start gap-3">
 				<div
@@ -366,11 +366,24 @@ function WorkspaceCard({ workspace, index }: { workspace: Workspace; index: numb
 						{memberCount} membre{memberCount !== 1 ? 's' : ''}
 					</span>
 				</div>
-				<span className="flex items-center gap-0.5 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-					Voir
+				<Link
+					to="/workspace/$id"
+					params={{ id: workspace.id }}
+					className="flex items-center gap-0.5 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-150 focus:opacity-100"
+					aria-label={`Ouvrir ${workspace.name}`}
+				>
+					Ouvrir
 					<ArrowRightIcon className="size-3" aria-hidden="true" />
-				</span>
+				</Link>
 			</div>
+			{/* Full-card link overlay */}
+			<Link
+				to="/workspace/$id"
+				params={{ id: workspace.id }}
+				className="absolute inset-0 rounded-xl focus:outline-none"
+				tabIndex={-1}
+				aria-hidden="true"
+			/>
 		</motion.article>
 	)
 }

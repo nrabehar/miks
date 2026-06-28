@@ -13,6 +13,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthAuthRouteImport } from './routes/_auth/auth'
+import { Route as AuthedWorkspaceIdRouteImport } from './routes/_authed/workspace.$id'
 import { Route as AuthAuthVerifyEmailRouteImport } from './routes/_auth/auth.verify-email'
 import { Route as AuthAuthResetPasswordRouteImport } from './routes/_auth/auth.reset-password'
 import { Route as AuthAuthRegisterRouteImport } from './routes/_auth/auth.register'
@@ -37,6 +38,11 @@ const AuthAuthRoute = AuthAuthRouteImport.update({
   id: '/_auth/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedWorkspaceIdRoute = AuthedWorkspaceIdRouteImport.update({
+  id: '/workspace/$id',
+  path: '/workspace/$id',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthAuthVerifyEmailRoute = AuthAuthVerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthAuthRegisterRoute
   '/auth/reset-password': typeof AuthAuthResetPasswordRoute
   '/auth/verify-email': typeof AuthAuthVerifyEmailRoute
+  '/workspace/$id': typeof AuthedWorkspaceIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthAuthRegisterRoute
   '/auth/reset-password': typeof AuthAuthResetPasswordRoute
   '/auth/verify-email': typeof AuthAuthVerifyEmailRoute
+  '/workspace/$id': typeof AuthedWorkspaceIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_auth/auth/register': typeof AuthAuthRegisterRoute
   '/_auth/auth/reset-password': typeof AuthAuthResetPasswordRoute
   '/_auth/auth/verify-email': typeof AuthAuthVerifyEmailRoute
+  '/_authed/workspace/$id': typeof AuthedWorkspaceIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/reset-password'
     | '/auth/verify-email'
+    | '/workspace/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/reset-password'
     | '/auth/verify-email'
+    | '/workspace/$id'
   id:
     | '__root__'
     | '/'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/_auth/auth/register'
     | '/_auth/auth/reset-password'
     | '/_auth/auth/verify-email'
+    | '/_authed/workspace/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -165,6 +177,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthAuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/workspace/$id': {
+      id: '/_authed/workspace/$id'
+      path: '/workspace/$id'
+      fullPath: '/workspace/$id'
+      preLoaderRoute: typeof AuthedWorkspaceIdRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_auth/auth/verify-email': {
       id: '/_auth/auth/verify-email'
@@ -206,10 +225,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedWorkspaceIdRoute: typeof AuthedWorkspaceIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedWorkspaceIdRoute: AuthedWorkspaceIdRoute,
 }
 
 const AuthedRouteWithChildren =

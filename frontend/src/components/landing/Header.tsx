@@ -1,6 +1,10 @@
 import { type SupportedLanguage } from '#/i18n/config'
 import { useLanguage } from '#/i18n/useLanguage'
+import { MiksLogo } from '@/components/brand/logo'
+import { useActiveSection } from '@/hook/useActiveSection'
 import { cn } from '@/lib/utils'
+import { useThemeStore } from '@/stores/theme.store'
+import { Link } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
 	GlobeIcon,
@@ -13,11 +17,7 @@ import {
 	XIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { useThemeStore } from '@/stores/theme.store'
-import { useActiveSection } from '@/hook/useActiveSection'
-import { MiksLogo } from '@/components/brand/logo'
 
 interface NavLink {
 	key: string
@@ -29,6 +29,7 @@ const NAV_LINK_KEYS: readonly NavLink[] = [
 	{ key: 'process', href: '#how' },
 	{ key: 'security', href: '#security' },
 	{ key: 'pricing', href: '#pricing' },
+	{ key: 'faq', href: '#faq' },
 ] as const
 
 const SECTION_IDS = ['features', 'how', 'security', 'pricing', 'faq']
@@ -141,7 +142,7 @@ export const Header = () => {
 					</nav>
 
 					{/* Right actions */}
-					<div className="flex shrink-0 items-center gap-1 pr-1">
+					<div className="flex shrink-0 items-center gap-1 pr-2">
 						<div className="hidden items-center gap-0.5 rounded-full p-0.5 sm:flex">
 							<GlobeIcon className="ml-1 size-3.5 text-muted-foreground" />
 							{languages.map((lng) => (
@@ -283,13 +284,24 @@ export const Header = () => {
 							})}
 						</nav>
 						<div className="my-2 h-px bg-border/40" />
-						<Link
-							to="/auth/login"
-							onClick={() => setMobileOpen(false)}
-							className="block rounded-xl px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-muted"
-						>
-							{t('landing.signIn')}
-						</Link>
+						<div className="flex flex-col gap-1.5 px-1 pb-1">
+							<Link
+								to="/auth/login"
+								onClick={() => setMobileOpen(false)}
+								className="block rounded-xl px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-muted active:scale-95 transition-all"
+							>
+								{t('landing.signIn')}
+							</Link>
+							<Link
+								to="/auth/register"
+								onClick={() => setMobileOpen(false)}
+								className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
+							>
+								<SparklesIcon className="size-3.5" />
+								{t('landing.signUp')}
+							</Link>
+						</div>
+						<div className="my-2 h-px bg-border/40" />
 						<div className="flex items-center gap-2 px-3 py-2">
 							{languages.map((lng) => (
 								<button
