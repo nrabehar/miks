@@ -6,8 +6,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { KeyvCacheableMemory } from 'cacheable';
 import { Keyv } from 'keyv';
-import { appConfig, authConfig, databaseConfig, emailConfig } from './core/config';
 import { AppController } from './app.controller';
+import { appConfig, authConfig, databaseConfig, emailConfig } from './core/config';
+import { RedisModule } from './core/redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
@@ -48,7 +49,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 			inject: [ConfigService],
 			isGlobal: true,
 		}),
-
+		RedisModule,
 		AuthModule,
 		WorkspacesModule,
 	],
