@@ -1,31 +1,41 @@
-import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+	const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-  app.use(cookieParser());
+	app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+	app.use(cookieParser());
 
-  const origins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',');
-  app.enableCors({
-    origin: origins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  });
+	const config = app.get(ConfigService);
 
-  app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
-  );
+	const origins =
+		config.get('app.corsOrigins') ||
+		config.get('app.frontendUrl') ||
+		'http://localhost:5173';
+	app.enableCors({
+		origin: origins,
+		credentials: true,
+		methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+	});
 
-  app.setGlobalPrefix('api');
+	app.useGlobalPipes(
+		new ValidationPipe({
+			whitelist: true,
+			forbidNonWhitelisted: true,
+			transform: true,
+		}),
+	);
 
-  const port = parseInt(process.env.PORT ?? '3000', 10);
-  await app.listen(port);
-  console.log(`MIKS API listening on :${port}`);
+	app.setGlobalPrefix('api');
+
+	const port = config.get<number>('app.port');
+	await app.listen(port!);
+	console.log(`MIKS API listening on :${port}`);
 }
 
 bootstrap();

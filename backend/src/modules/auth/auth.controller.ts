@@ -1,45 +1,49 @@
 import {
-  Controller,
-  Post,
-  Get,
-  Patch,
   Body,
-  Req,
-  Res,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
-  UseGuards,
+  Patch,
+  Post,
+  Req,
+  Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
-import { AuthService } from './auth.service.js';
-import { UsersService } from '../users/users.service.js';
-import { UpdateProfileDto } from '../users/dto/update-profile.dto.js';
-import { RegisterDto } from './dto/register.dto.js';
-import { LoginDto, VerifyEmailDto, ResendEmailDto } from './dto/login.dto.js';
-import { TwoFaCodeDto, TwoFaVerifyLoginDto } from './dto/two-fa.dto.js';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/password.dto.js';
-import { Public } from '../../core/decorators/public.decorator.js';
+import type { Request, Response } from 'express';
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
+import { Public } from '../../core/decorators/public.decorator.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
-
-const COOKIE_NAME = 'refresh_token';
-const COOKIE_OPTS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: '/',
-};
+import { UpdateProfileDto } from '../users/dto/update-profile.dto.js';
+import { UsersService } from '../users/users.service.js';
+import { AuthService } from './auth.service.js';
+import { LoginDto, ResendEmailDto, VerifyEmailDto } from './dto/login.dto.js';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password.dto.js';
+import { RegisterDto } from './dto/register.dto.js';
+import { TwoFaCodeDto, TwoFaVerifyLoginDto } from './dto/two-fa.dto.js';
 
 @Controller('auth')
 @UseGuards(JwtAuthGuard)
 export class AuthController {
+
+  private COOKIE_NAME = 'refresh_token';
+  private COOKIE_OPTS = {};
+
   constructor(
     private readonly auth: AuthService,
     private readonly users: UsersService,
-  ) {}
+    config: ConfigService,
+  ) {
+    this.COOKIE_OPTS = {
+      httpOnly: true,
+      secure: config.get('app.nodeEnv') === 'production',
+      sameSite: 'lax' as const,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    };
+  }
 
   @Public()
   @Throttle({ default: { limit: 3, ttl: 3_600_000 } })
@@ -68,7 +72,7 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await this.auth.login(dto, req.headers['user-agent'], req.ip);
     if (!result.requiresTwoFa && (result as any).refreshToken) {
-      res.cookie(COOKIE_NAME, (result as any).refreshToken, COOKIE_OPTS);
+      res.cookie(this.COOKIE_NAME, (result as any).refreshToken, this.COOKIE_OPTS);
     }
     const { refreshToken: _, ...safe } = result as any;
     return safe;
@@ -83,7 +87,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.auth.verifyTwoFaLogin(dto.tempToken, dto.code, req.headers['user-agent'], req.ip);
-    res.cookie(COOKIE_NAME, result.refreshToken, COOKIE_OPTS);
+    res.cookie(this.COOKIE_NAME, result.refreshToken, this.COOKIE_OPTS);
     const { refreshToken: _, ...safe } = result;
     return safe;
   }
@@ -107,10 +111,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const token = req.cookies?.[COOKIE_NAME];
+    const token = req.cookies?.[this.COOKIE_NAME];
     if (!token) throw new UnauthorizedException('No refresh token');
     const result = await this.auth.refresh(token, req.headers['user-agent'], req.ip);
-    res.cookie(COOKIE_NAME, result.refreshToken, COOKIE_OPTS);
+    res.cookie(this.COOKIE_NAME, result.refreshToken, this.COOKIE_OPTS);
     const { refreshToken: _, ...safe } = result;
     return safe;
   }
@@ -118,7 +122,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   async logout(@CurrentUser() user: { jti: string }, @Res({ passthrough: true }) res: Response) {
-    res.clearCookie(COOKIE_NAME, { path: '/' });
+    res.clearCookie(this.COOKIE_NAME, { path: '/' });
     return this.auth.logout(user.jti);
   }
 

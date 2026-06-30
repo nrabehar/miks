@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MailService } from './mail.service.js';
 
 const BRAND = {
@@ -22,7 +23,7 @@ const BRAND = {
 
 @Injectable()
 export class EmailService {
-  constructor(private readonly mail: MailService) {}
+  constructor(private readonly mail: MailService, private readonly config: ConfigService) {}
 
   async sendVerificationCode(to: string, name: string, code: string) {
     await this.mail.send(
@@ -33,7 +34,7 @@ export class EmailService {
   }
 
   async sendPasswordReset(to: string, name: string, userId: string, token: string) {
-    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+    const frontendUrl = this.config.get('app.frontendUrl');
     const link = `${frontendUrl}/auth/reset-password?userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(token)}`;
     await this.mail.send(
       to,
