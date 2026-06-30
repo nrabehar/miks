@@ -1,6 +1,6 @@
 
 ARG NODE_VERSION=24.14.0-slim
-ARG VITE_API_URL=http://localhost:3000
+ARG VITE_API_URL=
 
 FROM node:${NODE_VERSION} AS dependencies
 
