@@ -31,8 +31,6 @@ async function bootstrap() {
 		}),
 	);
 
-	app.setGlobalPrefix('api');
-
 	const port = config.get<number>('app.port');
 	await app.listen(port!);
 	console.log(`MIKS API listening on :${port}`);
