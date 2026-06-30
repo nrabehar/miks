@@ -10,7 +10,7 @@ const strongPasswordSchema = z
 	.regex(/[^A-Za-z0-9]/, { message: 'Must contain at least one special character' })
 
 export const loginSchema = z.object({
-	identifier: z.string().min(1, { message: 'Identifier is required' }),
+	email: z.email({ message: 'Invalid email address' }),
 	password: z.string().min(1, { message: 'Password is required' }),
 })
 

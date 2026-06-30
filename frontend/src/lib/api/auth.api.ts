@@ -14,7 +14,7 @@ export interface RegisterResponse {
 }
 
 export interface LoginPayload {
-	identifier: string
+	email: string
 	password: string
 }
 

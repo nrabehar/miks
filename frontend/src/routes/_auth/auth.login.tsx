@@ -46,7 +46,7 @@ function LoginPage() {
 		formState: { errors },
 	} = useForm({
 		resolver: zodResolver(loginSchema),
-		defaultValues: { identifier: '', password: '' },
+		defaultValues: { email: '', password: '' },
 	})
 
 	const loginMutation = useMutation({
@@ -62,7 +62,8 @@ function LoginPage() {
 			navigate({ to: '/dashboard', replace: true })
 		},
 		onError: (err: any) => {
-			const msg: string = err.response?.data?.message ?? ''
+			const raw = err.response?.data?.message
+			const msg: string = Array.isArray(raw) ? raw.join(', ') : (raw ?? '')
 			if (msg.toLowerCase().includes('verify your email')) {
 				setEmailNotVerified(true)
 				return
@@ -163,8 +164,8 @@ function LoginPage() {
 					label={t('auth.login.identifierLabel')}
 					autoComplete="email"
 					placeholder={t('auth.login.identifierPlaceholder')}
-					error={errors.identifier?.message}
-					{...register('identifier')}
+					error={errors.email?.message}
+					{...register('email')}
 				/>
 				<PasswordInput
 					label={
