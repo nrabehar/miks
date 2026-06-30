@@ -1,0 +1,708 @@
+<title>MIKS — Schéma Base de Données</title>
+<style>
+:root {
+  --bg:#0A0E18;--surface:#111827;--surface2:#182030;--surface3:#1E2A40;
+  --border:#1E2A3E;--border2:#283650;--text:#C8D4F0;--text-muted:#5E6E90;--text-dim:#2E3D58;
+  --auth:#5B8FE8;--auth-bg:rgba(91,143,232,.07);--auth-b:rgba(91,143,232,.3);
+  --ws:#52C989;--ws-bg:rgba(82,201,137,.07);--ws-b:rgba(82,201,137,.3);
+  --fin:#E8B44A;--fin-bg:rgba(232,180,74,.07);--fin-b:rgba(232,180,74,.3);
+  --flux:#E87A4A;--flux-bg:rgba(232,122,74,.07);--flux-b:rgba(232,122,74,.3);
+  --proj:#A67FE8;--proj-bg:rgba(166,127,232,.07);--proj-b:rgba(166,127,232,.3);
+  --gov:#4AC8E8;--gov-bg:rgba(74,200,232,.07);--gov-b:rgba(74,200,232,.3);
+  --aud:#E84A8F;--aud-bg:rgba(232,74,143,.07);--aud-b:rgba(232,74,143,.3);
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --mono:'SF Mono','Fira Code','Cascadia Code','Consolas',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+#hdr{display:flex;align-items:center;gap:12px;padding:0 16px;height:50px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;z-index:100}
+#hdr h1{font-size:12px;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.logo{font-family:var(--mono);font-size:11px;background:var(--surface3);border:1px solid var(--border2);padding:2px 7px;border-radius:4px;color:var(--text-muted)}
+.sw{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:0 9px;height:28px;min-width:180px}
+.sw svg{color:var(--text-dim);flex-shrink:0}
+#srch{background:none;border:none;outline:none;color:var(--text);font-size:11.5px;width:100%;font-family:var(--font)}
+#srch::placeholder{color:var(--text-dim)}
+.gf{display:flex;gap:5px;flex-wrap:wrap}
+.gp{font-size:10px;padding:2px 8px;border-radius:99px;border:1px solid transparent;cursor:pointer;font-weight:500;transition:opacity .15s;user-select:none;white-space:nowrap}
+.gp.auth{color:var(--auth);border-color:var(--auth-b);background:var(--auth-bg)}
+.gp.ws{color:var(--ws);border-color:var(--ws-b);background:var(--ws-bg)}
+.gp.fin{color:var(--fin);border-color:var(--fin-b);background:var(--fin-bg)}
+.gp.flux{color:var(--flux);border-color:var(--flux-b);background:var(--flux-bg)}
+.gp.proj{color:var(--proj);border-color:var(--proj-b);background:var(--proj-bg)}
+.gp.gov{color:var(--gov);border-color:var(--gov-b);background:var(--gov-bg)}
+.gp.aud{color:var(--aud);border-color:var(--aud-b);background:var(--aud-bg)}
+.gp.off{opacity:.25}
+#stats{font-size:10px;color:var(--text-dim);font-family:var(--mono);white-space:nowrap;margin-left:auto}
+
+#main{display:flex;flex:1;overflow:hidden}
+
+#sb{width:190px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto;padding:8px 0}
+#sb::-webkit-scrollbar{width:3px}
+#sb::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.sg{margin-bottom:4px}
+.sgl{font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);padding:7px 12px 3px}
+.st{display:flex;align-items:center;gap:7px;padding:4px 12px;cursor:pointer;font-size:11.5px;color:var(--text-muted);border-left:2px solid transparent;transition:background .1s,color .1s}
+.st:hover{background:var(--surface2);color:var(--text)}
+.st.sel{color:var(--text);background:var(--surface2)}
+.st.sel.auth{border-left-color:var(--auth)}.st.sel.ws{border-left-color:var(--ws)}.st.sel.fin{border-left-color:var(--fin)}
+.st.sel.flux{border-left-color:var(--flux)}.st.sel.proj{border-left-color:var(--proj)}.st.sel.gov{border-left-color:var(--gov)}.st.sel.aud{border-left-color:var(--aud)}
+.sd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sd.auth{background:var(--auth)}.sd.ws{background:var(--ws)}.sd.fin{background:var(--fin)}
+.sd.flux{background:var(--flux)}.sd.proj{background:var(--proj)}.sd.gov{background:var(--gov)}.sd.aud{background:var(--aud)}
+.stn{font-family:var(--mono);font-size:11px;flex:1}
+.sfc{margin-left:auto;font-size:9.5px;color:var(--text-dim);font-family:var(--mono)}
+
+#dw{flex:1;position:relative;overflow:hidden;background:var(--bg);background-image:radial-gradient(circle,var(--border) 1px,transparent 1px);background-size:28px 28px}
+#diag{position:absolute;top:0;left:0;transform-origin:0 0}
+#svgl{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
+
+.tc{position:absolute;width:220px;background:var(--surface);border-radius:7px;border:1px solid var(--border);user-select:none;transition:box-shadow .15s,border-color .15s}
+.tc:hover{border-color:var(--border2)}
+.tc.auth.sel,.tc.auth.hi{border-color:var(--auth);box-shadow:0 0 0 1px var(--auth),0 6px 24px rgba(91,143,232,.14)}
+.tc.ws.sel,.tc.ws.hi{border-color:var(--ws);box-shadow:0 0 0 1px var(--ws),0 6px 24px rgba(82,201,137,.14)}
+.tc.fin.sel,.tc.fin.hi{border-color:var(--fin);box-shadow:0 0 0 1px var(--fin),0 6px 24px rgba(232,180,74,.14)}
+.tc.flux.sel,.tc.flux.hi{border-color:var(--flux);box-shadow:0 0 0 1px var(--flux),0 6px 24px rgba(232,122,74,.14)}
+.tc.proj.sel,.tc.proj.hi{border-color:var(--proj);box-shadow:0 0 0 1px var(--proj),0 6px 24px rgba(166,127,232,.14)}
+.tc.gov.sel,.tc.gov.hi{border-color:var(--gov);box-shadow:0 0 0 1px var(--gov),0 6px 24px rgba(74,200,232,.14)}
+.tc.aud.sel,.tc.aud.hi{border-color:var(--aud);box-shadow:0 0 0 1px var(--aud),0 6px 24px rgba(232,74,143,.14)}
+.tc.dim{opacity:.15}
+.ch{display:flex;align-items:center;gap:7px;padding:9px 11px 7px;border-bottom:1px solid var(--border);cursor:grab;border-radius:7px 7px 0 0}
+.ch:active{cursor:grabbing}
+.cd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cd.auth{background:var(--auth)}.cd.ws{background:var(--ws)}.cd.fin{background:var(--fin)}
+.cd.flux{background:var(--flux)}.cd.proj{background:var(--proj)}.cd.gov{background:var(--gov)}.cd.aud{background:var(--aud)}
+.cn{font-size:12px;font-weight:600;font-family:var(--mono);flex:1}
+.cn.auth{color:var(--auth)}.cn.ws{color:var(--ws)}.cn.fin{color:var(--fin)}
+.cn.flux{color:var(--flux)}.cn.proj{color:var(--proj)}.cn.gov{color:var(--gov)}.cn.aud{color:var(--aud)}
+.cfs{padding:5px 0 3px}
+.fr{display:flex;align-items:center;padding:2.5px 11px;font-family:var(--mono);font-size:10px}
+.fi{width:13px;flex-shrink:0;text-align:center;font-size:9px}
+.fi.pk{color:var(--fin)}.fi.fk{color:var(--ws)}.fi.uq{color:var(--auth)}
+.fn{flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ft{color:var(--text-dim);font-size:9.5px;white-space:nowrap}
+.cm{padding:3px 11px 7px;font-size:9px;color:var(--text-dim);font-family:var(--mono)}
+
+#dp{width:310px;flex-shrink:0;border-left:1px solid var(--border);background:var(--surface);overflow-y:auto;transform:translateX(310px);transition:transform .2s cubic-bezier(.2,0,0,1)}
+#dp.open{transform:translateX(0)}
+#dp::-webkit-scrollbar{width:3px}
+#dp::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+#de{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:12px;gap:8px}
+.dh{padding:14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:10}
+.dht{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.dtn{font-size:14px;font-weight:700;font-family:var(--mono)}
+.dtn.auth{color:var(--auth)}.dtn.ws{color:var(--ws)}.dtn.fin{color:var(--fin)}
+.dtn.flux{color:var(--flux)}.dtn.proj{color:var(--proj)}.dtn.gov{color:var(--gov)}.dtn.aud{color:var(--aud)}
+.dd{font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:8px}
+.dm{display:flex;gap:6px;flex-wrap:wrap}
+.mc{font-size:10px;font-family:var(--mono);padding:2px 6px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text-muted)}
+.ds{padding:10px 14px;border-bottom:1px solid var(--border)}
+.dst{font-size:9.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);margin-bottom:9px}
+.df{margin-bottom:9px}
+.dfh{display:flex;align-items:center;gap:5px;margin-bottom:2px}
+.dfn{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text)}
+.dft{font-family:var(--mono);font-size:9.5px;color:var(--text-dim);margin-left:auto}
+.dfd{font-size:10.5px;color:var(--text-muted);line-height:1.4}
+.bx{font-size:8.5px;font-weight:700;padding:1px 4px;border-radius:3px;text-transform:uppercase;letter-spacing:.03em}
+.bx.pk{background:rgba(232,180,74,.12);color:var(--fin);border:1px solid rgba(232,180,74,.2)}
+.bx.fk{background:rgba(82,201,137,.12);color:var(--ws);border:1px solid rgba(82,201,137,.2)}
+.bx.uq{background:rgba(91,143,232,.12);color:var(--auth);border:1px solid rgba(91,143,232,.2)}
+.dr{display:flex;align-items:center;gap:7px;padding:5px 9px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;margin-bottom:5px;cursor:pointer;transition:border-color .1s;font-size:11px}
+.dr:hover{border-color:var(--border2)}
+.rtb{font-size:9px;font-family:var(--mono);font-weight:600;padding:1px 5px;border-radius:3px;background:var(--surface3);color:var(--text-muted)}
+.ra{color:var(--text-dim)}.rt{font-family:var(--mono);font-size:10.5px;color:var(--text)}.rf{font-family:var(--mono);font-size:9.5px;color:var(--text-dim);margin-left:auto}
+
+.rl{fill:none;stroke-width:1.5}
+.rl.auth{stroke:var(--auth-b)}.rl.ws{stroke:var(--ws-b)}.rl.fin{stroke:var(--fin-b)}
+.rl.flux{stroke:var(--flux-b)}.rl.proj{stroke:var(--proj-b)}.rl.gov{stroke:var(--gov-b)}.rl.aud{stroke:var(--aud-b)}
+.rl.hi.auth{stroke:var(--auth);stroke-width:2.5}.rl.hi.ws{stroke:var(--ws);stroke-width:2.5}.rl.hi.fin{stroke:var(--fin);stroke-width:2.5}
+.rl.hi.flux{stroke:var(--flux);stroke-width:2.5}.rl.hi.proj{stroke:var(--proj);stroke-width:2.5}.rl.hi.gov{stroke:var(--gov);stroke-width:2.5}.rl.hi.aud{stroke:var(--aud);stroke-width:2.5}
+
+#zc{position:absolute;bottom:14px;right:14px;display:flex;flex-direction:column;gap:3px;z-index:50}
+.zb{width:26px;height:26px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .1s,color .1s}
+.zb:hover{background:var(--surface2);color:var(--text)}
+#zl{font-size:9.5px;font-family:var(--mono);color:var(--text-dim);text-align:center}
+#leg{position:absolute;bottom:14px;left:14px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 11px;z-index:50;font-size:10px}
+.lt{color:var(--text-dim);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px;font-size:9px}
+.lr{display:flex;align-items:center;gap:6px;margin-bottom:4px;color:var(--text-muted)}
+.ll{width:16px;height:2px;border-radius:1px}
+#tip{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 11px;font-size:10.5px;color:var(--text-dim);pointer-events:none;z-index:50;white-space:nowrap}
+</style>
+
+<div id="hdr">
+  <h1><span class="logo">MIKS</span> Schéma Base de Données</h1>
+  <div class="sw">
+    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+    <input id="srch" type="text" placeholder="Rechercher…" autocomplete="off">
+  </div>
+  <div class="gf">
+    <div class="gp auth" data-g="auth">Auth</div>
+    <div class="gp ws"   data-g="ws">Workspace</div>
+    <div class="gp fin"  data-g="fin">Finance</div>
+    <div class="gp flux" data-g="flux">Flux</div>
+    <div class="gp proj" data-g="proj">Projets</div>
+    <div class="gp gov"  data-g="gov">Gouvernance</div>
+    <div class="gp aud"  data-g="aud">Audit &amp; Notifs</div>
+  </div>
+  <span id="stats">19 tables · 18 relations</span>
+</div>
+
+<div id="main">
+  <div id="sb"></div>
+  <div id="dw">
+    <div id="diag">
+      <svg id="svgl" width="1900" height="1100"></svg>
+    </div>
+    <div id="tip">Glisser pour déplacer · Cliquer pour les détails · Molette pour zoomer</div>
+    <div id="leg">
+      <div class="lt">Groupes</div>
+      <div class="lr"><span class="ll" style="background:var(--auth)"></span>Auth</div>
+      <div class="lr"><span class="ll" style="background:var(--ws)"></span>Workspace</div>
+      <div class="lr"><span class="ll" style="background:var(--fin)"></span>Finance</div>
+      <div class="lr"><span class="ll" style="background:var(--flux)"></span>Flux</div>
+      <div class="lr"><span class="ll" style="background:var(--proj)"></span>Projets</div>
+      <div class="lr"><span class="ll" style="background:var(--gov)"></span>Gouvernance</div>
+      <div class="lr"><span class="ll" style="background:var(--aud)"></span>Audit &amp; Notifs</div>
+      <div class="lr" style="margin-top:5px">
+        <svg width="18" height="8"><line x1="0" y1="4" x2="12" y2="4" stroke="#5E6E90" stroke-width="1.5"/><polygon points="12,1 18,4 12,7" fill="#5E6E90"/></svg> 1→N
+      </div>
+      <div class="lr">
+        <svg width="18" height="8"><line x1="0" y1="4" x2="12" y2="4" stroke="#5E6E90" stroke-width="1.5" stroke-dasharray="3,2"/><polygon points="12,1 18,4 12,7" fill="#5E6E90"/></svg> 1→1
+      </div>
+    </div>
+    <div id="zc">
+      <button class="zb" id="zi">+</button>
+      <div id="zl">75%</div>
+      <button class="zb" id="zo">−</button>
+      <button class="zb" id="zr" style="font-size:10px">⊙</button>
+    </div>
+  </div>
+  <div id="dp">
+    <div id="de">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.25"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+      Sélectionnez une table
+    </div>
+    <div id="dc" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+const G={
+  auth:{label:'Auth'},ws:{label:'Workspace'},fin:{label:'Finance'},
+  flux:{label:'Flux'},proj:{label:'Projets'},gov:{label:'Gouvernance'},aud:{label:'Audit & Notifs'}
+};
+
+const T=[
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+{id:'User',g:'auth',map:'users',x:40,y:60,
+ desc:"Compte utilisateur central. Un user peut appartenir à plusieurs groupes simultanément avec un seul compte. Gère l'authentification, le profil et la présence.",
+ cf:['id','email','phone','twoFaEnabled','isOnline'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'Identifiant UUID unique'},
+  {n:'email',t:'String',uq:true,d:'Email unique, clé de connexion principale'},
+  {n:'phone',t:'String?',uq:true,d:'Téléphone, authentification alternative et OTP SMS'},
+  {n:'username',t:'String?',uq:true,d:'Pseudo public unique'},
+  {n:'firstName',t:'String?',d:'Prénom'},
+  {n:'lastName',t:'String?',d:'Nom de famille'},
+  {n:'avatarUrl',t:'String?',d:'URL photo de profil'},
+  {n:'emailVerified',t:'Boolean',d:'Email confirmé par lien de vérification'},
+  {n:'phoneVerified',t:'Boolean',d:'Téléphone confirmé par OTP SMS'},
+  {n:'twoFaEnabled',t:'Boolean',d:'Authentification 2 facteurs TOTP activée'},
+  {n:'twoFaSecret',t:'String?',d:'Clé TOTP chiffrée (Argon2)'},
+  {n:'isOnline',t:'Boolean',d:'Présence temps réel'},
+  {n:'lastLoginAt',t:'DateTime?',d:'Dernière connexion réussie'},
+  {n:'failedLoginAttempts',t:'Int',d:'Compteur anti brute-force'},
+  {n:'lockedUntil',t:'DateTime?',d:'Verrouillage temporaire après trop d\'échecs'},
+  {n:'language',t:'String?',d:'Langue UI préférée (ISO 639-1, défaut: fr)'},
+  {n:'createdAt',t:'DateTime',d:'Date de création du compte'},
+  {n:'updatedAt',t:'DateTime',d:'Mise à jour automatique'},
+]},
+
+{id:'Account',g:'auth',map:'accounts',x:40,y:380,
+ desc:"Liaison entre un User et un provider d'authentification. Un User peut avoir plusieurs Account (Google OAuth, credentials local). Stocke les tokens OAuth et le hash du mot de passe.",
+ cf:['id','userId','providerId','accountId'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'userId',t:'String',fk:true,d:'FK → User (cascade delete)'},
+  {n:'providerId',t:'String',d:'Provider: google | local'},
+  {n:'accountId',t:'String',d:"ID de l'utilisateur chez le provider OAuth"},
+  {n:'accessToken',t:'String?',d:'Token OAuth accès (courte durée)'},
+  {n:'refreshToken',t:'String?',d:'Token OAuth refresh (longue durée)'},
+  {n:'password',t:'String?',d:'Hash Argon2 du mot de passe (credentials local)'},
+  {n:'passwordSalt',t:'String?',d:'Sel cryptographique Argon2'},
+  {n:'createdAt',t:'DateTime',d:"Date d'association du provider"},
+  {n:'updatedAt',t:'DateTime',d:'Mise à jour'},
+]},
+
+{id:'Session',g:'auth',map:'sessions',x:40,y:620,
+ desc:"Session JWT avec traçabilité complète: device, IP, localisation. Supporte la rotation de tokens et la révocation individuelle par appareil.",
+ cf:['id','userId','jti','ipAddress','expiresAt'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'UUID unique'},
+  {n:'userId',t:'String',fk:true,d:'FK → User (cascade delete)'},
+  {n:'jti',t:'String',uq:true,d:'JWT ID — nonce unique par token émis'},
+  {n:'tokenHash',t:'String?',uq:true,d:'Hash SHA-256 du token actif'},
+  {n:'userAgent',t:'String?',d:'Navigateur / client'},
+  {n:'ipAddress',t:'String?',d:'Adresse IP source'},
+  {n:'device',t:'String?',d:'Type de device (mobile, desktop…)'},
+  {n:'revokedAt',t:'DateTime?',d:'Révocation manuelle (logout)'},
+  {n:'expiresAt',t:'DateTime',d:'Date limite de validité'},
+  {n:'createdAt',t:'DateTime',d:'Création de la session'},
+]},
+
+// ── WORKSPACE ─────────────────────────────────────────────────────────────────
+{id:'Workspace',g:'ws',map:'workspaces',x:310,y:60,
+ desc:"Espace de travail d'un groupe d'investissement collectif. Entité indépendante avec ses propres membres, coffres, projets et règles. Le créateur est mis en avant par MIKS à titre informatif.",
+ cf:['id','name','slug','currency','creatorId'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'name',t:'String',d:'Nom du groupe'},
+  {n:'slug',t:'String',uq:true,d:'Identifiant URL unique (ex: famille-rakoto-2025)'},
+  {n:'description',t:'String?',d:'Description du groupe'},
+  {n:'logoUrl',t:'String?',d:'URL du logo du groupe'},
+  {n:'currency',t:'String',d:'Devise principale du groupe (ex: MGA, EUR)'},
+  {n:'creatorId',t:'String',fk:true,d:'FK → User (créateur, mis en avant par MIKS — aucun privilège imposé)'},
+  {n:'createdAt',t:'DateTime',d:'Date de création du groupe'},
+  {n:'updatedAt',t:'DateTime',d:'Mise à jour'},
+]},
+
+{id:'WorkspaceMember',g:'ws',map:'workspace_members',x:310,y:320,
+ desc:"Appartenance d'un User à un Workspace. Porte les parts sociales proportionnelles aux cotisations cumulées. Les parts déterminent la quote-part de chaque distribution vers les coffres retirables.",
+ cf:['id','workspaceId','userId','totalShares','sharePercent'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'workspaceId',t:'String',fk:true,d:'FK → Workspace (cascade delete)'},
+  {n:'userId',t:'String',fk:true,d:'FK → User (cascade delete)'},
+  {n:'totalShares',t:'Decimal',d:'Cotisations cumulées du membre — sert de base au calcul des parts'},
+  {n:'sharePercent',t:'Decimal',d:'Part en % = totalShares membre / totalShares groupe × 100 (calculé en temps réel)'},
+  {n:'joinedAt',t:'DateTime',d:"Date d'adhésion au groupe"},
+  {n:'updatedAt',t:'DateTime',d:'Mise à jour (après chaque cotisation)'},
+]},
+
+{id:'InviteToken',g:'ws',map:'invite_tokens',x:310,y:580,
+ desc:"Token d'invitation pour rejoindre un Workspace. URL sécurisée à usage unique avec date d'expiration configurable. Peut cibler un email spécifique ou rester ouvert.",
+ cf:['id','workspaceId','token','email','usedAt','expiresAt'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'workspaceId',t:'String',fk:true,d:'FK → Workspace'},
+  {n:'createdById',t:'String',fk:true,d:'FK → WorkspaceMember (créateur de l\'invitation)'},
+  {n:'token',t:'String',uq:true,d:'CUID aléatoire — la valeur de l\'URL d\'invitation'},
+  {n:'email',t:'String?',d:'Email pré-ciblé (null = invitation ouverte)'},
+  {n:'usedAt',t:'DateTime?',d:"Date d'utilisation (null = encore valide)"},
+  {n:'expiresAt',t:'DateTime',d:"Date limite d'utilisation du token"},
+  {n:'createdAt',t:'DateTime',d:"Date de création"},
+]},
+
+// ── FINANCE ───────────────────────────────────────────────────────────────────
+{id:'Vault',g:'fin',map:'vaults',x:580,y:60,
+ desc:"Coffre financier d'un groupe. Le groupe crée autant de coffres que nécessaire — MIKS n'impose ni le nombre ni l'usage. Chaque coffre a un solde indépendant mis à jour à chaque opération.",
+ cf:['id','workspaceId','name','balance','currency'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'workspaceId',t:'String',fk:true,d:'FK → Workspace'},
+  {n:'name',t:'String',d:'Nom du coffre (ex: Capital, Réserve, Logistique…)'},
+  {n:'description',t:'String?',d:'Description de l\'usage du coffre'},
+  {n:'balance',t:'Decimal',d:'Solde actuel du coffre (mis à jour à chaque LedgerEntry)'},
+  {n:'currency',t:'String',d:'Devise du coffre'},
+  {n:'isArchived',t:'Boolean',d:'Coffre archivé (non supprimable si mouvements existants)'},
+  {n:'createdAt',t:'DateTime',d:'Création du coffre'},
+  {n:'updatedAt',t:'DateTime',d:'Mise à jour'},
+]},
+
+{id:'MemberWithdrawableVault',g:'fin',map:'member_withdrawable_vaults',x:580,y:300,
+ desc:"Coffre rétirable personnel de chaque membre au sein d'un groupe. Alimenté automatiquement par MIKS selon les règles de flux configurées et la part du membre. Un par membre par groupe.",
+ cf:['id','workspaceId','memberId','balance'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'workspaceId',t:'String',fk:true,d:'FK → Workspace'},
+  {n:'memberId',t:'String',fk:true,uq:true,d:'FK unique → WorkspaceMember (1:1 par groupe)'},
+  {n:'balance',t:'Decimal',d:'Solde disponible du membre dans ce groupe'},
+  {n:'currency',t:'String',d:'Devise'},
+  {n:'totalReceived',t:'Decimal',d:'Total cumulé reçu depuis la création (informatif)'},
+  {n:'updatedAt',t:'DateTime',d:'Mise à jour après chaque crédit automatique'},
+]},
+
+{id:'Cotisation',g:'fin',map:'cotisations',x:580,y:530,
+ desc:"Cotisation d'un membre au groupe. Alimente les Parts Sociales en temps réel (sharePercent recalculé). Déclenche l'application des règles de flux configurées pour la source COTISATION.",
+ cf:['id','workspaceId','memberId','amount','period'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'workspaceId',t:'String',fk:true,d:'FK → Workspace'},
+  {n:'memberId',t:'String',fk:true,d:'FK → WorkspaceMember'},
+  {n:'amount',t:'Decimal',d:'Montant de la cotisation'},
+  {n:'currency',t:'String',d:'Devise'},
+  {n:'period',t:'String?',d:'Période de référence (ex: "2025-06", libre)'},
+  {n:'note',t:'String?',d:'Note libre'},
+  {n:'recordedById',t:'String',d:'ID du membre qui a saisi la cotisation'},
+  {n:'createdAt',t:'DateTime',d:'Date d\'enregistrement de la cotisation'},
+]},
+
+{id:'LedgerEntry',g:'fin',map:'ledger_entries',x:580,y:760,
+ desc:"Journal financier immuable du groupe. Toute opération financière (cotisation, revenu de projet, flux entre coffres) génère une entrée permanente. Append-only — jamais modifié, jamais supprimé.",
+ cf:['id','workspaceId','vaultId','type','amount','category'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'workspaceId',t:'String',fk:true,d:'FK → Workspace'},
+  {n:'vaultId',t:'String?',fk:true,d:'FK → Vault ou MemberWithdrawableVault concerné'},
+  {n:'vaultType',t:'String',d:'GROUP_VAULT | WITHDRAWABLE_VAULT — précise le type de coffre'},
+  {n:'type',t:'String',d:'IN (entrée) | OUT (sortie)'},
+  {n:'category',t:'String',d:'COTISATION | PROJECT_REVENUE | PROJECT_EXPENSE | FLUX | MANUAL'},
+  {n:'amount',t:'Decimal',d:'Montant de l\'opération'},
+  {n:'currency',t:'String',d:'Devise'},
+  {n:'description',t:'String?',d:'Description libre de l\'opération'},
+  {n:'referenceId',t:'String?',d:'ID de l\'entité source (cotisationId, projectId…)'},
+  {n:'referenceType',t:'String?',d:'Type de la référence source'},
+  {n:'authorId',t:'String',d:'ID du membre auteur (non-FK pour immuabilité)'},
+  {n:'createdAt',t:'DateTime',d:'Horodatage immuable — append only'},
+]},
+
+// ── FLUX ──────────────────────────────────────────────────────────────────────
+{id:'FluxRule',g:'flux',map:'flux_rules',x:850,y:60,
+ desc:"Règle de flux financier du groupe. Définit comment l'argent entrant depuis une source donnée est automatiquement réparti entre plusieurs coffres. Le groupe crée autant de règles que nécessaire.",
+ cf:['id','workspaceId','name','sourceType'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'workspaceId',t:'String',fk:true,d:'FK → Workspace'},
+  {n:'name',t:'String',d:'Nom de la règle (ex: "Distribution revenus projet A")'},
+  {n:'sourceType',t:'String',d:'Source déclencheuse: COTISATION | PROJECT_REVENUE | MANUAL'},
+  {n:'sourceId',t:'String?',d:'ID de la source spécifique (projectId si PROJECT_REVENUE, null si toutes)'},
+  {n:'isActive',t:'Boolean',d:'Règle active ou suspendue'},
+  {n:'description',t:'String?',d:'Description de l\'objectif de cette règle'},
+  {n:'createdAt',t:'DateTime',d:'Création'},
+  {n:'updatedAt',t:'DateTime',d:'Mise à jour'},
+]},
+
+{id:'FluxRuleDestination',g:'flux',map:'flux_rule_destinations',x:850,y:340,
+ desc:"Destination d'une règle de flux avec son pourcentage. Une FluxRule a N destinations dont les pourcentages doivent totaliser 100%. Peut cibler un coffre du groupe ou le coffre rétirable de chaque membre.",
+ cf:['id','fluxRuleId','targetType','targetVaultId','percent'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'fluxRuleId',t:'String',fk:true,d:'FK → FluxRule'},
+  {n:'targetType',t:'String',d:'GROUP_VAULT (coffre du groupe) | WITHDRAWABLE_VAULTS (répartis entre tous les membres selon leurs parts)'},
+  {n:'targetVaultId',t:'String?',fk:true,d:'FK → Vault (si targetType = GROUP_VAULT, null si WITHDRAWABLE_VAULTS)'},
+  {n:'percent',t:'Decimal',d:'Pourcentage du flux alloué à cette destination (total des destinations = 100%)'},
+  {n:'createdAt',t:'DateTime',d:'Création'},
+]},
+
+// ── PROJETS ───────────────────────────────────────────────────────────────────
+{id:'Project',g:'proj',map:'projects',x:1120,y:60,
+ desc:"Projet soumis par un membre du groupe. Aucun type imposé par MIKS — le groupe décide librement de la nature du projet. Passe en attente de vote avant d'être activé. Possède ses propres coffres et règles de flux.",
+ cf:['id','workspaceId','proposedById','title','status','budget'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'workspaceId',t:'String',fk:true,d:'FK → Workspace'},
+  {n:'proposedById',t:'String',fk:true,d:'FK → WorkspaceMember (tout membre peut proposer)'},
+  {n:'sourceVaultId',t:'String?',fk:true,d:'FK → Vault (coffre du groupe depuis lequel le budget est prélevé si approuvé)'},
+  {n:'title',t:'String',d:'Titre du projet'},
+  {n:'description',t:'String',d:'Description complète du projet'},
+  {n:'budget',t:'Decimal?',d:'Budget demandé au groupe'},
+  {n:'currency',t:'String',d:'Devise du budget'},
+  {n:'status',t:'String',d:'PENDING_VOTE | APPROVED | REJECTED | ACTIVE | COMPLETED | CANCELLED'},
+  {n:'createdAt',t:'DateTime',d:'Soumission du projet'},
+  {n:'updatedAt',t:'DateTime',d:'Mise à jour'},
+]},
+
+{id:'ProjectVault',g:'proj',map:'project_vaults',x:1120,y:360,
+ desc:"Coffre interne à un projet. Le groupe crée autant de coffres de projet que nécessaire pour organiser les flux financiers du projet (ex: stock, logistique, capital…).",
+ cf:['id','projectId','name','balance'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'projectId',t:'String',fk:true,d:'FK → Project'},
+  {n:'name',t:'String',d:'Nom du coffre (ex: Stock, Logistique, Capital…)'},
+  {n:'description',t:'String?',d:'Usage du coffre dans le contexte du projet'},
+  {n:'balance',t:'Decimal',d:'Solde actuel du coffre projet'},
+  {n:'currency',t:'String',d:'Devise'},
+  {n:'createdAt',t:'DateTime',d:'Création du coffre'},
+]},
+
+{id:'ProjectFluxRule',g:'proj',map:'project_flux_rules',x:1120,y:590,
+ desc:"Règle de flux propre à un projet. Définit comment les revenus ou entrées du projet se répartissent entre ses coffres et les coffres retirables des membres. Même logique que FluxRule mais scoped au projet.",
+ cf:['id','projectId','name','sourceType'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'projectId',t:'String',fk:true,d:'FK → Project'},
+  {n:'name',t:'String',d:'Nom de la règle (ex: "Distribution revenus vente")'},
+  {n:'sourceType',t:'String',d:'Source: PROJECT_REVENUE | MANUAL'},
+  {n:'isActive',t:'Boolean',d:'Règle active'},
+  {n:'destinations',t:'Json',d:'Array de destinations: [{targetType, vaultId, percent}] (total = 100%)'},
+  {n:'createdAt',t:'DateTime',d:'Création'},
+]},
+
+// ── GOUVERNANCE ───────────────────────────────────────────────────────────────
+{id:'Vote',g:'gov',map:'votes',x:1390,y:60,
+ desc:"Vote du groupe pour l'approbation d'un projet. Le seuil, le quorum et la durée sont configurés librement par le groupe. Résultat horodaté et enregistré dans les logs.",
+ cf:['id','workspaceId','projectId','threshold','status','result'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'workspaceId',t:'String',fk:true,d:'FK → Workspace'},
+  {n:'projectId',t:'String',fk:true,uq:true,d:'FK unique → Project (1:1 — un vote par projet)'},
+  {n:'threshold',t:'Int',d:'Seuil d\'approbation en % (configuré par le groupe, ex: 50, 70, 100)'},
+  {n:'quorum',t:'Int?',d:'Nombre minimum de votants requis (null = pas de quorum)'},
+  {n:'status',t:'String',d:'OPEN | CLOSED | INVALIDATED'},
+  {n:'result',t:'String?',d:'APPROVED | REJECTED | NO_QUORUM (null tant qu\'ouvert)'},
+  {n:'yesCount',t:'Int',d:'Nombre de votes favorables'},
+  {n:'noCount',t:'Int',d:'Nombre de votes défavorables'},
+  {n:'abstainCount',t:'Int',d:'Nombre d\'abstentions'},
+  {n:'opensAt',t:'DateTime',d:'Ouverture du vote'},
+  {n:'closesAt',t:'DateTime',d:'Fermeture prévue du vote (configurable)'},
+  {n:'closedAt',t:'DateTime?',d:'Fermeture réelle'},
+]},
+
+{id:'VoteChoice',g:'gov',map:'vote_choices',x:1390,y:380,
+ desc:"Vote individuel d'un membre. Enregistrement immuable horodaté. Un membre ne peut voter qu'une seule fois par vote. Le résultat est calculé à la clôture.",
+ cf:['id','voteId','memberId','choice'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'voteId',t:'String',fk:true,d:'FK → Vote'},
+  {n:'memberId',t:'String',fk:true,d:'FK → WorkspaceMember'},
+  {n:'choice',t:'String',d:'YES | NO | ABSTAIN'},
+  {n:'createdAt',t:'DateTime',d:'Horodatage du vote (immuable)'},
+]},
+
+// ── AUDIT & NOTIFS ─────────────────────────────────────────────────────────────
+{id:'AuditLog',g:'aud',map:'audit_logs',x:1660,y:60,
+ desc:"Journal immuable de tous les événements du groupe et des membres. Accessible en lecture seule par tous les membres pour la transparence et en cas de réclamation. Jamais modifié, jamais supprimé.",
+ cf:['id','workspaceId','userId','event','createdAt'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'UUID unique'},
+  {n:'workspaceId',t:'String?',fk:true,d:'FK → Workspace (null = événement compte global)'},
+  {n:'userId',t:'String?',d:'ID de l\'utilisateur concerné'},
+  {n:'memberId',t:'String?',d:'ID du membre concerné dans le groupe'},
+  {n:'event',t:'String',d:'Type d\'événement: COTISATION_RECORDED | FLUX_APPLIED | PROJECT_SUBMITTED | VOTE_CAST | VOTE_CLOSED | VAULT_CREATED | MEMBER_JOINED | CONFIG_CHANGED…'},
+  {n:'metadata',t:'Json?',d:'Données contextuelles de l\'événement (montants, IDs, valeurs avant/après)'},
+  {n:'ipAddress',t:'String?',d:'IP source de l\'action'},
+  {n:'createdAt',t:'DateTime',d:'Horodatage immuable — append only'},
+]},
+
+{id:'Notification',g:'aud',map:'notifications',x:1660,y:340,
+ desc:"Notification envoyée à un membre. Couvre tous les événements de son compte et de ses groupes — coffres, cotisations, projets, votes, membres. Canaux configurables par l'utilisateur.",
+ cf:['id','userId','workspaceId','type','channel','isRead'],
+ fields:[
+  {n:'id',t:'String',pk:true,d:'CUID unique'},
+  {n:'userId',t:'String',fk:true,d:'FK → User (destinataire)'},
+  {n:'workspaceId',t:'String?',fk:true,d:'FK → Workspace (null si notification globale compte)'},
+  {n:'type',t:'String',d:'COTISATION_RECORDED | FLUX_APPLIED | VAULT_CREDITED | PROJECT_SUBMITTED | VOTE_OPEN | VOTE_RESULT | MEMBER_JOINED | CONFIG_CHANGED…'},
+  {n:'title',t:'String',d:'Titre de la notification'},
+  {n:'body',t:'String',d:'Corps du message'},
+  {n:'channel',t:'String',d:'IN_APP | EMAIL | SMS'},
+  {n:'referenceType',t:'String?',d:'Type de l\'entité liée (PROJECT, VOTE, VAULT…)'},
+  {n:'referenceId',t:'String?',d:'ID de l\'entité liée'},
+  {n:'isRead',t:'Boolean',d:'Lu par le destinataire'},
+  {n:'sentAt',t:'DateTime',d:'Envoi effectif'},
+  {n:'readAt',t:'DateTime?',d:'Date de lecture'},
+]},
+];
+
+const RELS=[
+  {f:'User',t:'Account',ff:'id',tf:'userId',tp:'1-N'},
+  {f:'User',t:'Session',ff:'id',tf:'userId',tp:'1-N'},
+  {f:'User',t:'WorkspaceMember',ff:'id',tf:'userId',tp:'1-N'},
+  {f:'Workspace',t:'WorkspaceMember',ff:'id',tf:'workspaceId',tp:'1-N'},
+  {f:'Workspace',t:'InviteToken',ff:'id',tf:'workspaceId',tp:'1-N'},
+  {f:'Workspace',t:'Vault',ff:'id',tf:'workspaceId',tp:'1-N'},
+  {f:'Workspace',t:'FluxRule',ff:'id',tf:'workspaceId',tp:'1-N'},
+  {f:'Workspace',t:'Project',ff:'id',tf:'workspaceId',tp:'1-N'},
+  {f:'WorkspaceMember',t:'MemberWithdrawableVault',ff:'id',tf:'memberId',tp:'1-1'},
+  {f:'WorkspaceMember',t:'Cotisation',ff:'id',tf:'memberId',tp:'1-N'},
+  {f:'WorkspaceMember',t:'VoteChoice',ff:'id',tf:'memberId',tp:'1-N'},
+  {f:'Cotisation',t:'LedgerEntry',ff:'id',tf:'referenceId',tp:'1-N'},
+  {f:'FluxRule',t:'FluxRuleDestination',ff:'id',tf:'fluxRuleId',tp:'1-N'},
+  {f:'Project',t:'ProjectVault',ff:'id',tf:'projectId',tp:'1-N'},
+  {f:'Project',t:'ProjectFluxRule',ff:'id',tf:'projectId',tp:'1-N'},
+  {f:'Project',t:'Vote',ff:'id',tf:'projectId',tp:'1-1'},
+  {f:'Vote',t:'VoteChoice',ff:'id',tf:'voteId',tp:'1-N'},
+  {f:'Workspace',t:'AuditLog',ff:'id',tf:'workspaceId',tp:'1-N'},
+];
+
+const S={sel:null,hi:new Set(),groups:new Set(['auth','ws','fin','flux','proj','gov','aud']),q:'',scale:.75,px:0,py:0};
+const POS={};T.forEach(t=>{POS[t.id]={x:t.x,y:t.y}});
+const EL={};
+
+function tbl(id){return T.find(t=>t.id===id)}
+
+function renderSB(){
+  const sb=document.getElementById('sb');
+  const byG={};T.forEach(t=>{(byG[t.g]=byG[t.g]||[]).push(t)});
+  sb.innerHTML=Object.entries(G).map(([gk,gv])=>{
+    const ts=(byG[gk]||[]).filter(t=>S.groups.has(gk)&&(!S.q||t.id.toLowerCase().includes(S.q)));
+    if(!ts.length)return'';
+    return`<div class="sg"><div class="sgl">${gv.label}</div>${ts.map(t=>`
+      <div class="st ${t.g}${S.sel===t.id?' sel':''}" data-id="${t.id}">
+        <span class="sd ${t.g}"></span>
+        <span class="stn">${t.id}</span>
+        <span class="sfc">${t.fields.length}</span>
+      </div>`).join('')}</div>`;
+  }).join('');
+  sb.querySelectorAll('.st').forEach(el=>el.addEventListener('click',()=>selTable(el.dataset.id)));
+}
+
+function renderCards(){
+  const diag=document.getElementById('diag');
+  T.forEach(t=>{
+    if(EL[t.id])return;
+    const el=document.createElement('div');
+    el.className=`tc ${t.g}`;el.dataset.id=t.id;
+    const p=POS[t.id];el.style.left=p.x+'px';el.style.top=p.y+'px';
+    const cf=t.fields.filter(f=>t.cf.includes(f.n));
+    el.innerHTML=`<div class="ch" data-drag="${t.id}">
+      <span class="cd ${t.g}"></span>
+      <span class="cn ${t.g}">${t.id}</span>
+    </div>
+    <div class="cfs">${cf.map(f=>`<div class="fr">
+      <span class="fi ${f.pk?'pk':f.fk?'fk':f.uq?'uq':''}">${f.pk?'⬡':f.fk?'◈':f.uq?'◇':''}</span>
+      <span class="fn">${f.n}</span>
+      <span class="ft">${f.t}</span>
+    </div>`).join('')}</div>
+    <div class="cm">@@map("${t.map}")</div>`;
+    diag.appendChild(el);EL[t.id]=el;
+    el.addEventListener('click',e=>{if(e.target.closest('[data-drag]'))selTable(t.id)});
+    el.addEventListener('mousedown',e=>{if(e.button===0)startDrag(e,t.id)});
+    el.addEventListener('mouseenter',()=>{if(!S.sel)hiRels(t.id)});
+    el.addEventListener('mouseleave',()=>{if(!S.sel){S.hi.clear();updCards();drawLines()}});
+  });
+}
+
+function updCards(){
+  T.forEach(t=>{
+    const el=EL[t.id];if(!el)return;
+    const vis=S.groups.has(t.g)&&(!S.q||t.id.toLowerCase().includes(S.q));
+    el.style.display=vis?'':'none';
+    el.classList.toggle('sel',S.sel===t.id);
+    el.classList.toggle('hi',S.hi.has(t.id)&&S.sel!==t.id);
+    el.classList.toggle('dim',!!S.sel&&!S.hi.has(t.id)&&S.sel!==t.id);
+  });
+}
+
+function selTable(id){
+  S.sel=S.sel===id?null:id;
+  if(S.sel)hiRels(S.sel);else S.hi.clear();
+  updCards();renderSB();renderDP();
+}
+
+function hiRels(id){
+  S.hi.clear();S.hi.add(id);
+  RELS.forEach(r=>{if(r.f===id)S.hi.add(r.t);if(r.t===id)S.hi.add(r.f)});
+  updCards();drawLines();
+}
+
+function renderDP(){
+  const dp=document.getElementById('dp'),de=document.getElementById('de'),dc=document.getElementById('dc');
+  if(!S.sel){dp.classList.remove('open');de.style.display='';dc.style.display='none';return}
+  const t=tbl(S.sel);if(!t)return;
+  const out=RELS.filter(r=>r.f===t.id),inc=RELS.filter(r=>r.t===t.id);
+  de.style.display='none';dc.style.display='';dp.classList.add('open');
+  dc.innerHTML=`<div class="dh">
+    <div class="dht"><span class="dtn ${t.g}">${t.id}</span></div>
+    <div class="dd">${t.desc}</div>
+    <div class="dm">
+      <span class="mc">@@map: ${t.map}</span>
+      <span class="mc">${t.fields.length} champs</span>
+      <span class="mc">${out.length+inc.length} relations</span>
+    </div>
+  </div>
+  <div class="ds">
+    <div class="dst">Champs</div>
+    ${t.fields.map(f=>`<div class="df">
+      <div class="dfh">
+        <span class="dfn">${f.n}</span>
+        ${f.pk?'<span class="bx pk">PK</span>':''}
+        ${f.fk?'<span class="bx fk">FK</span>':''}
+        ${f.uq?'<span class="bx uq">UNIQUE</span>':''}
+        <span class="dft">${f.t}</span>
+      </div>
+      <div class="dfd">${f.d}</div>
+    </div>`).join('')}
+  </div>
+  ${out.length?`<div class="ds"><div class="dst">Relations sortantes</div>${out.map(r=>`
+    <div class="dr" data-t="${r.t}"><span class="rtb">${r.tp}</span><span class="ra">→</span><span class="rt">${r.t}</span><span class="rf">.${r.tf}</span></div>`).join('')}</div>`:''}
+  ${inc.length?`<div class="ds"><div class="dst">Relations entrantes</div>${inc.map(r=>`
+    <div class="dr" data-t="${r.f}"><span class="rtb">${r.tp}</span><span class="ra">←</span><span class="rt">${r.f}</span><span class="rf">.${r.ff}</span></div>`).join('')}</div>`:''}`;
+  dc.querySelectorAll('.dr').forEach(el=>el.addEventListener('click',()=>selTable(el.dataset.t)));
+}
+
+let DR=null;
+function startDrag(e,id){
+  e.preventDefault();
+  const p=POS[id],sx=e.clientX/S.scale,sy=e.clientY/S.scale;
+  DR={id,el:EL[id],sx,sy,ox:p.x,oy:p.y};DR.el.style.zIndex=200;
+  const mv=ev=>{if(!DR)return;const nx=Math.max(0,DR.ox+(ev.clientX/S.scale-DR.sx)),ny=Math.max(0,DR.oy+(ev.clientY/S.scale-DR.sy));POS[DR.id]={x:nx,y:ny};DR.el.style.left=nx+'px';DR.el.style.top=ny+'px';drawLines()};
+  const up=()=>{if(DR){DR.el.style.zIndex='';DR=null}window.removeEventListener('mousemove',mv);window.removeEventListener('mouseup',up)};
+  window.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
+}
+
+function rect(id){
+  const el=EL[id];if(!el||el.style.display==='none')return null;
+  return{x:POS[id].x,y:POS[id].y,w:el.offsetWidth||220,h:el.offsetHeight||150};
+}
+
+function pts(fr,to){
+  const dx=(to.x+to.w/2)-(fr.x+fr.w/2),dy=(to.y+to.h/2)-(fr.y+fr.h/2);
+  let fx,fy,tx,ty;
+  if(Math.abs(dx)>=Math.abs(dy)){
+    if(dx>0){fx=fr.x+fr.w;fy=fr.y+fr.h*.4;tx=to.x;ty=to.y+to.h*.4}
+    else{fx=fr.x;fy=fr.y+fr.h*.4;tx=to.x+to.w;ty=to.y+to.h*.4}
+  }else{
+    if(dy>0){fx=fr.x+fr.w*.5;fy=fr.y+fr.h;tx=to.x+to.w*.5;ty=to.y}
+    else{fx=fr.x+fr.w*.5;fy=fr.y;tx=to.x+to.w*.5;ty=to.y+to.h}
+  }
+  return{fx,fy,tx,ty};
+}
+
+function bezier(fx,fy,tx,ty){
+  const d=Math.max(50,Math.min(Math.abs(tx-fx),Math.abs(ty-fy))*.55+25);
+  return`M${fx} ${fy}C${fx+(tx>fx?d:-d)} ${fy} ${tx-(tx>fx?d:-d)} ${ty} ${tx} ${ty}`;
+}
+
+function drawLines(){
+  const svg=document.getElementById('svgl');
+  const groups=['auth','ws','fin','flux','proj','gov','aud'];
+  const defs=`<defs>${groups.flatMap(g=>[
+    `<marker id="a-${g}" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0L0,6L7,3z" fill="var(--${g})" opacity=".45"/></marker>`,
+    `<marker id="ah-${g}" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0L0,6L7,3z" fill="var(--${g})"/></marker>`
+  ]).join('')}</defs>`;
+  const paths=RELS.map(r=>{
+    const fr=rect(r.f),to=rect(r.t);if(!fr||!to)return'';
+    const{fx,fy,tx,ty}=pts(fr,to);
+    const g=tbl(r.f)?.g||'auth';
+    const hi=S.hi.has(r.f)&&S.hi.has(r.t);
+    const op=S.hi.size>0&&!hi?.06:.38;
+    const dash=r.tp==='1-1'?'stroke-dasharray="6,3"':'';
+    return`<path d="${bezier(fx,fy,tx,ty)}" class="rl ${g}${hi?' hi':''}" ${dash} marker-end="url(#a${hi?'h':''}-${g})" opacity="${op}"/>`;
+  }).join('');
+  const labels=RELS.map(r=>{
+    const fr=rect(r.f),to=rect(r.t);if(!fr||!to)return'';
+    const{fx,fy,tx,ty}=pts(fr,to);
+    const g=tbl(r.f)?.g||'auth';
+    const hi=S.hi.has(r.f)&&S.hi.has(r.t);
+    const op=S.hi.size>0&&!hi?.04:.5;
+    return`<text x="${fx}" y="${fy-5}" fill="var(--${g})" opacity="${op}" style="font-family:var(--mono);font-size:9px" text-anchor="middle">1</text><text x="${tx}" y="${ty-5}" fill="var(--${g})" opacity="${op}" style="font-family:var(--mono);font-size:9px" text-anchor="middle">${r.tp==='1-1'?'1':'N'}</text>`;
+  }).join('');
+  svg.innerHTML=defs+paths+labels;
+}
+
+function applyT(){
+  document.getElementById('diag').style.transform=`translate(${S.px}px,${S.py}px)scale(${S.scale})`;
+  document.getElementById('zl').textContent=Math.round(S.scale*100)+'%';
+}
+document.getElementById('zi').onclick=()=>{S.scale=Math.min(2,S.scale+.1);applyT()};
+document.getElementById('zo').onclick=()=>{S.scale=Math.max(.25,S.scale-.1);applyT()};
+document.getElementById('zr').onclick=()=>{S.scale=.75;S.px=0;S.py=0;applyT()};
+document.getElementById('dw').addEventListener('wheel',e=>{e.preventDefault();S.scale=Math.min(2,Math.max(.25,S.scale+(e.deltaY>0?-.07:.07)));applyT()},{passive:false});
+let pan=false,ps=null;
+document.getElementById('dw').addEventListener('mousedown',e=>{if(e.button===1||(e.button===0&&e.altKey)){pan=true;ps={x:e.clientX-S.px,y:e.clientY-S.py};e.preventDefault()}});
+window.addEventListener('mousemove',e=>{if(!pan)return;S.px=e.clientX-ps.x;S.py=e.clientY-ps.y;applyT()});
+window.addEventListener('mouseup',e=>{if(e.button===1||e.altKey)pan=false});
+
+document.getElementById('srch').addEventListener('input',e=>{S.q=e.target.value.toLowerCase().trim();updCards();renderSB();drawLines()});
+document.querySelectorAll('.gp').forEach(p=>p.addEventListener('click',()=>{
+  const g=p.dataset.g;
+  if(S.groups.has(g)){if(S.groups.size===1)return;S.groups.delete(g);p.classList.add('off')}
+  else{S.groups.add(g);p.classList.remove('off')}
+  updCards();renderSB();drawLines();
+}));
+
+applyT();renderSB();renderCards();
+setTimeout(()=>{drawLines();updCards()},80);
+setTimeout(()=>{const t=document.getElementById('tip');if(t){t.style.transition='opacity .5s';t.style.opacity='0';setTimeout(()=>t.remove(),500)}},4000);
+window.addEventListener('resize',drawLines);
+</script>

@@ -1,34 +1,38 @@
-import { CACHE_MANAGER } from "@nestjs/cache-manager";
-import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import type { Cache } from "cache-manager";
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Keyv from 'keyv';
+import KeyvRedis from '@keyv/redis';
 
 @Injectable()
-export class RedisService implements OnModuleInit {
+export class RedisService implements OnModuleInit, OnModuleDestroy {
+  private store!: Keyv;
 
-	private readonly logger = new Logger(RedisService.name);
+  constructor(private readonly config: ConfigService) {}
 
-	constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+  async onModuleInit() {
+    const url = this.config.get<string>('redis.url', 'redis://localhost:6379');
+    const adapter = new KeyvRedis(url);
+    this.store = new Keyv({ store: adapter, namespace: 'miks' });
+    this.store.on('error', (err) => console.error('[Redis]', err));
+  }
 
-	onModuleInit() {
-		this.cacheManager.stores.forEach((store) => {
-			store.on('error', (err: Error) => {
-				this.logger.error('Redis error:', err);
-			});
-		});
+  async onModuleDestroy() {
+    await (this.store as any)?.disconnect?.();
+  }
 
-		this.logger.log('Initialized and connected to Redis.');
-	}
+  async set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
+    await this.store.set(key, value, ttlMs);
+  }
 
-	async set(key: string, value: any, ttl?: number) {
-		await this.cacheManager.set(key, value, ttl);
-	}
+  async get<T>(key: string): Promise<T | undefined> {
+    return this.store.get<T>(key);
+  }
 
-	async get<T>(key: string): Promise<T | undefined> {
-		return this.cacheManager.get<T>(key);
-	}
+  async del(key: string): Promise<boolean> {
+    return this.store.delete(key);
+  }
 
-	async del(key: string) {
-		await this.cacheManager.del(key);
-	}
-
+  async has(key: string): Promise<boolean> {
+    return this.store.has(key);
+  }
 }

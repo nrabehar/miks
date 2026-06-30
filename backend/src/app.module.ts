@@ -1,59 +1,43 @@
-import KeyvRedis from '@keyv/redis';
-import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { KeyvCacheableMemory } from 'cacheable';
-import { Keyv } from 'keyv';
-import { AppController } from './app.controller';
-import { appConfig, authConfig, databaseConfig, emailConfig } from './core/config';
-import { RedisModule } from './core/redis/redis.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { WorkspacesModule } from './modules/workspaces/workspaces.module';
+import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { PrismaModule } from './core/prisma/prisma.module.js';
+import { RedisModule } from './core/redis/redis.module.js';
+import { AllExceptionsFilter } from './core/filters/all-exceptions.filter.js';
+import { LoggingInterceptor } from './core/interceptors/logging.interceptor.js';
+import { SanitizerInterceptor } from './core/interceptors/sanitizer.interceptor.js';
+import { AuthModule } from './modules/auth/auth.module.js';
+import { UsersModule } from './modules/users/users.module.js';
+import { WorkspacesModule } from './modules/workspaces/workspaces.module.js';
+import { AuditModule } from './modules/audit/audit.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import appConfig from './config/app.config.js';
+import authConfig from './config/auth.config.js';
+import emailConfig from './config/email.config.js';
+import redisConfig from './config/redis.config.js';
 
 @Module({
-	imports: [
-		ConfigModule.forRoot({
-			isGlobal: true,
-			load: [appConfig, databaseConfig, authConfig, emailConfig],
-		}),
-		ThrottlerModule.forRoot({
-			throttlers: [
-				{ name: 'default', ttl: 60_000, limit: 60 },
-				{ name: 'auth-email', ttl: 3_600_000, limit: 5 },
-				{ name: 'auth-login', ttl: 900_000, limit: 10 },
-				{ name: 'auth-register', ttl: 3_600_000, limit: 3 },
-			],
-		}),
-		CacheModule.registerAsync({
-			useFactory: async (configService: ConfigService) => {
-				const redisUrl = configService.get<string>('database.redisUrl');
-				if (!redisUrl) {
-					throw new Error(
-						'Redis URL is not defined in the configuration.',
-					);
-				}
-				return {
-					stores: [
-						new Keyv({
-							store: new KeyvCacheableMemory({
-								ttl: 60000,
-								lruSize: 5000,
-							}),
-						}),
-						new KeyvRedis(redisUrl),
-					],
-				};
-			},
-			inject: [ConfigService],
-			isGlobal: true,
-		}),
-		RedisModule,
-		AuthModule,
-		WorkspacesModule,
-	],
-	controllers: [AppController],
-	providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [appConfig, authConfig, emailConfig, redisConfig],
+      expandVariables: true,
+    }),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
+    PrismaModule,
+    RedisModule,
+    AuthModule,
+    UsersModule,
+    WorkspacesModule,
+    AuditModule,
+    NotificationsModule,
+  ],
+  providers: [
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: SanitizerInterceptor },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

@@ -1,236 +1,200 @@
-import { PrismaService } from '#/core/prisma/prisma.service';
-import {
-	ForbiddenException,
-	Injectable,
-	Logger,
-	NotFoundException,
-} from '@nestjs/common';
-import { CotisationEntryDto } from './dtos/batch-cotisations.dto';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../../core/prisma/prisma.service.js';
+import { VaultsService } from '../vaults/vaults.service.js';
+import type { RecordCotisationsDto } from './dto/record-cotisations.dto.js';
 
 @Injectable()
 export class CotisationsService {
-	private readonly logger = new Logger(CotisationsService.name);
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly vaults: VaultsService,
+  ) {}
 
-	constructor(private readonly prisma: PrismaService) {}
+  async recordBatch(workspaceId: string, dto: RecordCotisationsDto, authorId: string) {
+    const [fluxRules, allMembers] = await Promise.all([
+      this.prisma.fluxRule.findMany({
+        where: { workspaceId, isActive: true, sourceType: 'COTISATION' },
+        include: { destinations: true },
+      }),
+      this.prisma.workspaceMember.findMany({
+        where: { workspaceId },
+        select: { id: true, totalShares: true, sharePercent: true },
+      }),
+    ]);
 
-	async recordBatch(workspaceId: string, requesterId: string, entries: CotisationEntryDto[]) {
-		const requester = await this.prisma.workspaceMember.findUnique({
-			where: { workspaceId_userId: { workspaceId, userId: requesterId } },
-		});
-		if (!requester) throw new ForbiddenException('You are not a member of this workspace');
-		if (requester.role !== 'admin') throw new ForbiddenException('Only admins can record cotisations');
+    const results = await this.prisma.$transaction(async (tx) => {
+      const created: any[] = [];
 
-		const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-		if (!workspace) throw new NotFoundException('Workspace not found');
+      const sharesAccum: Record<string, number> = {};
 
-		const created = await this.prisma.$transaction(async (tx) => {
-			const cotisations: Awaited<ReturnType<typeof tx.cotisation.create>>[] = [];
+      for (const entry of dto.entries) {
+        const member = await tx.workspaceMember.findUnique({
+          where: { id: entry.memberId },
+          select: { id: true, workspaceId: true, totalShares: true },
+        });
 
-			for (const entry of entries) {
-				const member = await tx.workspaceMember.findUnique({
-					where: { id: entry.memberId },
-				});
-				if (!member || member.workspaceId !== workspaceId) {
-					throw new NotFoundException(`Member ${entry.memberId} not found in this workspace`);
-				}
+        if (!member || member.workspaceId !== workspaceId) {
+          throw new BadRequestException(`Member ${entry.memberId} not found in workspace`);
+        }
 
-				const cotisation = await tx.cotisation.create({
-					data: {
-						workspaceId,
-						memberId: entry.memberId,
-						amount: entry.amount,
-						currency: workspace.currency,
-						month: entry.month,
-						year: entry.year,
-						note: entry.note,
-					},
-				});
-				cotisations.push(cotisation);
+        const cotisation = await tx.cotisation.create({
+          data: {
+            workspaceId,
+            memberId: entry.memberId,
+            amount: entry.amount,
+            period: entry.period ?? null,
+            note: entry.note ?? null,
+            recordedById: authorId,
+          },
+        });
 
-				await tx.ledgerEntry.create({
-					data: {
-						workspaceId,
-						type: 'IN',
-						vault: 'C1',
-						category: 'COTISATION',
-						amount: entry.amount,
-						currency: workspace.currency,
-						referenceId: cotisation.id,
-						authorId: requesterId,
-					},
-				});
-			}
+        sharesAccum[entry.memberId] = (sharesAccum[entry.memberId] ?? 0) + entry.amount;
 
-			const memberIds = [...new Set(entries.map((e) => e.memberId))];
-			for (const memberId of memberIds) {
-				const agg = await tx.cotisation.aggregate({
-					_sum: { amount: true },
-					where: { workspaceId, memberId },
-				});
-				const total = Number(agg._sum.amount ?? 0);
-				await tx.workspaceMember.update({
-					where: { id: memberId },
-					data: { totalShares: total },
-				});
-			}
+        // Apply FluxRules
+        for (const rule of fluxRules) {
+          for (const dest of rule.destinations) {
+            const allocationAmount = (entry.amount * Number(dest.percent)) / 100;
 
-			return cotisations;
-		});
+            if (dest.targetType === 'GROUP_VAULT' && dest.targetVaultId) {
+              await (this.vaults as any).creditGroupVault(tx, {
+                vaultId: dest.targetVaultId,
+                workspaceId,
+                authorId,
+                amount: allocationAmount,
+                category: 'COTISATION',
+                description: `Cotisation – rule: ${rule.name}`,
+                referenceId: cotisation.id,
+                referenceType: 'cotisation',
+              });
+            }
 
-		this.logger.log(`Recorded ${created.length} cotisation(s) in workspace ${workspaceId} by ${requesterId}`);
-		return created;
-	}
+            if (dest.targetType === 'WITHDRAWABLE_VAULTS') {
+              for (const m of allMembers) {
+                const memberShare = (allocationAmount * Number(m.sharePercent)) / 100;
+                if (memberShare <= 0) continue;
+                await (this.vaults as any).creditWithdrawableVault(tx, {
+                  memberId: m.id,
+                  workspaceId,
+                  authorId,
+                  amount: memberShare,
+                  category: 'COTISATION_FLUX',
+                  description: `Flux cotisation – rule: ${rule.name}`,
+                  referenceId: cotisation.id,
+                  referenceType: 'cotisation',
+                });
+              }
+            }
+          }
+        }
 
-	async listByWorkspace(
-		workspaceId: string,
-		requesterId: string,
-		filters?: { month?: number; year?: number },
-	) {
-		await this.assertMember(workspaceId, requesterId);
+        created.push(cotisation);
+      }
 
-		return this.prisma.cotisation.findMany({
-			where: {
-				workspaceId,
-				...(filters?.month !== undefined && { month: filters.month }),
-				...(filters?.year !== undefined && { year: filters.year }),
-			},
-			include: {
-				member: {
-					include: {
-						user: {
-							select: {
-								id: true,
-								email: true,
-								username: true,
-								firstName: true,
-								lastName: true,
-								avatarUrl: true,
-							},
-						},
-					},
-				},
-			},
-			orderBy: [{ year: 'desc' }, { month: 'desc' }, { createdAt: 'desc' }],
-		});
-	}
+      // Update totalShares for each member that paid in this batch
+      for (const [memberId, addedShares] of Object.entries(sharesAccum)) {
+        await tx.workspaceMember.update({
+          where: { id: memberId },
+          data: { totalShares: { increment: addedShares } },
+        });
+      }
 
-	async computeEquity(workspaceId: string, requesterId: string) {
-		await this.assertMember(workspaceId, requesterId);
+      // Recalculate sharePercent for all members
+      const updatedMembers = await tx.workspaceMember.findMany({
+        where: { workspaceId },
+        select: { id: true, totalShares: true },
+      });
 
-		const globalAgg = await this.prisma.cotisation.aggregate({
-			_sum: { amount: true },
-			where: { workspaceId },
-		});
-		const globalTotal = Number(globalAgg._sum.amount ?? 0);
+      const totalShares = updatedMembers.reduce(
+        (s, m) => s + Number(m.totalShares),
+        0,
+      );
 
-		const byMember = await this.prisma.cotisation.groupBy({
-			by: ['memberId'],
-			_sum: { amount: true },
-			where: { workspaceId },
-		});
+      for (const m of updatedMembers) {
+        const sharePercent =
+          totalShares > 0 ? (Number(m.totalShares) / totalShares) * 100 : 0;
+        await tx.workspaceMember.update({
+          where: { id: m.id },
+          data: { sharePercent },
+        });
+      }
 
-		const members = await this.prisma.workspaceMember.findMany({
-			where: { workspaceId },
-			include: {
-				user: {
-					select: {
-						id: true,
-						email: true,
-						username: true,
-						firstName: true,
-						lastName: true,
-						avatarUrl: true,
-					},
-				},
-			},
-		});
+      return created;
+    });
 
-		const memberMap = new Map(members.map((m) => [m.id, m]));
+    return { recorded: results.length, cotisations: results };
+  }
 
-		const equity = byMember.map((row) => {
-			const totalAmount = Number(row._sum.amount ?? 0);
-			const sharePercent = globalTotal > 0 ? (totalAmount / globalTotal) * 100 : 0;
-			const member = memberMap.get(row.memberId);
-			return { member, totalAmount, sharePercent };
-		});
+  async list(workspaceId: string, filters: { period?: string; memberId?: string } = {}) {
+    return this.prisma.cotisation.findMany({
+      where: {
+        workspaceId,
+        ...(filters.period ? { period: filters.period } : {}),
+        ...(filters.memberId ? { memberId: filters.memberId } : {}),
+      },
+      include: {
+        member: {
+          select: {
+            id: true,
+            totalShares: true,
+            sharePercent: true,
+            user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
-		equity.sort((a, b) => b.sharePercent - a.sharePercent);
+  async getEquity(workspaceId: string) {
+    const members = await this.prisma.workspaceMember.findMany({
+      where: { workspaceId },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        withdrawableVault: { select: { balance: true, currency: true } },
+      },
+      orderBy: { sharePercent: 'desc' },
+    });
 
-		return equity.map((item, index) => {
-			const m = item.member;
-			const displayName =
-				[m?.user?.firstName, m?.user?.lastName].filter(Boolean).join(' ') ||
-				m?.user?.username ||
-				m?.user?.email ||
-				'Membre inconnu';
-			return {
-				memberId: m?.id ?? '',
-				userId: m?.userId ?? '',
-				displayName,
-				totalAmount: item.totalAmount,
-				sharePercent: item.sharePercent,
-				rank: index + 1,
-			};
-		});
-	}
+    return members.map((m) => ({
+      memberId: m.id,
+      userId: m.user.id,
+      firstName: m.user.firstName,
+      lastName: m.user.lastName,
+      avatarUrl: m.user.avatarUrl,
+      totalShares: Number(m.totalShares),
+      sharePercent: Number(m.sharePercent),
+      withdrawableBalance: Number(m.withdrawableVault?.balance ?? 0),
+      currency: m.withdrawableVault?.currency ?? 'MGA',
+    }));
+  }
 
-	async getSummary(workspaceId: string, requesterId: string) {
-		await this.assertMember(workspaceId, requesterId);
+  async getSummary(workspaceId: string) {
+    const [vaults, memberCount, lastCotisation] = await Promise.all([
+      this.prisma.vault.findMany({
+        where: { workspaceId, isArchived: false },
+        select: { id: true, name: true, balance: true, currency: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.workspaceMember.count({ where: { workspaceId } }),
+      this.prisma.cotisation.findFirst({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+        select: { period: true, createdAt: true },
+      }),
+    ]);
 
-		const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-		const currency = workspace?.currency ?? 'MGA';
+    const totalGroupBalance = vaults.reduce((s, v) => s + Number(v.balance), 0);
 
-		const vaultConfig = await this.prisma.vaultConfig.findUnique({ where: { workspaceId } });
-		const c1Ratio = Number(vaultConfig?.c1Ratio ?? 60);
-		const c2Ratio = Number(vaultConfig?.c2Ratio ?? 30);
-		const c3Ratio = Number(vaultConfig?.c3Ratio ?? 10);
-
-		const totalAgg = await this.prisma.cotisation.aggregate({
-			_sum: { amount: true },
-			where: { workspaceId },
-		});
-		const totalCaisse = Number(totalAgg._sum.amount ?? 0);
-
-		const c1Balance = (totalCaisse * c1Ratio) / 100;
-		const c2Balance = (totalCaisse * c2Ratio) / 100;
-		const c3Balance = (totalCaisse * c3Ratio) / 100;
-
-		const memberCount = await this.prisma.workspaceMember.count({ where: { workspaceId } });
-
-		const now = new Date();
-		const currentMonth = now.getMonth() + 1;
-		const currentYear = now.getFullYear();
-
-		const paidThisMonth = await this.prisma.cotisation.findMany({
-			where: { workspaceId, month: currentMonth, year: currentYear },
-			select: { memberId: true },
-		});
-		const uniquePayers = new Set(paidThisMonth.map((c) => c.memberId)).size;
-		const cotisationRateThisMonth = memberCount > 0 ? (uniquePayers / memberCount) * 100 : 0;
-
-		const lastCotisation = await this.prisma.cotisation.findFirst({
-			where: { workspaceId },
-			orderBy: { createdAt: 'desc' },
-			select: { createdAt: true },
-		});
-		const lastCotisationDate = lastCotisation?.createdAt ?? null;
-
-		return {
-			totalCaisse,
-			c1Balance,
-			c2Balance,
-			c3Balance,
-			memberCount,
-			cotisationRateThisMonth,
-			lastCotisationDate,
-			currency,
-		};
-	}
-
-	private async assertMember(workspaceId: string, userId: string): Promise<void> {
-		const member = await this.prisma.workspaceMember.findUnique({
-			where: { workspaceId_userId: { workspaceId, userId } },
-		});
-		if (!member) throw new ForbiddenException('You are not a member of this workspace');
-	}
+    return {
+      vaults: vaults.map((v) => ({
+        id: v.id,
+        name: v.name,
+        balance: Number(v.balance),
+        currency: v.currency,
+      })),
+      totalGroupBalance,
+      memberCount,
+      lastCotisation,
+    };
+  }
 }

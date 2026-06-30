@@ -1,0 +1,37 @@
+model FluxRule {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  sourceType  String
+  sourceId    String?
+  isActive    Boolean  @default(true)
+  description String?
+  // Named parameter definitions: [{key, label, type ("number"|"string"), default}]
+  // Destinations can reference these by key for runtime overrides (flow mode)
+  params      Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace    Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  destinations FluxRuleDestination[]
+
+  @@index([workspaceId, isActive])
+  @@map("flux_rules")
+}
+
+model FluxRuleDestination {
+  id            String   @id @default(cuid())
+  fluxRuleId    String
+  targetType    String
+  targetVaultId String?
+  // Simple mode: fixed percentage
+  percent       Decimal  @db.Decimal(7, 4)
+  // Flow mode: key from FluxRule.params — overrides percent when param is provided at runtime
+  percentParam  String?
+  createdAt     DateTime @default(now())
+
+  fluxRule    FluxRule @relation(fields: [fluxRuleId], references: [id], onDelete: Cascade)
+  targetVault Vault?   @relation(fields: [targetVaultId], references: [id])
+
+  @@map("flux_rule_destinations")
+}

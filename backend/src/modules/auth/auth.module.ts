@@ -1,27 +1,34 @@
-import { AuditModule } from '#/modules/audit/audit.module';
-import { MailModule } from '#/modules/email/mail.module';
-import { UsersModule } from '$/users/users.module';
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { TokenModule } from '../tokens/token.module';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { EmailModule } from './email/email.module';
-import { SessionModule } from './sessions/session.module';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthController } from './auth.controller.js';
+import { AuthService } from './auth.service.js';
+import { SessionService } from './session.service.js';
+import { JwtStrategy } from './strategies/jwt.strategy.js';
+import { UsersModule } from '../users/users.module.js';
+import { TokensModule } from '../tokens/tokens.module.js';
+import { EmailModule } from '../email/email.module.js';
 
 @Module({
-	imports: [
-		PassportModule.register({ defaultStrategy: 'jwt' }),
-		AuditModule,
-		MailModule,
-		TokenModule,
-		UsersModule,
-		SessionModule,
-		EmailModule,
-	],
-	controllers: [AuthController],
-	providers: [AuthService, JwtStrategy],
-	exports: [AuthService, JwtStrategy],
+  imports: [
+    PassportModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('auth.jwtSecret'),
+        signOptions: {
+          expiresIn: config.get<string>('auth.jwtAccessExpiresIn', '15m') as any,
+        },
+      }),
+      inject: [ConfigService],
+    }),
+    UsersModule,
+    TokensModule,
+    EmailModule,
+  ],
+  controllers: [AuthController],
+  providers: [AuthService, SessionService, JwtStrategy],
+  exports: [AuthService, SessionService, JwtModule],
 })
 export class AuthModule {}

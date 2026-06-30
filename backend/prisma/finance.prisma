@@ -1,0 +1,78 @@
+model Vault {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+  balance     Decimal  @default(0) @db.Decimal(14, 2)
+  currency    String   @default("MGA")
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace        Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  fluxDestinations FluxRuleDestination[]
+  projectsSourced  Project[]             @relation("ProjectSourceVault")
+  ledgerEntries    LedgerEntry[]
+
+  @@index([workspaceId])
+  @@map("vaults")
+}
+
+model MemberWithdrawableVault {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  memberId      String   @unique
+  balance       Decimal  @default(0) @db.Decimal(14, 2)
+  currency      String   @default("MGA")
+  totalReceived Decimal  @default(0) @db.Decimal(14, 2)
+  updatedAt     DateTime @updatedAt
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  member    WorkspaceMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("member_withdrawable_vaults")
+}
+
+model Cotisation {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  memberId     String
+  amount       Decimal  @db.Decimal(14, 2)
+  currency     String   @default("MGA")
+  period       String?
+  note         String?
+  recordedById String
+  createdAt    DateTime @default(now())
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  member    WorkspaceMember @relation(fields: [memberId], references: [id])
+
+  @@index([workspaceId, memberId])
+  @@index([workspaceId, period])
+  @@map("cotisations")
+}
+
+model LedgerEntry {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  vaultId       String?
+  vaultType     String
+  type          String
+  category      String
+  amount        Decimal  @db.Decimal(14, 2)
+  currency      String   @default("MGA")
+  description   String?
+  referenceId   String?
+  referenceType String?
+  authorId      String
+  createdAt     DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  vault     Vault?    @relation(fields: [vaultId], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@index([vaultId])
+  @@index([referenceId, referenceType])
+  @@map("ledger_entries")
+}

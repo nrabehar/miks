@@ -1,481 +1,257 @@
-import { getErrorMessage } from '#/core/utils';
-import { User } from '#/generated/prisma';
-import { AuditService } from '#/modules/audit/audit.service';
-import { JwtPayload } from '#/modules/auth/strategies/jwt.strategy';
-import { MailService } from '#/modules/email/mail.service';
-import { TokenService } from '$/tokens/token.service';
-import { AccountsService } from '$/users/accounts/accounts.service';
-import { UsersService } from '$/users/users.service';
 import {
-	BadRequestException,
-	Injectable,
-	Logger,
-	NotFoundException,
-	UnauthorizedException,
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  ConflictException,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
-import { VerificationContext } from '../email/types/verification.type';
-import type { AuthUserDto, UserLoginResult, UserRefreshResult } from './auth.type';
-import { EmailService } from './email/email.service';
-import { SessionService } from './sessions/session.service';
+import { randomUUID } from 'crypto';
+import * as speakeasy from 'speakeasy';
+import { PrismaService } from '../../core/prisma/prisma.service.js';
+import { RedisService } from '../../core/redis/redis.service.js';
+import { UsersService } from '../users/users.service.js';
+import { AccountsService } from '../users/accounts.service.js';
+import { TokensService } from '../tokens/tokens.service.js';
+import { EmailService } from '../email/email.service.js';
+import { SessionService } from './session.service.js';
+import type { RegisterDto } from './dto/register.dto.js';
+import type { LoginDto } from './dto/login.dto.js';
 
-const REFRESH_TOKEN_COOKIE = 'refreshToken';
-const REFRESH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const TEMP_2FA_TTL_MS = 5 * 60 * 1000;
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
-	private readonly logger = new Logger(AuthService.name);
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+    private readonly users: UsersService,
+    private readonly accounts: AccountsService,
+    private readonly tokens: TokensService,
+    private readonly email: EmailService,
+    private readonly sessions: SessionService,
+  ) {}
 
-	constructor(
-		private readonly usersService: UsersService,
-		private readonly accountsService: AccountsService,
-		private readonly tokenService: TokenService,
-		private readonly sessionService: SessionService,
-		private readonly mailService: MailService,
-		private readonly emailService: EmailService,
-		private readonly audit: AuditService,
-	) {}
+  async register(dto: RegisterDto) {
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existing) throw new ConflictException('Email already in use');
 
-	private auditCtx(userId?: string | null, ipAddress?: string, userAgent?: string) {
-		return {
-			userId: userId ?? null,
-			ipAddress: ipAddress ?? null,
-			userAgent: userAgent ?? null,
-		};
-	}
+    const { hash, salt } = await this.accounts.hashPassword(dto.password);
 
-	async register(
-		email: string,
-		firstName: string,
-		lastName: string,
-		password: string,
-		lang: string = 'fr',
-	): Promise<{ registrationId: string; emailSent: boolean }> {
-		if (!email || !firstName || !lastName || !password) {
-			throw new UnauthorizedException({
-				email: 'Email, first name, last name and password are required',
-			});
-		}
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        firstName: dto.firstName,
+        lastName: dto.lastName ?? null,
+        phone: dto.phone ?? null,
+        accounts: {
+          create: {
+            providerId: 'credential',
+            accountId: dto.email,
+            password: hash,
+            passwordSalt: salt,
+          },
+        },
+      },
+      select: { id: true, email: true, firstName: true, lastName: true, emailVerified: true },
+    });
 
-		try {
-			const user = await this.usersService.create(email, firstName, lastName);
-			await this.accountsService.createCredentials(user.id, password);
-			await this.sendWelcomeEmail(user);
-			const token = await this.tokenService.createToken(user.id, 15);
-			await this.mailService.sendVerificationCode({
-				to: user.email,
-				name: `${firstName} ${lastName}`,
-				code: token,
-				context: VerificationContext.EMAIL_CONFIRMATION,
-				lang,
-				expirationTime: '15 min',
-			});
-			await this.audit.log('auth.register', 'success', {
-				userId: user.id,
-				metadata: { email: user.email },
-			});
-			this.logger.log(`User registered successfully: ${firstName} ${lastName}`);
-			return { registrationId: user.id, emailSent: true };
-		} catch (error) {
-			const message = getErrorMessage(error);
-			this.audit.log('auth.register', 'failure', {
-				metadata: { email, reason: message },
-			});
-			this.logger.error(`Failed to register user: ${message}`);
-			throw error;
-		}
-	}
+    const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+    const code = await this.tokens.generateEmailCode(user.id);
+    await this.email.sendVerificationCode(user.email, displayName, code);
 
-	async verifyEmail(registrationId: string, code: string): Promise<void> {
-		const confirmed = await this.emailService.confirmUserEmail(registrationId, code);
-		if (!confirmed) {
-			await this.audit.log('auth.email.verified', 'failure', {
-				userId: registrationId,
-			});
-			throw new BadRequestException('Invalid or expired verification code');
-		}
-		await this.audit.log('auth.email.verified', 'success', {
-			userId: registrationId,
-		});
-	}
+    return { userId: user.id, message: 'Verification code sent to your email' };
+  }
 
-	async resendEmailCode(registrationId: string, lang: string = 'fr'): Promise<void> {
-		const user = await this.usersService.findById(registrationId);
-		if (!user) throw new NotFoundException('User not found');
+  async verifyEmail(userId: string, code: string) {
+    await this.tokens.verifyEmailCode(userId, code);
+    await this.prisma.user.update({ where: { id: userId }, data: { emailVerified: true } });
+    return { verified: true };
+  }
 
-		if (user.emailVerified) {
-			throw new BadRequestException('Email is already verified');
-		}
+  async resendEmailCode(userId: string) {
+    const user = await this.users.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    if (user.emailVerified) throw new BadRequestException('Email already verified');
 
-		const token = await this.tokenService.createToken(user.id, 15);
-		await this.mailService.sendVerificationCode({
-			to: user.email,
-			name: `${user.firstName} ${user.lastName}`,
-			code: token,
-			context: VerificationContext.EMAIL_CONFIRMATION,
-			lang,
-			expirationTime: '15 min',
-		});
-		await this.audit.log('auth.email.resend', 'success', {
-			userId: user.id,
-			metadata: { email: user.email },
-		});
-	}
+    const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+    const code = await this.tokens.generateEmailCode(userId);
+    await this.email.sendVerificationCode(user.email, displayName, code);
+    return { message: 'Code resent' };
+  }
 
-	async forgotPassword(email: string, lang: string = 'fr'): Promise<void> {
-		const user = await this.usersService.findByIdentifier(email);
-		if (!user) {
-			// Silently succeed to avoid email enumeration
-			await this.audit.log('auth.password.reset_request', 'info', {
-				metadata: { email, found: false },
-			});
-			return;
-		}
+  async login(dto: LoginDto, userAgent?: string, ip?: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      include: { accounts: { where: { providerId: 'credential' } } },
+    });
 
-		const token = await this.tokenService.createToken(user.id, 15);
-		const frontendUrl = process.env.FRONTEND_URL || 'https://miks.dedyn.io';
-		const resetLink = `${frontendUrl.replace(/\/$/, '')}/auth/reset-password?userId=${user.id}&token=${token}`;
+    if (!user || !user.accounts[0]) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
-		await this.mailService.sendVerificationCode({
-			to: user.email,
-			name: `${user.firstName} ${user.lastName}`,
-			code: token,
-			context: VerificationContext.PASSWORD_RESET,
-			lang,
-			expirationTime: '15 min',
-			resetLink,
-		});
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      throw new ForbiddenException('Account temporarily locked. Try again later');
+    }
 
-		await this.audit.log('auth.password.reset_request', 'success', {
-			userId: user.id,
-			metadata: { email: user.email },
-		});
-		this.logger.log(`Password reset email sent to ${email}`);
-	}
+    const account = user.accounts[0];
+    const valid = await this.accounts.verifyPassword(
+      dto.password,
+      account.password!,
+      account.passwordSalt!,
+    );
 
-	async resetPassword(userId: string, code: string, newPassword: string): Promise<void> {
-		const valid = await this.tokenService.validateToken(userId, code, 15);
-		if (!valid) {
-			await this.audit.log('auth.password.reset_success', 'failure', { userId });
-			throw new BadRequestException('Invalid or expired reset code');
-		}
+    if (!valid) {
+      const failed = user.failedLoginAttempts + 1;
+      const lockUpdate =
+        failed >= MAX_FAILED_ATTEMPTS
+          ? { lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS), failedLoginAttempts: 0 }
+          : { failedLoginAttempts: failed };
+      await this.prisma.user.update({ where: { id: user.id }, data: lockUpdate });
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
-		// Prevent code reuse within the TOTP window
-		await this.tokenService.markTokenUsed(userId, code, 15);
-		await this.accountsService.updatePassword(userId, newPassword);
-		await this.audit.log('auth.password.reset_success', 'success', { userId });
-		await this.audit.log('auth.password.changed', 'success', { userId });
-		this.logger.log(`Password reset successfully for user ${userId}`);
-	}
+    if (user.failedLoginAttempts > 0) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
+    }
 
-	async login(
-		identifier: string,
-		password: string,
-		ipAddress?: string,
-		userAgent?: string,
-		location?: string,
-	): Promise<UserLoginResult> {
-		const ctx = this.auditCtx(null, ipAddress, userAgent);
-		if (!identifier || !password) {
-			throw new UnauthorizedException('Identifier and password are required');
-		}
+    if (!user.emailVerified) {
+      throw new ForbiddenException('Email not verified');
+    }
 
-		const user = await this.usersService.findByIdentifier(identifier);
-		if (!user) {
-			this.logger.warn(
-				`Login attempt failed: Invalid identifier ${identifier} ${ipAddress ? `from IP ${ipAddress}` : ''}`,
-			);
-			await this.audit.log('auth.login.failed', 'failure', {
-				...ctx,
-				metadata: { identifier, reason: 'unknown_user' },
-			});
-			throw new UnauthorizedException('Invalid credentials');
-		}
+    if (user.twoFaEnabled) {
+      const tempToken = randomUUID();
+      await this.redis.set(`2fa_pending:${tempToken}`, user.id, TEMP_2FA_TTL_MS);
+      return { requiresTwoFa: true, tempToken };
+    }
 
-		// Account lockout check (Redis primary, DB fallback)
-		const lock = await this.usersService.isLockedOut(user.id);
-		if (lock.locked) {
-			this.logger.warn(
-				`Login attempt blocked: locked account ${identifier} until ${lock.lockedUntil?.toISOString()}`,
-			);
-			await this.audit.log('auth.login.locked', 'blocked', {
-				userId: user.id,
-				ipAddress,
-				userAgent,
-				metadata: {
-					lockedUntil: lock.lockedUntil?.toISOString(),
-				},
-			});
-			throw new UnauthorizedException(
-				`Account temporarily locked. Try again after ${lock.lockedUntil?.toISOString()}.`,
-			);
-		}
+    const tokens = await this.sessions.createSession(user.id, userAgent, ip);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date(), isOnline: true },
+    });
 
-		const isValid = await this.accountsService.validateCredentials(user.id, password);
-		if (!isValid) {
-			this.logger.warn(
-				`Login attempt failed: Invalid password for ${identifier} ${ipAddress ? `from IP ${ipAddress}` : ''}`,
-			);
-			const { attempts, lockedUntil } =
-				await this.usersService.registerFailedLogin(user.id);
-			await this.audit.log('auth.login.failed', 'failure', {
-				userId: user.id,
-				ipAddress,
-				userAgent,
-				metadata: {
-					reason: 'bad_password',
-					attempts,
-					lockedUntil: lockedUntil?.toISOString(),
-				},
-			});
-			throw new UnauthorizedException('Invalid credentials');
-		}
+    return { requiresTwoFa: false, ...tokens, user: this.formatUser(user) };
+  }
 
-		if (!user.emailVerified) {
-			this.logger.warn(`Login attempt failed: Email not verified for ${identifier}`);
-			await this.audit.log('auth.login.failed', 'failure', {
-				userId: user.id,
-				ipAddress,
-				userAgent,
-				metadata: { reason: 'email_not_verified' },
-			});
-			throw new UnauthorizedException('Please verify your email before logging in.');
-		}
+  async verifyTwoFaLogin(tempToken: string, code: string, userAgent?: string, ip?: string) {
+    const userId = await this.redis.get<string>(`2fa_pending:${tempToken}`);
+    if (!userId) throw new UnauthorizedException('Invalid or expired 2FA session');
 
-		const tokens = this.tokenService.generateJwtToken({ sub: user.id });
+    const user = await this.users.findById(userId);
+    if (!user?.twoFaSecret) throw new UnauthorizedException('2FA not configured');
 
-		if (!user.twoFaEnabled) {
-			await this.sessionService.createSession({
-				userId: user.id,
-				jti: tokens.refreshJti,
-				refreshToken: tokens.refreshToken,
-				familyId: tokens.familyId,
-				ipAddress: ipAddress ?? null,
-				userAgent: userAgent ?? null,
-				location: location ?? null,
-				expiresAt: tokens.refreshExpiresAt,
-			});
-			await this.usersService.markLogin(user.id);
-		}
+    const valid = speakeasy.totp.verify({
+      secret: user.twoFaSecret,
+      encoding: 'base32',
+      token: code,
+      window: 1,
+    });
+    if (!valid) throw new UnauthorizedException('Invalid 2FA code');
 
-		await this.audit.log(
-			user.twoFaEnabled ? 'auth.2fa.challenge' : 'auth.login.success',
-			'success',
-			{ userId: user.id, ipAddress, userAgent },
-		);
-		this.logger.log(`User logged in successfully: ${user.username}`);
+    await this.redis.del(`2fa_pending:${tempToken}`);
+    const tokens = await this.sessions.createSession(userId, userAgent, ip);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastLoginAt: new Date(), isOnline: true },
+    });
 
-		return {
-			user: this.mapUser(user),
-			accessToken: tokens.accessToken,
-			refreshToken: tokens.refreshToken,
-		};
-	}
+    return { ...tokens, user: this.formatUser(user) };
+  }
 
-	/**
-	 * Completes a 2FA-protected login. The challenge was previously issued
-	 * from `login()` (returns `requires2FA: true, challengeId: user.id`).
-	 * Validates the 6-digit TOTP code and, on success, creates the session
-	 * and returns the same shape as a non-2FA login.
-	 */
-	async verify2FALogin(
-		challengeId: string,
-		code: string,
-		ipAddress?: string,
-		userAgent?: string,
-		location?: string,
-	): Promise<UserLoginResult> {
-		const user = await this.usersService.findById(challengeId);
-		if (!user) {
-			await this.audit.log('auth.2fa.failed', 'failure', {
-				metadata: { challengeId, reason: 'unknown_challenge' },
-				ipAddress,
-				userAgent,
-			});
-			throw new UnauthorizedException('Invalid 2FA challenge');
-		}
+  async refresh(refreshToken: string, userAgent?: string, ip?: string) {
+    return this.sessions.refreshSession(refreshToken, userAgent, ip);
+  }
 
-		if (!user.twoFaEnabled || !user.twoFaSecret) {
-			await this.audit.log('auth.2fa.failed', 'failure', {
-				userId: user.id,
-				metadata: { reason: '2fa_not_enabled' },
-				ipAddress,
-				userAgent,
-			});
-			throw new UnauthorizedException('2FA is not enabled for this account');
-		}
+  async logout(jti: string) {
+    await this.sessions.revokeSession(jti);
+    return { message: 'Logged out' };
+  }
 
-		const valid = await this.tokenService.validate2FAToken(user.id, code);
-		if (!valid) {
-			this.logger.warn(`Invalid 2FA code for user ${user.id}`);
-			await this.audit.log('auth.2fa.failed', 'failure', {
-				userId: user.id,
-				ipAddress,
-				userAgent,
-			});
-			throw new UnauthorizedException('Invalid 2FA code');
-		}
+  async setupTwoFa(userId: string) {
+    const user = await this.users.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
 
-		const tokens = this.tokenService.generateJwtToken({ sub: user.id });
-		await this.sessionService.createSession({
-			userId: user.id,
-			jti: tokens.refreshJti,
-			refreshToken: tokens.refreshToken,
-			familyId: tokens.familyId,
-			ipAddress: ipAddress ?? null,
-			userAgent: userAgent ?? null,
-			location: location ?? null,
-			expiresAt: tokens.refreshExpiresAt,
-		});
-		await this.usersService.markLogin(user.id);
+    const secret = speakeasy.generateSecret({ name: `MIKS (${user.email})`, length: 20 });
+    await this.redis.set(`2fa_setup:${userId}`, secret.base32, 10 * 60 * 1000);
 
-		await this.audit.log('auth.2fa.success', 'success', {
-			userId: user.id,
-			ipAddress,
-			userAgent,
-		});
-		this.logger.log(`2FA login successful for user ${user.username}`);
+    return { secret: secret.base32, otpAuthUrl: secret.otpauth_url };
+  }
 
-		return {
-			user: this.mapUser(user),
-			accessToken: tokens.accessToken,
-			refreshToken: tokens.refreshToken,
-		};
-	}
+  async enableTwoFa(userId: string, code: string) {
+    const secret = await this.redis.get<string>(`2fa_setup:${userId}`);
+    if (!secret) throw new BadRequestException('No pending 2FA setup. Call setup first');
 
-	async refresh(
-		refreshToken: string,
-		ipAddress?: string,
-		userAgent?: string,
-		location?: string,
-	): Promise<UserRefreshResult> {
-		if (!refreshToken) {
-			throw new UnauthorizedException('Missing refresh token');
-		}
+    const valid = speakeasy.totp.verify({ secret, encoding: 'base32', token: code, window: 1 });
+    if (!valid) throw new UnauthorizedException('Invalid 2FA code');
 
-		let payload: JwtPayload;
-		try {
-			payload = this.tokenService.decodeJwtToken(refreshToken, 'RefreshSecret');
-		} catch {
-			throw new UnauthorizedException('Invalid refresh token');
-		}
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFaSecret: secret, twoFaEnabled: true },
+    });
+    await this.redis.del(`2fa_setup:${userId}`);
+    return { enabled: true };
+  }
 
-		if (!payload.sub || !payload.jti || !payload.familyId) {
-			throw new UnauthorizedException('Malformed refresh token');
-		}
+  async disableTwoFa(userId: string, code: string) {
+    const user = await this.users.findById(userId);
+    if (!user?.twoFaEnabled) throw new BadRequestException('2FA is not enabled');
 
-		const newTokens = this.tokenService.generateJwtToken({ sub: payload.sub }, payload.familyId);
+    const valid = speakeasy.totp.verify({
+      secret: user.twoFaSecret!,
+      encoding: 'base32',
+      token: code,
+      window: 1,
+    });
+    if (!valid) throw new UnauthorizedException('Invalid 2FA code');
 
-		const session = await this.sessionService.rotateRefresh({
-			oldJti: payload.jti,
-			userId: payload.sub,
-			refreshToken,
-			newJti: newTokens.refreshJti,
-			newRefreshToken: newTokens.refreshToken,
-			familyId: payload.familyId,
-			ipAddress: ipAddress ?? null,
-			userAgent: userAgent ?? null,
-			location: location ?? null,
-			refreshExpiresAt: newTokens.refreshExpiresAt,
-		});
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFaEnabled: false, twoFaSecret: null },
+    });
+    return { disabled: true };
+  }
 
-		this.logger.log(
-			`Refresh rotated for user ${session.user.username ?? session.user.email} (family ${payload.familyId})`,
-		);
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, firstName: true, lastName: true },
+    });
+    if (!user) return { message: 'If that email exists, a reset link has been sent' };
 
-		return {
-			accessToken: newTokens.accessToken,
-			refreshToken: newTokens.refreshToken,
-		};
-	}
+    const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+    const token = await this.tokens.generatePasswordResetToken(user.id);
+    await this.email.sendPasswordReset(email, displayName, user.id, token);
+    return { message: 'If that email exists, a reset link has been sent' };
+  }
 
-	async logout(refreshToken: string): Promise<void> {
-		if (!refreshToken) return;
-		try {
-			const payload = this.tokenService.decodeJwtToken(refreshToken, 'RefreshSecret');
-			if (payload.jti) {
-				await this.sessionService.revokeByJti(payload.jti);
-				await this.audit.log('auth.logout', 'success', {
-					userId: payload.sub,
-				});
-				this.logger.log(`Session logged out (jti=${payload.jti}, user=${payload.sub})`);
-			}
-		} catch (error) {
-			this.logger.debug(
-				`Logout: could not decode refresh token: ${(error as Error).message}`,
-			);
-		}
-	}
+  async resetPassword(userId: string, token: string, newPassword: string) {
+    await this.tokens.verifyPasswordResetToken(userId, token);
+    const { hash, salt } = await this.accounts.hashPassword(newPassword);
+    await this.prisma.account.updateMany({
+      where: { userId, providerId: 'credential' },
+      data: { password: hash, passwordSalt: salt },
+    });
+    await this.sessions.revokeAllForUser(userId);
+    return { message: 'Password reset successfully' };
+  }
 
-	mapUser(user: User): AuthUserDto {
-		return {
-			id: user.id,
-			email: user.email,
-			phone: user.phone ?? undefined,
-			displayName: user.username ?? undefined,
-			emailVerified: user.emailVerified,
-			phoneVerified: user.phoneVerified,
-			twoFaEnabled: user.twoFaEnabled,
-		};
-	}
-
-	/**
-	 * Returns the public auth-user DTO for the given user id. Used by the
-	 * `GET /auth/me` endpoint to rehydrate the frontend auth store on page
-	 * reload. Throws 404 if the user no longer exists.
-	 */
-	async getMe(userId: string): Promise<AuthUserDto> {
-		const user = await this.usersService.findById(userId);
-		if (!user) {
-			throw new NotFoundException('User not found');
-		}
-		return this.mapUser(user);
-	}
-
-	/**
-	 * Generates a new 2FA secret for the user and returns the QR code URL.
-	 * Call this before enabling 2FA — the user must scan the QR code and
-	 * verify a code before 2FA is activated.
-	 */
-	async setup2FA(userId: string): Promise<{ otpauthUrl: string; secret: string }> {
-		const result = await this.tokenService.create2FASecret(userId);
-		return { otpauthUrl: result.qrUrl ?? '', secret: result.secret };
-	}
-
-	async enable2FA(userId: string, code: string): Promise<void> {
-		const valid = await this.tokenService.validate2FAToken(userId, code);
-		if (!valid) {
-			await this.audit.log('auth.2fa.enable', 'failure', { userId });
-			throw new BadRequestException('Invalid 2FA code — please try again');
-		}
-		await this.usersService.update(userId, { twoFaEnabled: true });
-		await this.audit.log('auth.2fa.enable', 'success', { userId });
-		this.logger.log(`2FA enabled for user ${userId}`);
-	}
-
-	async disable2FA(userId: string, code: string): Promise<void> {
-		const user = await this.usersService.findById(userId);
-		if (!user) throw new NotFoundException('User not found');
-		if (!user.twoFaEnabled) {
-			throw new BadRequestException('2FA is not enabled on this account');
-		}
-		const valid = await this.tokenService.validate2FAToken(userId, code);
-		if (!valid) {
-			await this.audit.log('auth.2fa.disable', 'failure', { userId });
-			throw new BadRequestException('Invalid 2FA code — please try again');
-		}
-		await this.usersService.update(userId, { twoFaEnabled: false, twoFaSecret: null });
-		await this.audit.log('auth.2fa.disable', 'success', { userId });
-		this.logger.log(`2FA disabled for user ${userId}`);
-	}
-
-	async sendWelcomeEmail(user: User) {
-		await this.mailService.sendEmail(user.email, 'welcome', 'subjects.welcome', {
-			lang: 'fr',
-			name: user.username,
-			dashboardLink: 'https://miks.dedyn.io/dashboard',
-		});
-	}
-
-	static readonly REFRESH_TOKEN_COOKIE = REFRESH_TOKEN_COOKIE;
-	static readonly REFRESH_TOKEN_MAX_AGE_MS = REFRESH_TOKEN_MAX_AGE_MS;
+  private formatUser(user: any) {
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatarUrl: user.avatarUrl,
+      phone: user.phone,
+      emailVerified: user.emailVerified,
+      twoFaEnabled: user.twoFaEnabled,
+      language: user.language,
+    };
+  }
 }

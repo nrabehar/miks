@@ -1,0 +1,36 @@
+model Vote {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  projectId    String    @unique
+  threshold    Int
+  quorum       Int?
+  status       String    @default("OPEN")
+  result       String?
+  yesCount     Int       @default(0)
+  noCount      Int       @default(0)
+  abstainCount Int       @default(0)
+  opensAt      DateTime  @default(now())
+  closesAt     DateTime
+  closedAt     DateTime?
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  choices   VoteChoice[]
+
+  @@index([workspaceId, status])
+  @@map("votes")
+}
+
+model VoteChoice {
+  id        String   @id @default(cuid())
+  voteId    String
+  memberId  String
+  choice    String
+  createdAt DateTime @default(now())
+
+  vote   Vote            @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  member WorkspaceMember @relation(fields: [memberId], references: [id])
+
+  @@unique([voteId, memberId])
+  @@map("vote_choices")
+}

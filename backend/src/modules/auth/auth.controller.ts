@@ -1,261 +1,169 @@
-import { GetLang } from '#/common/decorators/get-lang.decorator';
-import { Public } from '#/common/decorators/public.decorator';
 import {
-    Body,
-    Controller,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Post,
-    Req,
-    Res,
-    UnauthorizedException,
-    UseGuards,
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Req,
+  Res,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { AuthService } from './auth.service';
-import { ForgotPasswordDto } from './dtos/forgot-password.dto';
-import { ResendEmailDto } from './dtos/resend-email.dto';
-import { ResetPasswordDto } from './dtos/reset-password.dto';
-import { UserLoginDto } from './dtos/user-login.dto';
-import { UserRegisterDto } from './dtos/user-register.dto';
-import { Toggle2FADto } from './dtos/toggle-2fa.dto';
-import { Verify2FADto } from './dtos/verify-2fa.dto';
-import { VerifyEmailDto } from './dtos/verify-email.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Throttle } from '@nestjs/throttler';
+import { AuthService } from './auth.service.js';
+import { UsersService } from '../users/users.service.js';
+import { UpdateProfileDto } from '../users/dto/update-profile.dto.js';
+import { RegisterDto } from './dto/register.dto.js';
+import { LoginDto, VerifyEmailDto, ResendEmailDto } from './dto/login.dto.js';
+import { TwoFaCodeDto, TwoFaVerifyLoginDto } from './dto/two-fa.dto.js';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password.dto.js';
+import { Public } from '../../core/decorators/public.decorator.js';
+import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
+import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
+
+const COOKIE_NAME = 'refresh_token';
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: '/',
+};
 
 @Controller('auth')
+@UseGuards(JwtAuthGuard)
 export class AuthController {
-	private readonly isProduction =
-		process.env.NODE_ENV === 'production';
+  constructor(
+    private readonly auth: AuthService,
+    private readonly users: UsersService,
+  ) {}
 
-	private readonly cookieOptions = {
-		httpOnly: true as const,
-		secure: this.isProduction,
-		sameSite: 'strict' as const,
-		path: '/',
-	};
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 3_600_000 } })
+  @Post('register')
+  register(@Body() dto: RegisterDto) {
+    return this.auth.register(dto);
+  }
 
-	constructor(
-		private readonly userAuthService: AuthService,
-		private readonly configService: ConfigService,
-	) {}
+  @Public()
+  @Post('verify-email')
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.auth.verifyEmail(dto.userId, dto.code);
+  }
 
-	@Public()
-	@Throttle({ 'auth-register': { ttl: 3_600_000, limit: 3 } })
-	@Post('register')
-	async registerUser(@Body() body: UserRegisterDto, @GetLang() lang: string) {
-		const { firstName, lastName, email, password } = body;
-		const result = await this.userAuthService.register(email, firstName, lastName, password, lang);
-		return result;
-	}
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
+  @Post('resend-email')
+  resendEmail(@Body() dto: ResendEmailDto) {
+    return this.auth.resendEmailCode(dto.userId);
+  }
 
-	@Public()
-	@Throttle({ 'auth-login': { ttl: 900_000, limit: 10 } })
-	@Post('verify-email')
-	@HttpCode(HttpStatus.OK)
-	async verifyEmail(@Body() body: VerifyEmailDto) {
-		await this.userAuthService.verifyEmail(body.registrationId, body.code);
-		return { ok: true };
-	}
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 900_000 } })
+  @HttpCode(HttpStatus.OK)
+  @Post('login')
+  async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const result = await this.auth.login(dto, req.headers['user-agent'], req.ip);
+    if (!result.requiresTwoFa && (result as any).refreshToken) {
+      res.cookie(COOKIE_NAME, (result as any).refreshToken, COOKIE_OPTS);
+    }
+    const { refreshToken: _, ...safe } = result as any;
+    return safe;
+  }
 
-	@Public()
-	@Throttle({ 'auth-email': { ttl: 3_600_000, limit: 5 } })
-	@Post('resend-email')
-	@HttpCode(HttpStatus.OK)
-	async resendEmail(@Body() body: ResendEmailDto, @GetLang() lang: string) {
-		await this.userAuthService.resendEmailCode(body.registrationId, lang);
-		return { ok: true };
-	}
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('2fa/verify')
+  async verifyTwoFaLogin(
+    @Body() dto: TwoFaVerifyLoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.auth.verifyTwoFaLogin(dto.tempToken, dto.code, req.headers['user-agent'], req.ip);
+    res.cookie(COOKIE_NAME, result.refreshToken, COOKIE_OPTS);
+    const { refreshToken: _, ...safe } = result;
+    return safe;
+  }
 
-	@Public()
-	@Throttle({ 'auth-email': { ttl: 3_600_000, limit: 5 } })
-	@Post('forgot-password')
-	@HttpCode(HttpStatus.OK)
-	async forgotPassword(@Body() body: ForgotPasswordDto, @GetLang() lang: string) {
-		await this.userAuthService.forgotPassword(body.email, lang);
-		return { ok: true };
-	}
+  @Post('2fa/setup')
+  setupTwoFa(@CurrentUser() user: { id: string }) {
+    return this.auth.setupTwoFa(user.id);
+  }
 
-	@Public()
-	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
-	@Post('reset-password')
-	@HttpCode(HttpStatus.OK)
-	async resetPassword(@Body() body: ResetPasswordDto) {
-		await this.userAuthService.resetPassword(body.userId, body.code, body.newPassword);
-		return { ok: true };
-	}
+  @Post('2fa/enable')
+  enableTwoFa(@CurrentUser() user: { id: string }, @Body() dto: TwoFaCodeDto) {
+    return this.auth.enableTwoFa(user.id, dto.code);
+  }
 
-	@Public()
-	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
-	@Post('login')
-	@HttpCode(HttpStatus.OK)
-	async login(
-		@Req() req: Request,
-		@Res() res: Response,
-		@Body() data: UserLoginDto,
-	) {
-		const { identifier, password } = data;
-		const ipAddress = req.ip ?? req.socket.remoteAddress ?? 'unknown';
-		const userAgent = req.headers['user-agent'];
+  @Post('2fa/disable')
+  disableTwoFa(@CurrentUser() user: { id: string }, @Body() dto: TwoFaCodeDto) {
+    return this.auth.disableTwoFa(user.id, dto.code);
+  }
 
-		const { user, accessToken, refreshToken } = await this.userAuthService.login(
-			identifier,
-			password,
-			ipAddress,
-			userAgent,
-		);
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh')
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const token = req.cookies?.[COOKIE_NAME];
+    if (!token) throw new UnauthorizedException('No refresh token');
+    const result = await this.auth.refresh(token, req.headers['user-agent'], req.ip);
+    res.cookie(COOKIE_NAME, result.refreshToken, COOKIE_OPTS);
+    const { refreshToken: _, ...safe } = result;
+    return safe;
+  }
 
-		if (user.twoFaEnabled) {
-			res.clearCookie(AuthService.REFRESH_TOKEN_COOKIE);
-			return res.status(HttpStatus.OK).json({
-				requires2FA: true,
-				challengeId: user.id,
-			});
-		}
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
+  async logout(@CurrentUser() user: { jti: string }, @Res({ passthrough: true }) res: Response) {
+    res.clearCookie(COOKIE_NAME, { path: '/' });
+    return this.auth.logout(user.jti);
+  }
 
-		this.setRefreshCookie(res, refreshToken);
-		return res.status(HttpStatus.OK).json({ requires2FA: false, user, accessToken });
-	}
+  @Public()
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto.email);
+  }
 
-	@Public()
-	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
-	@Post('2fa/verify')
-	@HttpCode(HttpStatus.OK)
-	async verify2FA(
-		@Req() req: Request,
-		@Res() res: Response,
-		@Body() data: Verify2FADto,
-	) {
-		const ipAddress = req.ip ?? req.socket.remoteAddress ?? 'unknown';
-		const userAgent = req.headers['user-agent'];
+  @Public()
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto.userId, dto.token, dto.newPassword);
+  }
 
-		const { user, accessToken, refreshToken } =
-			await this.userAuthService.verify2FALogin(
-				data.challengeId,
-				data.code,
-				ipAddress,
-				userAgent,
-			);
+  @Get('me')
+  async me(@CurrentUser() user: { id: string }) {
+    const full = await this.users.findById(user.id);
+    if (!full) throw new UnauthorizedException();
+    return {
+      id: full.id,
+      email: full.email,
+      firstName: full.firstName,
+      lastName: full.lastName,
+      avatarUrl: full.avatarUrl,
+      phone: full.phone,
+      emailVerified: full.emailVerified,
+      phoneVerified: full.phoneVerified,
+      twoFaEnabled: full.twoFaEnabled,
+      language: full.language,
+      isOnline: full.isOnline,
+    };
+  }
 
-		this.setRefreshCookie(res, refreshToken);
-		return res
-			.status(HttpStatus.OK)
-			.json({ user, accessToken, requires2FA: false });
-	}
-
-	@Public()
-	@Throttle({ 'auth-login': { ttl: 60_000, limit: 30 } })
-	@Post('refresh')
-	@HttpCode(HttpStatus.OK)
-	async refresh(@Req() req: Request, @Res() res: Response) {
-		const refreshToken = this.extractRefreshToken(req);
-		if (!refreshToken) {
-			throw new UnauthorizedException('Missing refresh token cookie');
-		}
-
-		const ipAddress = req.ip ?? req.socket.remoteAddress ?? 'unknown';
-		const userAgent = req.headers['user-agent'];
-
-		const { accessToken, refreshToken: newRefreshToken } =
-			await this.userAuthService.refresh(refreshToken, ipAddress, userAgent);
-
-		this.setRefreshCookie(res, newRefreshToken);
-		return res.status(HttpStatus.OK).json({ accessToken });
-	}
-
-	@Post('logout')
-	@HttpCode(HttpStatus.NO_CONTENT)
-	async logout(@Req() req: Request, @Res() res: Response): Promise<void> {
-		const refreshToken = this.extractRefreshToken(req);
-		await this.userAuthService.logout(refreshToken ?? '');
-
-		res.clearCookie(AuthService.REFRESH_TOKEN_COOKIE, this.cookieOptions);
-		res.status(HttpStatus.NO_CONTENT).send();
-	}
-
-	// ─── 2FA Management ─────────────────────────────────────────────────────────
-
-	/**
-	 * Generate a new 2FA TOTP secret for the authenticated user.
-	 * The response includes the otpauth URL for QR-code rendering and the raw
-	 * base32 secret (for manual entry). No changes are persisted until the user
-	 * calls POST /auth/2fa/enable with a valid code.
-	 */
-	@UseGuards(JwtAuthGuard)
-	@Post('2fa/setup')
-	@HttpCode(HttpStatus.OK)
-	async setup2FA(@Req() req: Request) {
-		const sub = this.extractSub(req);
-		return this.userAuthService.setup2FA(sub);
-	}
-
-	/** Enable 2FA after scanning the QR code — verifies a live TOTP code first */
-	@UseGuards(JwtAuthGuard)
-	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
-	@Post('2fa/enable')
-	@HttpCode(HttpStatus.OK)
-	async enable2FA(@Req() req: Request, @Body() body: Toggle2FADto) {
-		const sub = this.extractSub(req);
-		await this.userAuthService.enable2FA(sub, body.code);
-		return { ok: true };
-	}
-
-	/** Disable 2FA — requires a valid TOTP code to prevent accidental lockout */
-	@UseGuards(JwtAuthGuard)
-	@Throttle({ 'auth-login': { ttl: 900_000, limit: 5 } })
-	@Post('2fa/disable')
-	@HttpCode(HttpStatus.OK)
-	async disable2FA(@Req() req: Request, @Body() body: Toggle2FADto) {
-		const sub = this.extractSub(req);
-		await this.userAuthService.disable2FA(sub, body.code);
-		return { ok: true };
-	}
-
-	// ─── Current User ───────────────────────────────────────────────────────────
-
-	/**
-	 * Returns the currently-authenticated user (resolved from the JWT in
-	 * `Authorization: Bearer …`). Used by the frontend to re-hydrate the
-	 * auth store on page reload — since the access token is kept in memory
-	 * only, this endpoint lets us recover the user object without forcing
-	 * a login.
-	 */
-	@UseGuards(JwtAuthGuard)
-	@Get('me')
-	async me(@Req() req: Request) {
-		const sub = this.extractSub(req);
-		const user = await this.userAuthService.getMe(sub);
-		return user;
-	}
-
-	private extractSub(req: Request): string {
-		const sub = (req as Request & { user?: { sub?: string } }).user?.sub;
-		if (!sub) throw new UnauthorizedException('Invalid token payload');
-		return sub;
-	}
-
-	private setRefreshCookie(res: Response, refreshToken: string): void {
-		res.cookie(AuthService.REFRESH_TOKEN_COOKIE, refreshToken, {
-			...this.cookieOptions,
-			maxAge: AuthService.REFRESH_TOKEN_MAX_AGE_MS,
-			signed: true,
-		});
-	}
-
-	private extractRefreshToken(req: Request): string | undefined {
-		const cookies = (req as Request & {
-			cookies?: Record<string, string | undefined>;
-			signedCookies?: Record<string, string | undefined>;
-		}).cookies;
-		const signedCookies = (req as Request & {
-			signedCookies?: Record<string, string | undefined>;
-		}).signedCookies;
-		return (
-			signedCookies?.[AuthService.REFRESH_TOKEN_COOKIE] ??
-			cookies?.[AuthService.REFRESH_TOKEN_COOKIE]
-		);
-	}
+  @Patch('profile')
+  async updateProfile(@CurrentUser() user: { id: string }, @Body() dto: UpdateProfileDto) {
+    const updated = await this.users.updateProfile(user.id, dto);
+    return {
+      id: updated.id,
+      email: updated.email,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      avatarUrl: updated.avatarUrl,
+      phone: updated.phone,
+      language: updated.language,
+    };
+  }
 }

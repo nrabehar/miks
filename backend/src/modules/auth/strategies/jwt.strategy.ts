@@ -1,43 +1,37 @@
-import { RedisService } from '#/core/redis/redis.service';
-import { SessionService } from '#/modules/auth/sessions/session.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PrismaService } from '../../../core/prisma/prisma.service.js';
 
 export interface JwtPayload {
-	sub: string;
-	iat?: number;
-	exp?: number;
-	jti?: string;
-	familyId?: string;
-	typ?: string;
+  sub: string;
+  jti: string;
 }
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-	constructor(
-		private readonly redisService: RedisService,
-		private readonly sessionService: SessionService,
-		configService: ConfigService,
-	) {
-		super({
-			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-			ignoreExpiration: false,
-			secretOrKey: configService.get<string>('auth.jwtSecret')!,
-		});
-	}
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(
+    config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: config.get<string>('auth.jwtSecret'),
+      passReqToCallback: false,
+    });
+  }
 
-	async validate(payload: JwtPayload) {
-		if (!payload.jti) {
-			throw new UnauthorizedException('Token is missing unique identifier (jti)');
-		}
+  async validate(payload: JwtPayload) {
+    const session = await this.prisma.session.findUnique({
+      where: { jti: payload.jti },
+      select: { revokedAt: true, expiresAt: true },
+    });
 
-		const isValid = await this.sessionService.validateSession(payload.jti);
-		if (!isValid) {
-			throw new UnauthorizedException('Session is invalid or has been revoked');
-		}
+    if (!session || session.revokedAt || session.expiresAt < new Date()) {
+      throw new UnauthorizedException('Session expired or revoked');
+    }
 
-		return payload;
-	}
+    return { id: payload.sub, jti: payload.jti };
+  }
 }

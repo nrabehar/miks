@@ -1,77 +1,31 @@
-import { AllExceptionsFilter } from '#/core/filters/all-exception.filter';
-import { HttpExceptionFilter } from '#/core/filters/http-exception.filter';
-import { LoggingInterceptor } from '#/core/interceptors/logging.interceptor';
-import { SanitizerInterceptor } from '#/core/interceptors/sanitizer.interceptor';
-import { AppModule } from '@/app.module';
-import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import * as cookieParser from 'cookie-parser';
+import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { AppModule } from './app.module.js';
 
 async function bootstrap() {
-	const app = await NestFactory.create(AppModule);
-	const configService = app.get(ConfigService);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-	app.use(helmet({
-		contentSecurityPolicy: {
-			directives: {
-				defaultSrc: ["'self'"],
-				scriptSrc: ["'self'"],
-				styleSrc: ["'self'", "'unsafe-inline'"],
-				imgSrc: ["'self'", 'data:', 'https:'],
-				connectSrc: ["'self'"],
-			},
-		},
-	}));
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  app.use(cookieParser());
 
-	app.use(
-		cookieParser.default(configService.get<string>('auth.cookieSecret')),
-	);
+  const origins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',');
+  app.enableCors({
+    origin: origins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  });
 
-	const isProduction = configService.get<string>('app.nodeEnv') === 'production';
-	const allowedOrigins = [
-		...(isProduction ? [] : ['http://localhost:81', 'http://localhost:3001', 'http://localhost:5173']),
-		configService.get<string>('app.frontendUrl'),
-	].filter(Boolean);
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+  );
 
-	app.enableCors({
-		origin: (origin, callback) => {
-			if (!origin || allowedOrigins.includes(origin)) {
-				callback(null, true);
-			} else {
-				callback(new Error('Origin Not allowed by CORS'));
-			}
-		},
-		methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-		allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-		credentials: true,
-		maxAge: 86400,
-	});
+  app.setGlobalPrefix('api');
 
-	app.useGlobalPipes(
-		new ValidationPipe({
-			whitelist: true,
-			forbidNonWhitelisted: true,
-			transform: true,
-			transformOptions: {
-				enableImplicitConversion: true,
-			},
-		}),
-	);
-
-	// Global exception filters
-	app.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());
-
-	// Global interceptors
-	app.useGlobalInterceptors(
-		new SanitizerInterceptor(),
-		new LoggingInterceptor(),
-	);
-
-	const port = configService.get<number>('app.port') ?? 3000;
-	const host = configService.get<string>('app.host') ?? '127.0.0.1';
-
-	await app.listen(port, host);
+  const port = parseInt(process.env.PORT ?? '3000', 10);
+  await app.listen(port);
+  console.log(`MIKS API listening on :${port}`);
 }
+
 bootstrap();

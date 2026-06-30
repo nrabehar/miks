@@ -1,0 +1,38 @@
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  userId      String?
+  memberId    String?
+  event       String
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String
+  workspaceId   String?
+  type          String
+  title         String
+  body          String
+  channel       String    @default("IN_APP")
+  referenceType String?
+  referenceId   String?
+  isRead        Boolean   @default(false)
+  sentAt        DateTime  @default(now())
+  readAt        DateTime?
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([workspaceId])
+  @@map("notifications")
+}

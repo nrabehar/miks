@@ -1,181 +1,112 @@
-import { PrismaService } from '#/core/prisma/prisma.service';
-import { UsersService } from '$/users/users.service';
-import {
-	ConflictException,
-	ForbiddenException,
-	Injectable,
-	Logger,
-	NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { PrismaService } from '../../core/prisma/prisma.service.js';
+import { VaultsService } from './vaults/vaults.service.js';
+import type { CreateWorkspaceDto } from './dto/create-workspace.dto.js';
 
 function toSlug(name: string): string {
-	return name
-		.toLowerCase()
-		.normalize('NFD')
-		.replace(/[̀-ͯ]/g, '')
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-|-$/g, '');
+  return (
+    name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) +
+    '-' +
+    randomUUID().slice(0, 6)
+  );
 }
-
-const MEMBER_SELECT = {
-	id: true,
-	email: true,
-	username: true,
-	firstName: true,
-	lastName: true,
-	avatarUrl: true,
-} as const;
 
 @Injectable()
 export class WorkspacesService {
-	private readonly logger = new Logger(WorkspacesService.name);
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly vaults: VaultsService,
+  ) {}
 
-	constructor(
-		private readonly prisma: PrismaService,
-		private readonly usersService: UsersService,
-	) {}
+  async create(userId: string, dto: CreateWorkspaceDto) {
+    const currency = dto.currency ?? 'MGA';
+    const slug = toSlug(dto.name);
 
-	async create(name: string, creatorId: string) {
-		const slug = toSlug(name);
+    return this.prisma.$transaction(async (tx) => {
+      const ws = await tx.workspace.create({
+        data: {
+          name: dto.name,
+          slug,
+          description: dto.description ?? null,
+          currency,
+          creatorId: userId,
+        },
+      });
 
-		const existing = await this.prisma.workspace.findUnique({ where: { slug } });
-		if (existing) {
-			throw new ConflictException(
-				'A workspace with a similar name already exists. Please choose a different name.',
-			);
-		}
+      const member = await tx.workspaceMember.create({
+        data: { workspaceId: ws.id, userId },
+      });
 
-		const workspace = await this.prisma.workspace.create({
-			data: {
-				name,
-				slug,
-				workspaceMembers: {
-					create: {
-						userId: creatorId,
-						role: 'admin',
-						activityScore: 100,
-					},
-				},
-			},
-			include: {
-				workspaceMembers: {
-					include: { user: { select: MEMBER_SELECT } },
-				},
-			},
-		});
+      await (this.vaults as any).createMemberWithdrawableVault(tx, ws.id, member.id, currency);
 
-		this.logger.log(`Workspace "${name}" created by user ${creatorId}`);
-		return workspace;
-	}
+      return ws;
+    });
+  }
 
-	async findAllForUser(userId: string) {
-		return this.prisma.workspace.findMany({
-			where: {
-				workspaceMembers: { some: { userId } },
-			},
-			include: {
-				workspaceMembers: {
-					include: { user: { select: MEMBER_SELECT } },
-					orderBy: { createdAt: 'asc' },
-				},
-			},
-			orderBy: { createdAt: 'desc' },
-		});
-	}
+  async findAllForUser(userId: string) {
+    const memberships = await this.prisma.workspaceMember.findMany({
+      where: { userId },
+      include: {
+        workspace: {
+          include: {
+            _count: { select: { members: true } },
+            vaults: { where: { isArchived: false }, select: { balance: true } },
+          },
+        },
+        withdrawableVault: { select: { balance: true, currency: true } },
+      },
+      orderBy: { joinedAt: 'desc' },
+    });
 
-	async findById(id: string, requesterId: string) {
-		const workspace = await this.prisma.workspace.findUnique({
-			where: { id },
-			include: {
-				workspaceMembers: {
-					include: { user: { select: MEMBER_SELECT } },
-				},
-			},
-		});
+    return memberships.map((m) => ({
+      ...m.workspace,
+      myWithdrawableBalance: Number(m.withdrawableVault?.balance ?? 0),
+      memberCount: m.workspace._count.members,
+      totalGroupBalance: m.workspace.vaults.reduce((s, v) => s + Number(v.balance), 0),
+      totalShares: Number(m.totalShares),
+      sharePercent: Number(m.sharePercent),
+    }));
+  }
 
-		if (!workspace) throw new NotFoundException('Workspace not found');
+  async findOne(workspaceId: string) {
+    const ws = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      include: {
+        vaults: { where: { isArchived: false }, orderBy: { createdAt: 'asc' } },
+        members: {
+          include: {
+            user: {
+              select: { id: true, firstName: true, lastName: true, avatarUrl: true, email: true },
+            },
+            withdrawableVault: { select: { balance: true, currency: true } },
+          },
+          orderBy: { joinedAt: 'asc' },
+        },
+        fluxRules: { where: { isActive: true }, include: { destinations: true } },
+      },
+    });
+    if (!ws) throw new NotFoundException('Workspace not found');
+    return ws;
+  }
 
-		const isMember = workspace.workspaceMembers.some((m) => m.userId === requesterId);
-		if (!isMember) throw new ForbiddenException('You are not a member of this workspace');
+  async delete(workspaceId: string, requesterId: string) {
+    const ws = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { creatorId: true },
+    });
+    if (!ws) throw new NotFoundException('Workspace not found');
+    if (ws.creatorId !== requesterId) {
+      throw new ForbiddenException('Only the workspace creator can delete it');
+    }
 
-		return workspace;
-	}
-
-	async inviteMember(workspaceId: string, inviterId: string, email: string, role: string = 'member') {
-		await this.assertAdmin(workspaceId, inviterId);
-
-		const invitee = await this.usersService.findByIdentifier(email);
-		if (!invitee) throw new NotFoundException(`No account found for ${email}`);
-
-		const alreadyMember = await this.prisma.workspaceMember.findUnique({
-			where: { workspaceId_userId: { workspaceId, userId: invitee.id } },
-		});
-		if (alreadyMember) throw new ConflictException('User is already a member of this workspace');
-
-		const member = await this.prisma.workspaceMember.create({
-			data: { workspaceId, userId: invitee.id, role, activityScore: 100 },
-			include: { user: { select: MEMBER_SELECT } },
-		});
-
-		this.logger.log(`User ${invitee.id} invited to workspace ${workspaceId} by ${inviterId}`);
-		return member;
-	}
-
-	async removeMember(workspaceId: string, requesterId: string, targetUserId: string) {
-		// Allow self-removal or admin removal
-		if (requesterId !== targetUserId) {
-			await this.assertAdmin(workspaceId, requesterId);
-		}
-
-		const member = await this.prisma.workspaceMember.findUnique({
-			where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
-		});
-		if (!member) throw new NotFoundException('Member not found in this workspace');
-
-		// Cannot remove the last admin
-		if (member.role === 'admin') {
-			const adminCount = await this.prisma.workspaceMember.count({
-				where: { workspaceId, role: 'admin' },
-			});
-			if (adminCount <= 1) {
-				throw new ForbiddenException('Cannot remove the last admin. Transfer ownership first.');
-			}
-		}
-
-		await this.prisma.workspaceMember.delete({
-			where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
-		});
-
-		this.logger.log(`User ${targetUserId} removed from workspace ${workspaceId}`);
-	}
-
-	async updateMemberRole(workspaceId: string, requesterId: string, targetUserId: string, role: string) {
-		await this.assertAdmin(workspaceId, requesterId);
-
-		const member = await this.prisma.workspaceMember.findUnique({
-			where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
-		});
-		if (!member) throw new NotFoundException('Member not found in this workspace');
-
-		return this.prisma.workspaceMember.update({
-			where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
-			data: { role },
-			include: { user: { select: MEMBER_SELECT } },
-		});
-	}
-
-	async delete(workspaceId: string, requesterId: string) {
-		await this.assertAdmin(workspaceId, requesterId);
-
-		await this.prisma.workspace.delete({ where: { id: workspaceId } });
-		this.logger.log(`Workspace ${workspaceId} deleted by ${requesterId}`);
-	}
-
-	private async assertAdmin(workspaceId: string, userId: string): Promise<void> {
-		const member = await this.prisma.workspaceMember.findUnique({
-			where: { workspaceId_userId: { workspaceId, userId } },
-		});
-		if (!member) throw new ForbiddenException('You are not a member of this workspace');
-		if (member.role !== 'admin') throw new ForbiddenException('Only admins can perform this action');
-	}
+    await this.prisma.workspace.delete({ where: { id: workspaceId } });
+    return { deleted: true };
+  }
 }

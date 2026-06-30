@@ -1,61 +1,40 @@
-import {
-	Body,
-	Controller,
-	Get,
-	Param,
-	Post,
-	Query,
-	Req,
-	UseGuards,
-} from '@nestjs/common';
-import type { Request } from 'express';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { JwtPayload } from '../../auth/strategies/jwt.strategy';
-import { CotisationsService } from './cotisations.service';
-import { BatchCotisationsDto } from './dtos/batch-cotisations.dto';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { CotisationsService } from './cotisations.service.js';
+import { RecordCotisationsDto } from './dto/record-cotisations.dto.js';
+import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
+import { WorkspaceMemberGuard } from '../guards/workspace-member.guard.js';
+import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
 
-type AuthedRequest = Request & { user: JwtPayload };
-
-@Controller('workspaces/:workspaceId/cotisations')
-@UseGuards(JwtAuthGuard)
+@Controller('workspaces/:id/cotisations')
+@UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
 export class CotisationsController {
-	constructor(private readonly cotisationsService: CotisationsService) {}
+  constructor(private readonly cotisations: CotisationsService) {}
 
-	@Get()
-	async list(
-		@Req() req: AuthedRequest,
-		@Param('workspaceId') workspaceId: string,
-		@Query('month') month?: string,
-		@Query('year') year?: string,
-	) {
-		const filters: { month?: number; year?: number } = {};
-		if (month !== undefined) filters.month = parseInt(month, 10);
-		if (year !== undefined) filters.year = parseInt(year, 10);
-		return this.cotisationsService.listByWorkspace(workspaceId, req.user.sub, filters);
-	}
+  @Get()
+  list(
+    @Param('id') workspaceId: string,
+    @Query('period') period?: string,
+    @Query('memberId') memberId?: string,
+  ) {
+    return this.cotisations.list(workspaceId, { period, memberId });
+  }
 
-	@Post('batch')
-	async recordBatch(
-		@Req() req: AuthedRequest,
-		@Param('workspaceId') workspaceId: string,
-		@Body() body: BatchCotisationsDto,
-	) {
-		return this.cotisationsService.recordBatch(workspaceId, req.user.sub, body.entries);
-	}
+  @Post('batch')
+  recordBatch(
+    @Param('id') workspaceId: string,
+    @Body() dto: RecordCotisationsDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.cotisations.recordBatch(workspaceId, dto, user.id);
+  }
 
-	@Get('equity')
-	async equity(
-		@Req() req: AuthedRequest,
-		@Param('workspaceId') workspaceId: string,
-	) {
-		return this.cotisationsService.computeEquity(workspaceId, req.user.sub);
-	}
+  @Get('equity')
+  getEquity(@Param('id') workspaceId: string) {
+    return this.cotisations.getEquity(workspaceId);
+  }
 
-	@Get('summary')
-	async summary(
-		@Req() req: AuthedRequest,
-		@Param('workspaceId') workspaceId: string,
-	) {
-		return this.cotisationsService.getSummary(workspaceId, req.user.sub);
-	}
+  @Get('summary')
+  getSummary(@Param('id') workspaceId: string) {
+    return this.cotisations.getSummary(workspaceId);
+  }
 }
