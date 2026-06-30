@@ -1,16 +1,16 @@
 import { Type } from 'class-transformer';
 import {
-  IsString,
-  IsEnum,
-  IsOptional,
-  IsBoolean,
   IsArray,
+  IsBoolean,
+  IsEnum,
+  IsIn,
   IsNumber,
   IsObject,
-  ValidateNested,
-  Min,
+  IsOptional,
+  IsString,
   Max,
-  IsIn,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 
 enum SourceType {
@@ -35,18 +35,18 @@ enum TargetType {
  */
 export class FluxParamDefinitionDto {
   @IsString()
-  key: string;
+  key: string = '';
 
   @IsString()
-  label: string;
+  label: string = '';
 
   @IsIn(['number'])
-  type: string;
+  type: string = 'number';
 
   @IsNumber({ maxDecimalPlaces: 4 })
   @Min(0)
   @Max(100)
-  default: number;
+  default: number = 0;
 }
 
 /**
@@ -60,7 +60,7 @@ export class FluxParamDefinitionDto {
  */
 export class FluxDestinationDto {
   @IsEnum(TargetType)
-  targetType: string;
+  targetType: string = '';
 
   @IsOptional()
   @IsString()
@@ -70,7 +70,7 @@ export class FluxDestinationDto {
   @IsNumber({ maxDecimalPlaces: 4 })
   @Min(0)
   @Max(100)
-  percent: number;
+  percent: number = 0;
 
   /** Key of a named param from FluxRule.params. When provided at apply-time, overrides percent. */
   @IsOptional()
@@ -80,10 +80,10 @@ export class FluxDestinationDto {
 
 export class CreateFluxRuleDto {
   @IsString()
-  name: string;
+  name: string = '';
 
   @IsEnum(SourceType)
-  sourceType: string;
+  sourceType: string = '';
 
   @IsOptional()
   @IsString()
@@ -106,7 +106,7 @@ export class CreateFluxRuleDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => FluxDestinationDto)
-  destinations: FluxDestinationDto[];
+  destinations: FluxDestinationDto[] = [];
 }
 
 export class UpdateFluxRuleDto {
@@ -139,7 +139,7 @@ export class UpdateFluxRuleDto {
 export class ApplyFluxRuleDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  amount: number;
+  amount: number = 0;
 
   @IsOptional()
   @IsString()

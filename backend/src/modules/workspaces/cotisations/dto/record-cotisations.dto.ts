@@ -3,18 +3,18 @@ import {
   IsArray,
   IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
   ValidateNested,
-  IsPositive,
 } from 'class-validator';
 
 export class CotisationEntryDto {
   @IsString()
-  memberId: string;
+  memberId!: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
-  amount: number;
+  amount!: number;
 
   @IsOptional()
   @IsString()
@@ -29,5 +29,5 @@ export class RecordCotisationsDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CotisationEntryDto)
-  entries: CotisationEntryDto[];
+  entries!: CotisationEntryDto[];
 }

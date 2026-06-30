@@ -8,5 +8,5 @@ enum Choice {
 
 export class CastVoteDto {
   @IsEnum(Choice)
-  choice: string;
+  choice!: string;
 }

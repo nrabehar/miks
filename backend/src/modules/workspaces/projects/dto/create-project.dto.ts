@@ -1,21 +1,21 @@
 import {
-  IsString,
-  IsOptional,
-  IsNumber,
-  IsPositive,
   IsDateString,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
   MaxLength,
   Min,
-  IsInt,
 } from 'class-validator';
 
 export class CreateProjectDto {
   @IsString()
   @MaxLength(200)
-  title: string;
+  title!: string;
 
   @IsString()
-  description: string;
+  description!: string;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -31,11 +31,11 @@ export class CreateProjectDto {
   sourceVaultId?: string;
 
   @IsDateString()
-  voteClosesAt: string;
+  voteClosesAt!: string;
 
   @IsInt()
   @Min(1)
-  voteThreshold: number;
+  voteThreshold!: number;
 
   @IsOptional()
   @IsInt()

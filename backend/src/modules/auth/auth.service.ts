@@ -1,22 +1,22 @@
 import {
-  Injectable,
   BadRequestException,
-  UnauthorizedException,
   ConflictException,
-  NotFoundException,
   ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import * as speakeasy from 'speakeasy';
 import { PrismaService } from '../../core/prisma/prisma.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
-import { UsersService } from '../users/users.service.js';
-import { AccountsService } from '../users/accounts.service.js';
-import { TokensService } from '../tokens/tokens.service.js';
 import { EmailService } from '../email/email.service.js';
-import { SessionService } from './session.service.js';
-import type { RegisterDto } from './dto/register.dto.js';
+import { TokensService } from '../tokens/tokens.service.js';
+import { AccountsService } from '../users/accounts.service.js';
+import { UsersService } from '../users/users.service.js';
 import type { LoginDto } from './dto/login.dto.js';
+import type { RegisterDto } from './dto/register.dto.js';
+import { SessionService } from './session.service.js';
 
 const TEMP_2FA_TTL_MS = 5 * 60 * 1000;
 const MAX_FAILED_ATTEMPTS = 5;

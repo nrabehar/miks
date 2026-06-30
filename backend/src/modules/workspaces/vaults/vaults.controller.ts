@@ -1,13 +1,13 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
-import { VaultsService } from './vaults.service.js';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { WorkspaceMemberGuard } from '../guards/workspace-member.guard.js';
-import { IsString, IsOptional, MaxLength } from 'class-validator';
+import { VaultsService } from './vaults.service.js';
 
 class CreateVaultDto {
   @IsString()
   @MaxLength(100)
-  name: string;
+  name: string = '';
 
   @IsOptional()
   @IsString()
