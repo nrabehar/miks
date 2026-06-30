@@ -64,11 +64,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
 	disabled,
 	loadingText,
 	...props
-}: ButtonProps) {
+}: ButtonProps, ref) {
 	const Comp = asChild ? Slot.Root : 'button'
 
 	return (
 		<Comp
+			ref={ref}
 			data-slot="button"
 			data-variant={variant}
 			data-size={size}
