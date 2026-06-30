@@ -31,8 +31,8 @@ async function bootstrap() {
 		}),
 	);
 
-	const port = config.get<number>('app.port');
-	await app.listen(port!);
+	const port = config.get<number>('app.port') ?? 3000;
+	await app.listen(port, '0.0.0.0');
 	console.log(`MIKS API listening on :${port}`);
 }
 
