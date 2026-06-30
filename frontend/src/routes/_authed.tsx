@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { MiksLogo } from '#/components/brand/logo'
+import { NotificationsBell } from '#/components/NotificationsBell'
 import { toast } from 'sonner'
 
 type NavItem =
@@ -119,10 +120,11 @@ function AppShell() {
 					>
 						<MenuIcon className="size-5" />
 					</button>
-					<Link to="/dashboard" className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">
+					<Link to="/dashboard" className="flex min-w-0 flex-1 items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">
 						<MiksLogo className="h-7 w-7" />
 						<span className="text-base font-bold tracking-tight">Miks</span>
 					</Link>
+					<NotificationsBell />
 				</header>
 
 				{/* Contenu de la page */}
@@ -182,7 +184,7 @@ function AppSidebar({
 			<div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-5">
 				<Link
 					to="/dashboard"
-					className="flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+					className="flex min-w-0 flex-1 items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
 					onClick={onClose}
 				>
 					<MiksLogo className="h-8 w-8" />
@@ -190,13 +192,16 @@ function AppSidebar({
 						Miks
 					</span>
 				</Link>
-				<button
-					onClick={onClose}
-					className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors lg:hidden cursor-pointer"
-					aria-label="Fermer la navigation"
-				>
-					<XIcon className="size-4" />
-				</button>
+				<div className="flex items-center gap-1">
+					<NotificationsBell />
+					<button
+						onClick={onClose}
+						className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors lg:hidden cursor-pointer"
+						aria-label="Fermer la navigation"
+					>
+						<XIcon className="size-4" />
+					</button>
+				</div>
 			</div>
 
 			{/* Navigation principale */}
@@ -308,11 +313,9 @@ function AppSidebar({
 					{/* Badges + Logout */}
 					<div className="flex shrink-0 items-center gap-1.5">
 						{user?.twoFaEnabled && (
-							<ShieldCheckIcon
-								className="size-3.5 text-emerald-500"
-								title="2FA activé"
-								aria-label="Authentification à deux facteurs activée"
-							/>
+							<span title="2FA activé" aria-label="Authentification à deux facteurs activée">
+								<ShieldCheckIcon className="size-3.5 text-emerald-500" />
+							</span>
 						)}
 						<button
 							onClick={() => logout.mutate()}

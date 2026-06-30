@@ -8,6 +8,7 @@ import dbConfig from './config/db.config.js';
 import emailConfig from './config/email.config.js';
 import redisConfig from './config/redis.config.js';
 import { AllExceptionsFilter } from './core/filters/all-exceptions.filter.js';
+import { HealthController } from './core/health/health.controller.js';
 import { LoggingInterceptor } from './core/interceptors/logging.interceptor.js';
 import { SanitizerInterceptor } from './core/interceptors/sanitizer.interceptor.js';
 import { PrismaModule } from './core/prisma/prisma.module.js';
@@ -34,6 +35,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module.js';
     AuditModule,
     NotificationsModule,
   ],
+  controllers: [HealthController],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },

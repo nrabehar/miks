@@ -104,32 +104,37 @@ export class FluxService {
 
     if (dto.destinations !== undefined) {
       validateTotalPercent(dto.destinations, 'Destinations');
-      await this.prisma.fluxRuleDestination.deleteMany({ where: { fluxRuleId: ruleId } });
     }
 
-    return this.prisma.fluxRule.update({
-      where: { id: ruleId },
-      data: {
-        ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-        ...(dto.description !== undefined ? { description: dto.description } : {}),
-        ...(dto.params !== undefined ? { params: dto.params as any } : {}),
-        ...(dto.destinations !== undefined
-          ? {
-              destinations: {
-                create: dto.destinations.map((d) => ({
-                  targetType: d.targetType,
-                  targetVaultId: d.targetVaultId ?? null,
-                  percent: d.percent,
-                  percentParam: d.percentParam ?? null,
-                })),
-              },
-            }
-          : {}),
-      },
-      include: {
-        destinations: { include: { targetVault: { select: { id: true, name: true } } } },
-      },
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.destinations !== undefined) {
+        await tx.fluxRuleDestination.deleteMany({ where: { fluxRuleId: ruleId } });
+      }
+
+      return tx.fluxRule.update({
+        where: { id: ruleId },
+        data: {
+          ...(dto.name !== undefined ? { name: dto.name } : {}),
+          ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+          ...(dto.description !== undefined ? { description: dto.description } : {}),
+          ...(dto.params !== undefined ? { params: dto.params as any } : {}),
+          ...(dto.destinations !== undefined
+            ? {
+                destinations: {
+                  create: dto.destinations.map((d) => ({
+                    targetType: d.targetType,
+                    targetVaultId: d.targetVaultId ?? null,
+                    percent: d.percent,
+                    percentParam: d.percentParam ?? null,
+                  })),
+                },
+              }
+            : {}),
+        },
+        include: {
+          destinations: { include: { targetVault: { select: { id: true, name: true } } } },
+        },
+      });
     });
   }
 

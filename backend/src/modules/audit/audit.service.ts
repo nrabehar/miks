@@ -21,4 +21,18 @@ export class AuditService {
       this.logger.error('Failed to write audit log', err);
     }
   }
+
+  async listForWorkspace(
+    workspaceId: string,
+    opts: { event?: string; limit?: number } = {},
+  ) {
+    return this.prisma.auditLog.findMany({
+      where: {
+        workspaceId,
+        ...(opts.event ? { event: opts.event } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(opts.limit ?? 100, 500),
+    });
+  }
 }

@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { WorkspaceMemberGuard } from '../guards/workspace-member.guard.js';
@@ -36,6 +37,18 @@ export class VaultsController {
   @Get('ledger')
   getLedger(@Param('id') workspaceId: string) {
     return this.vaults.getLedger(workspaceId);
+  }
+
+  @Get('ledger/export')
+  async exportLedger(
+    @Param('id') workspaceId: string,
+    @Query('vaultId') vaultId: string | undefined,
+    @Res() res: Response,
+  ) {
+    const csv = await this.vaults.exportLedgerCsv(workspaceId, vaultId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="ledger-${workspaceId}.csv"`);
+    res.send(csv);
   }
 
   @Get(':vaultId')

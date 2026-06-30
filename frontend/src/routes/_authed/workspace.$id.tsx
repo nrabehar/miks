@@ -2,27 +2,32 @@ import {
 	type CotisationEntry,
 	type EquityItem,
 	type WorkspaceMember,
-	type WorkspaceSummary,
 	workspacesApi,
 } from '#/lib/api/workspaces.api'
+import { AuditTab } from '#/components/workspace/AuditTab'
+import { FluxTab } from '#/components/workspace/FluxTab'
+import { ProjectsTab } from '#/components/workspace/ProjectsTab'
+import { VaultsTab } from '#/components/workspace/VaultsTab'
 import { useAuthStore } from '#/stores/auth.store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
 	ArrowLeftIcon,
-	BookOpenIcon,
 	CheckIcon,
 	ChevronUpIcon,
 	CrownIcon,
 	EyeIcon,
+	FolderOpenIcon,
 	MailIcon,
 	MinusCircleIcon,
 	PlusIcon,
+	ScrollTextIcon,
 	ShieldIcon,
 	TrendingUpIcon,
 	UserIcon,
 	UsersIcon,
+	WalletIcon,
 	XIcon,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -38,7 +43,7 @@ const FADE_UP = {
 	show: (i: number) => ({
 		opacity: 1,
 		y: 0,
-		transition: { duration: 0.28, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] },
+		transition: { duration: 0.28, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
 	}),
 }
 
@@ -54,7 +59,7 @@ function WorkspacePage() {
 	const queryClient = useQueryClient()
 	const navigate = useNavigate()
 
-	const [tab, setTab] = useState<'overview' | 'members' | 'ledger'>('overview')
+	const [tab, setTab] = useState<'overview' | 'vaults' | 'projects' | 'members' | 'journal'>('overview')
 	const [showInvite, setShowInvite] = useState(false)
 	const [inviteEmail, setInviteEmail] = useState('')
 	const [inviteRole, setInviteRole] = useState<'member' | 'observer'>('member')
@@ -184,31 +189,31 @@ function WorkspacePage() {
 				<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 					<VaultCard
 						label="Total caisse"
-						value={summary ? fmt(summary.totalCaisse, currency) : null}
+						value={summary ? fmt(summary.totalCaisse ?? 0, currency) : null}
 						icon={<TrendingUpIcon className="size-4" />}
 						colorClass="text-primary bg-primary/10"
 						description="Toutes cotisations cumulées"
 					/>
 					<VaultCard
 						label="C1 — Liquidité"
-						value={summary ? fmt(summary.c1Balance, currency) : null}
+						value={summary ? fmt(summary.c1Balance ?? 0, currency) : null}
 						icon={<ShieldIcon className="size-4" />}
 						colorClass="text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
 						description="Disponible"
 					/>
 					<VaultCard
 						label="C2 — Investissement"
-						value={summary ? fmt(summary.c2Balance, currency) : null}
+						value={summary ? fmt(summary.c2Balance ?? 0, currency) : null}
 						icon={<TrendingUpIcon className="size-4" />}
 						colorClass="text-blue-600 dark:text-blue-400 bg-blue-500/10"
 						description="Bloqué"
 					/>
 					<VaultCard
 						label="Taux cotisation"
-						value={summary ? `${Math.round(summary.cotisationRateThisMonth)}%` : null}
+						value={summary ? `${Math.round(summary.cotisationRateThisMonth ?? 0)}%` : null}
 						icon={<UsersIcon className="size-4" />}
 						colorClass={
-							summary && summary.cotisationRateThisMonth >= 70
+							summary && (summary.cotisationRateThisMonth ?? 0) >= 70
 								? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
 								: 'text-amber-600 dark:text-amber-400 bg-amber-500/10'
 						}
@@ -220,11 +225,13 @@ function WorkspacePage() {
 
 			{/* Tab navigation */}
 			<motion.div custom={3} variants={FADE_UP} initial="hidden" animate="show">
-				<div className="flex gap-1 rounded-xl border border-border bg-muted/40 p-1">
+				<div className="flex gap-1 rounded-xl border border-border bg-muted/40 p-1 overflow-x-auto">
 					{([
-						{ key: 'overview', label: 'Vue d\'ensemble', icon: TrendingUpIcon },
+						{ key: 'overview', label: 'Ensemble', icon: TrendingUpIcon },
+						{ key: 'vaults', label: 'Coffres', icon: WalletIcon },
+						{ key: 'projects', label: 'Projets', icon: FolderOpenIcon },
 						{ key: 'members', label: 'Membres', icon: UsersIcon },
-						{ key: 'ledger', label: 'Grand Livre', icon: BookOpenIcon },
+						{ key: 'journal', label: 'Journal', icon: ScrollTextIcon },
 					] as const).map((t) => (
 						<button
 							key={t.key}
@@ -369,15 +376,47 @@ function WorkspacePage() {
 					</motion.div>
 				)}
 
-				{tab === 'ledger' && (
+				{tab === 'vaults' && (
 					<motion.div
-						key="ledger"
+						key="vaults"
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -8 }}
+						transition={{ duration: 0.2 }}
+						className="space-y-8"
+					>
+						<VaultsTab workspaceId={id} currency={currency} isAdmin={isAdmin} />
+						<div className="border-t border-border pt-6">
+							<FluxTab workspaceId={id} isAdmin={isAdmin} />
+						</div>
+					</motion.div>
+				)}
+
+				{tab === 'projects' && (
+					<motion.div
+						key="projects"
 						initial={{ opacity: 0, y: 8 }}
 						animate={{ opacity: 1, y: 0 }}
 						exit={{ opacity: 0, y: -8 }}
 						transition={{ duration: 0.2 }}
 					>
-						<LedgerPlaceholder />
+						<ProjectsTab
+							workspaceId={id}
+							currency={currency}
+							isAdmin={isAdmin}
+						/>
+					</motion.div>
+				)}
+
+				{tab === 'journal' && (
+					<motion.div
+						key="journal"
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -8 }}
+						transition={{ duration: 0.2 }}
+					>
+						<AuditTab workspaceId={id} />
 					</motion.div>
 				)}
 			</AnimatePresence>
@@ -435,7 +474,7 @@ function EquityRow({ item, index, currency, total }: {
 				<div className="flex items-center justify-between gap-2 mb-1">
 					<p className="truncate text-sm font-semibold text-foreground">{item.displayName}</p>
 					<p className="shrink-0 text-xs font-bold text-foreground tabular-nums">
-						{fmt(item.totalAmount, currency)}
+						{fmt(item.withdrawableBalance, currency)}
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
@@ -696,31 +735,6 @@ function MemberRow({
 				</button>
 			)}
 		</motion.div>
-	)
-}
-
-// ─── Grand Livre Placeholder ──────────────────────────────────────────────────
-
-function LedgerPlaceholder() {
-	return (
-		<div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
-			<div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-				<BookOpenIcon className="size-6 text-primary" />
-			</div>
-			<div>
-				<p className="font-semibold text-foreground">Grand Livre — Bientôt disponible</p>
-				<p className="mt-1 text-sm text-muted-foreground max-w-sm">
-					Toutes les entrées et sorties de votre caisse apparaîtront ici avec l'horodatage, l'auteur et la catégorie.
-				</p>
-			</div>
-			<div className="mt-2 flex flex-wrap justify-center gap-2">
-				{['Cotisations', 'Prêts', 'Dividendes', 'Dépenses'].map((cat) => (
-					<span key={cat} className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-						{cat}
-					</span>
-				))}
-			</div>
-		</div>
 	)
 }
 

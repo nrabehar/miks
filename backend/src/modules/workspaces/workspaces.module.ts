@@ -13,11 +13,13 @@ import { ProjectsController } from './projects/projects.controller.js';
 import { ProjectsService } from './projects/projects.service.js';
 import { GovernanceController } from './governance/governance.controller.js';
 import { GovernanceService } from './governance/governance.service.js';
+import { WorkspaceAuditController } from './audit/workspace-audit.controller.js';
 import { WorkspaceMemberGuard } from './guards/workspace-member.guard.js';
+import { AuditModule } from '../audit/audit.module.js';
 import { EmailModule } from '../email/email.module.js';
 
 @Module({
-  imports: [EmailModule],
+  imports: [AuditModule, EmailModule],
   controllers: [
     WorkspacesController,
     MembersController,
@@ -26,6 +28,7 @@ import { EmailModule } from '../email/email.module.js';
     FluxController,
     ProjectsController,
     GovernanceController,
+    WorkspaceAuditController,
   ],
   providers: [
     WorkspacesService,

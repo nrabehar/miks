@@ -160,14 +160,34 @@ export class VaultsService {
     });
   }
 
-  async getLedger(workspaceId: string, vaultId?: string) {
+  async getLedger(workspaceId: string, vaultId?: string, take = 100) {
     return this.prisma.ledgerEntry.findMany({
       where: {
         workspaceId,
         ...(vaultId ? { vaultId } : {}),
       },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take,
     });
+  }
+
+  async exportLedgerCsv(workspaceId: string, vaultId?: string): Promise<string> {
+    const entries = await this.getLedger(workspaceId, vaultId, 5000);
+    const header = 'date,type,category,amount,currency,vaultType,description,author\n';
+    const rows = entries
+      .map((e) =>
+        [
+          (e.createdAt as Date).toISOString(),
+          e.type,
+          e.category,
+          e.amount,
+          e.currency,
+          e.vaultType,
+          `"${String(e.description ?? '').replace(/"/g, '""')}"`,
+          e.authorId,
+        ].join(','),
+      )
+      .join('\n');
+    return header + rows;
   }
 }

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { MembersService } from './members.service.js';
 import { InviteMemberDto } from './dto/invite-member.dto.js';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
@@ -16,6 +17,7 @@ export class MembersController {
   }
 
   @Post('invite')
+  @Throttle({ default: { limit: 20, ttl: 3_600_000 } })
   invite(
     @Param('id') workspaceId: string,
     @Body() dto: InviteMemberDto,

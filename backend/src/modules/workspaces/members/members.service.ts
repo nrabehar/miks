@@ -4,6 +4,7 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../../../core/prisma/prisma.service.js';
 import { VaultsService } from '../vaults/vaults.service.js';
 
@@ -37,9 +38,10 @@ export class MembersService {
     }
 
     const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
+    const token = randomBytes(32).toString('hex');
 
     const invite = await this.prisma.inviteToken.create({
-      data: { workspaceId, email: targetEmail, expiresAt, createdById: inviterMemberId },
+      data: { workspaceId, email: targetEmail, expiresAt, createdById: inviterMemberId, token },
     });
 
     if (target) {
