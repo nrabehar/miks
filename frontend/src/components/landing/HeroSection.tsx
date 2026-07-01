@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { ArrowRight, Shield, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { DashboardMock } from './DashboardMock'
 
 export const HeroSection = () => {
 	const { t } = useTranslation()
@@ -31,109 +30,83 @@ export const HeroSection = () => {
 			<div className="animate-blob-down absolute -left-16 bottom-16 -z-10 size-72 rounded-full bg-accent/8 blur-3xl" />
 
 			{/* Two-column layout */}
-			<div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 lg:py-8">
-				<div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-12">
-
-					{/* ── Left column: text content ── */}
-					<div className="max-w-xl">
-						<motion.div
-							initial={{ opacity: 0, y: 16 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.45 }}
-							className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary backdrop-blur"
-						>
-							<Sparkles className="size-3.5" />
-							{t('landing.hero.badge')}
-						</motion.div>
-
-						<motion.h1
-							initial={{ opacity: 0, y: 24 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.55, delay: 0.08 }}
-							className="text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
-						>
-							{t('landing.hero.title1')}{' '}
-							<span className="relative inline-block text-primary">
-								{t('landing.hero.title2')}
-								<motion.svg
-									viewBox="0 0 300 12"
-									fill="none"
-									className="absolute -bottom-2 left-0 w-full"
-								>
-									<motion.path
-										d="M2 9c60-7 120-7 180-3s60 4 116 0"
-										stroke="currentColor"
-										strokeWidth="3"
-										strokeLinecap="round"
-										initial={{ pathLength: 0 }}
-										animate={{ pathLength: 1 }}
-										transition={{ duration: 1.2, delay: 0.8 }}
-									/>
-								</motion.svg>
-							</span>
-						</motion.h1>
-
-						<motion.p
-							initial={{ opacity: 0, y: 16 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.5, delay: 0.2 }}
-							className="mt-6 text-lg leading-relaxed text-muted-foreground sm:text-xl"
-						>
-							{t('landing.hero.subtitle')}
-						</motion.p>
-
-						<motion.div
-							initial={{ opacity: 0, y: 16 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.5, delay: 0.32 }}
-							className="mt-8 flex flex-wrap items-center gap-3"
-						>
-							<Link
-								to="/auth/register"
-								className="group inline-flex items-center gap-2.5 rounded-full bg-primary px-7 py-3.5 font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 active:scale-100"
-							>
-								{t('landing.hero.cta')}
-								<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-							</Link>
-							<a
-								href="#features"
-								className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/50 px-5 py-3.5 text-sm font-medium text-foreground backdrop-blur transition-colors hover:bg-muted"
-							>
-								<Shield className="size-4 text-primary" />
-								{t('landing.hero.ctaSecondary')}
-							</a>
-						</motion.div>
-
-						<motion.p
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							transition={{ duration: 0.6, delay: 0.5 }}
-							className="mt-5 text-xs text-muted-foreground"
-						>
-							{t('landing.hero.trustLine')}
-						</motion.p>
-					</div>
-
-					{/* ── Right column: Dashboard mock (desktop only) ── */}
+			<div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 lg:py-8 flex flex-col items-center gap-10 text-center">
 					<motion.div
-						initial={{ opacity: 0, x: 32 }}
-						animate={{ opacity: 1, x: 0 }}
-						transition={{ duration: 0.75, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-						className="hidden lg:block"
+						initial={{ opacity: 0, y: 16 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.45 }}
+						className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary backdrop-blur"
 					>
-						<DashboardMock className="mt-0 max-w-full" />
+						<Sparkles className="size-3.5" />
+						{t('landing.hero.badge')}
 					</motion.div>
-				</div>
 
-				{/* Dashboard mock — mobile (below text) */}
-				<motion.div
-					initial={{ opacity: 0, y: 24 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.65, delay: 0.45 }}
-					className="mt-10 lg:hidden"
-				>
-					<DashboardMock className="mt-0" />
-				</motion.div>
+					<motion.h1
+						initial={{ opacity: 0, y: 24 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.55, delay: 0.08 }}
+						className="text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
+					>
+						{t('landing.hero.title1')}{' '}
+						<span className="relative inline-block text-primary">
+							{t('landing.hero.title2')}
+							<motion.svg
+								viewBox="0 0 300 12"
+								fill="none"
+								className="absolute -bottom-2 left-0 w-full"
+							>
+								<motion.path
+									d="M2 9c60-7 120-7 180-3s60 4 116 0"
+									stroke="currentColor"
+									strokeWidth="3"
+									strokeLinecap="round"
+									initial={{ pathLength: 0 }}
+									animate={{ pathLength: 1 }}
+									transition={{ duration: 1.2, delay: 0.8 }}
+								/>
+							</motion.svg>
+						</span>
+					</motion.h1>
+
+					<motion.p
+						initial={{ opacity: 0, y: 16 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.5, delay: 0.2 }}
+						className="mt-6 leading-relaxed text-muted-foreground sm:text-xl max-w-lg"
+					>
+						{t('landing.hero.subtitle')}
+					</motion.p>
+
+					<motion.div
+						initial={{ opacity: 0, y: 16 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.5, delay: 0.32 }}
+						className="mt-8 flex flex-wrap items-center gap-3"
+					>
+						<Link
+							to="/auth/register"
+							className="group inline-flex items-center gap-2.5 rounded-full bg-primary px-7 py-3.5 font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 active:scale-100"
+						>
+							{t('landing.hero.cta')}
+							<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+						</Link>
+						<a
+							href="#features"
+							className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/50 px-5 py-3.5 text-sm font-medium text-foreground backdrop-blur transition-colors hover:bg-muted"
+						>
+							<Shield className="size-4 text-primary" />
+							{t('landing.hero.ctaSecondary')}
+						</a>
+					</motion.div>
+
+					<motion.p
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						transition={{ duration: 0.6, delay: 0.5 }}
+						className="mt-5 text-xs text-muted-foreground"
+					>
+						{t('landing.hero.trustLine')}
+					</motion.p>
 			</div>
 
 			<div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-background" />
