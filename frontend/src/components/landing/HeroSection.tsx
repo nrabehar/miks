@@ -47,7 +47,7 @@ export const HeroSection = () => {
 						transition={{ duration: 0.55, delay: 0.08 }}
 						className="text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
 					>
-						{t('landing.hero.title1')}{' '}
+						{t('landing.hero.title1')}<br/>
 						<span className="relative inline-block text-primary">
 							{t('landing.hero.title2')}
 							<motion.svg
