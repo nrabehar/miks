@@ -335,5 +335,59 @@
 		"generic": "Something went wrong. Please try again.",
 		"unauthorized": "Please sign in to continue.",
 		"forbidden": "You don't have access to this resource."
+	},
+	"settings": {
+		"title": "Settings",
+		"subtitle": "Manage your account and security preferences.",
+		"tabs": {
+			"profile": "Profile",
+			"security": "Security"
+		},
+		"profile": {
+			"title": "Personal information",
+			"description": "Update your name, phone number and preferred language.",
+			"firstName": "First name",
+			"lastName": "Last name",
+			"email": "Email address",
+			"phone": "Phone number",
+			"language": "Language",
+			"save": "Save changes",
+			"saving": "Saving...",
+			"success": "Profile updated successfully.",
+			"error": "Could not update profile. Please try again."
+		},
+		"security": {
+			"twofa": {
+				"title": "Two-factor authentication",
+				"description": "Add an extra layer of security to your account with a TOTP authenticator app.",
+				"enabled": "2FA is active",
+				"enabledHint": "Your account is protected with a second factor.",
+				"disabled": "2FA is inactive",
+				"disabledHint": "Enable 2FA to secure your account against unauthorised access.",
+				"enable": "Enable",
+				"disable": "Disable",
+				"invalidCode": "Invalid code. Please try again.",
+				"setupError": "Could not start 2FA setup. Please try again.",
+				"disableSuccess": "Two-factor authentication has been disabled.",
+				"setup": {
+					"scanTitle": "Set up authenticator",
+					"scanDescription": "Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.).",
+					"manualKey": "Or enter this key manually",
+					"copyKey": "Copy key",
+					"apps": "Compatible with Google Authenticator, Authy, Microsoft Authenticator, and any TOTP app.",
+					"verifyTitle": "Verify setup",
+					"verifyDescription": "Enter the 6-digit code from your authenticator app to confirm the setup.",
+					"backToScan": "Back to QR code",
+					"doneTitle": "2FA enabled",
+					"doneDescription": "Your account is now protected with two-factor authentication.",
+					"close": "Done"
+				},
+				"disableDialog": {
+					"title": "Disable two-factor authentication",
+					"description": "Enter the 6-digit code from your authenticator app to confirm.",
+					"warning": "Disabling 2FA will reduce the security of your account."
+				}
+			}
+		}
 	}
 }

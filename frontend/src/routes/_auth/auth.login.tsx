@@ -64,7 +64,7 @@ function LoginPage() {
 		onError: (err: any) => {
 			const raw = err.response?.data?.message
 			const msg: string = Array.isArray(raw) ? raw.join(', ') : (raw ?? '')
-			if (msg.toLowerCase().includes('verify your email')) {
+			if (msg.toLowerCase().includes('not verified') || msg.toLowerCase().includes('verify your email')) {
 				setEmailNotVerified(true)
 				return
 			}

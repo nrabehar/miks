@@ -4,11 +4,15 @@ import { persist } from 'zustand/middleware'
 export interface AuthUser {
 	id: string
 	email: string
-	phone?: string
-	displayName?: string
+	firstName: string
+	lastName: string | null
+	phone: string | null
+	avatarUrl: string | null
 	emailVerified: boolean
 	phoneVerified: boolean
 	twoFaEnabled: boolean
+	language: string
+	isOnline?: boolean
 }
 
 export type AuthStatus = 'anonymous' | 'authenticated' | 'refreshing'

@@ -60,7 +60,7 @@ function DashboardPage() {
 
 	const totalMembers = workspaces.reduce((s, w) => s + w.workspaceMembers.length, 0)
 	const greeting = getGreeting()
-	const firstName = user?.displayName?.split(' ')[0] ?? user?.email?.split('@')[0] ?? 'vous'
+	const firstName = user?.firstName ?? user?.email?.split('@')[0] ?? 'vous'
 	const hasWorkspaces = workspaces.length > 0
 
 	const handleOpenCreate = () => {

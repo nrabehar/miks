@@ -335,5 +335,59 @@
 		"generic": "Une erreur est survenue. Réessayez.",
 		"unauthorized": "Veuillez vous connecter pour continuer.",
 		"forbidden": "Vous n'avez pas accès à cette ressource."
+	},
+	"settings": {
+		"title": "Paramètres",
+		"subtitle": "Gérez votre compte et vos préférences de sécurité.",
+		"tabs": {
+			"profile": "Profil",
+			"security": "Sécurité"
+		},
+		"profile": {
+			"title": "Informations personnelles",
+			"description": "Mettez à jour votre nom, numéro de téléphone et langue préférée.",
+			"firstName": "Prénom",
+			"lastName": "Nom",
+			"email": "Adresse email",
+			"phone": "Numéro de téléphone",
+			"language": "Langue",
+			"save": "Enregistrer",
+			"saving": "Enregistrement...",
+			"success": "Profil mis à jour avec succès.",
+			"error": "Impossible de mettre à jour le profil. Réessayez."
+		},
+		"security": {
+			"twofa": {
+				"title": "Authentification à deux facteurs",
+				"description": "Ajoutez une couche de sécurité supplémentaire avec une application TOTP.",
+				"enabled": "2FA activée",
+				"enabledHint": "Votre compte est protégé par un second facteur.",
+				"disabled": "2FA désactivée",
+				"disabledHint": "Activez la 2FA pour protéger votre compte contre les accès non autorisés.",
+				"enable": "Activer",
+				"disable": "Désactiver",
+				"invalidCode": "Code invalide. Réessayez.",
+				"setupError": "Impossible de démarrer la configuration 2FA. Réessayez.",
+				"disableSuccess": "L'authentification à deux facteurs a été désactivée.",
+				"setup": {
+					"scanTitle": "Configurer l'authentificateur",
+					"scanDescription": "Scannez le QR code avec votre application d'authentification (Google Authenticator, Authy, etc.).",
+					"manualKey": "Ou saisissez cette clé manuellement",
+					"copyKey": "Copier la clé",
+					"apps": "Compatible avec Google Authenticator, Authy, Microsoft Authenticator et toute application TOTP.",
+					"verifyTitle": "Vérifier la configuration",
+					"verifyDescription": "Entrez le code à 6 chiffres de votre application pour confirmer la configuration.",
+					"backToScan": "Retour au QR code",
+					"doneTitle": "2FA activée",
+					"doneDescription": "Votre compte est maintenant protégé par l'authentification à deux facteurs.",
+					"close": "Terminé"
+				},
+				"disableDialog": {
+					"title": "Désactiver l'authentification à deux facteurs",
+					"description": "Entrez le code à 6 chiffres de votre application pour confirmer.",
+					"warning": "Désactiver la 2FA réduira la sécurité de votre compte."
+				}
+			}
+		}
 	}
 }

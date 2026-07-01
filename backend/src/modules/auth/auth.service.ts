@@ -62,7 +62,7 @@ export class AuthService {
     const code = await this.tokens.generateEmailCode(user.id);
     await this.email.sendVerificationCode(user.email, displayName, code);
 
-    return { userId: user.id, message: 'Verification code sent to your email' };
+    return { registrationId: user.id, emailSent: true };
   }
 
   async verifyEmail(userId: string, code: string) {
@@ -125,9 +125,9 @@ export class AuthService {
     }
 
     if (user.twoFaEnabled) {
-      const tempToken = randomUUID();
-      await this.redis.set(`2fa_pending:${tempToken}`, user.id, TEMP_2FA_TTL_MS);
-      return { requiresTwoFa: true, tempToken };
+      const challengeId = randomUUID();
+      await this.redis.set(`2fa_pending:${challengeId}`, user.id, TEMP_2FA_TTL_MS);
+      return { requires2FA: true, challengeId };
     }
 
     const tokens = await this.sessions.createSession(user.id, userAgent, ip);
@@ -136,11 +136,11 @@ export class AuthService {
       data: { lastLoginAt: new Date(), isOnline: true },
     });
 
-    return { requiresTwoFa: false, ...tokens, user: this.formatUser(user) };
+    return { requires2FA: false, ...tokens, user: this.formatUser(user) };
   }
 
-  async verifyTwoFaLogin(tempToken: string, code: string, userAgent?: string, ip?: string) {
-    const userId = await this.redis.get<string>(`2fa_pending:${tempToken}`);
+  async verifyTwoFaLogin(challengeId: string, code: string, userAgent?: string, ip?: string) {
+    const userId = await this.redis.get<string>(`2fa_pending:${challengeId}`);
     if (!userId) throw new UnauthorizedException('Invalid or expired 2FA session');
 
     const user = await this.users.findById(userId);
@@ -154,7 +154,7 @@ export class AuthService {
     });
     if (!valid) throw new UnauthorizedException('Invalid 2FA code');
 
-    await this.redis.del(`2fa_pending:${tempToken}`);
+    await this.redis.del(`2fa_pending:${challengeId}`);
     const tokens = await this.sessions.createSession(userId, userAgent, ip);
     await this.prisma.user.update({
       where: { id: userId },
@@ -230,8 +230,8 @@ export class AuthService {
     return { message: 'If that email exists, a reset link has been sent' };
   }
 
-  async resetPassword(userId: string, token: string, newPassword: string) {
-    await this.tokens.verifyPasswordResetToken(userId, token);
+  async resetPassword(userId: string, code: string, newPassword: string) {
+    await this.tokens.verifyPasswordResetToken(userId, code);
     const { hash, salt } = await this.accounts.hashPassword(newPassword);
     await this.prisma.account.updateMany({
       where: { userId, providerId: 'credential' },
@@ -250,8 +250,10 @@ export class AuthService {
       avatarUrl: user.avatarUrl,
       phone: user.phone,
       emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified ?? false,
       twoFaEnabled: user.twoFaEnabled,
       language: user.language,
+      isOnline: user.isOnline,
     };
   }
 }

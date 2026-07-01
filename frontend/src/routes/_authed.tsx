@@ -164,7 +164,9 @@ function AppSidebar({
 	})
 
 	const initials = (() => {
-		const name = user?.displayName ?? user?.email ?? ''
+		const name = user
+			? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
+			: ''
 		return name
 			.split(/[\s@._-]/)
 			.filter(Boolean)
@@ -276,17 +278,25 @@ function AppSidebar({
 				</div>
 				<ul className="space-y-0.5" role="list">
 					<li>
-						<button
-							disabled
-							className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/35 cursor-not-allowed select-none"
-							title="Bientôt disponible"
+						<Link
+							to="/settings"
+							onClick={onClose}
+							aria-current={location.pathname.startsWith('/settings') ? 'page' : undefined}
+							className={cn(
+								'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 cursor-pointer',
+								location.pathname.startsWith('/settings')
+									? 'bg-primary/10 text-primary'
+									: 'text-sidebar-foreground/65 hover:bg-muted hover:text-sidebar-foreground',
+							)}
 						>
-							<SettingsIcon className="size-[18px] shrink-0" />
+							<SettingsIcon
+								className={cn(
+									'size-4.5 shrink-0',
+									location.pathname.startsWith('/settings') ? 'text-primary' : '',
+								)}
+							/>
 							<span>Paramètres</span>
-							<span className="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-muted/60 text-muted-foreground/60 px-1.5 py-0.5 rounded-full">
-								soon
-							</span>
-						</button>
+						</Link>
 					</li>
 				</ul>
 			</nav>
@@ -305,7 +315,7 @@ function AppSidebar({
 					{/* Infos */}
 					<div className="min-w-0 flex-1">
 						<p className="truncate text-sm font-semibold text-sidebar-foreground leading-tight">
-							{user?.displayName ?? user?.email?.split('@')[0] ?? '—'}
+							{user ? ([user.firstName, user.lastName].filter(Boolean).join(' ') || user.email?.split('@')[0]) : '—'}
 						</p>
 						<p className="truncate text-xs text-muted-foreground">{user?.email}</p>
 					</div>

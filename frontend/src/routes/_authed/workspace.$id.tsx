@@ -5,6 +5,7 @@ import {
 	workspacesApi,
 } from '#/lib/api/workspaces.api'
 import { AuditTab } from '#/components/workspace/AuditTab'
+import { CotisationsTab } from '#/components/workspace/CotisationsTab'
 import { FluxTab } from '#/components/workspace/FluxTab'
 import { ProjectsTab } from '#/components/workspace/ProjectsTab'
 import { VaultsTab } from '#/components/workspace/VaultsTab'
@@ -22,6 +23,7 @@ import {
 	MailIcon,
 	MinusCircleIcon,
 	PlusIcon,
+	ReceiptIcon,
 	ScrollTextIcon,
 	ShieldIcon,
 	TrendingUpIcon,
@@ -59,7 +61,7 @@ function WorkspacePage() {
 	const queryClient = useQueryClient()
 	const navigate = useNavigate()
 
-	const [tab, setTab] = useState<'overview' | 'vaults' | 'projects' | 'members' | 'journal'>('overview')
+	const [tab, setTab] = useState<'overview' | 'cotisations' | 'vaults' | 'projects' | 'members' | 'journal'>('overview')
 	const [showInvite, setShowInvite] = useState(false)
 	const [inviteEmail, setInviteEmail] = useState('')
 	const [inviteRole, setInviteRole] = useState<'member' | 'observer'>('member')
@@ -189,35 +191,31 @@ function WorkspacePage() {
 				<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 					<VaultCard
 						label="Total caisse"
-						value={summary ? fmt(summary.totalCaisse ?? 0, currency) : null}
+						value={summary ? fmt(summary.totalGroupBalance, currency) : null}
 						icon={<TrendingUpIcon className="size-4" />}
 						colorClass="text-primary bg-primary/10"
 						description="Toutes cotisations cumulées"
 					/>
 					<VaultCard
-						label="C1 — Liquidité"
-						value={summary ? fmt(summary.c1Balance ?? 0, currency) : null}
+						label={summary?.vaults[0]?.name ?? 'C1 — Liquidité'}
+						value={summary ? fmt(summary.vaults[0]?.balance ?? 0, currency) : null}
 						icon={<ShieldIcon className="size-4" />}
 						colorClass="text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
 						description="Disponible"
 					/>
 					<VaultCard
-						label="C2 — Investissement"
-						value={summary ? fmt(summary.c2Balance ?? 0, currency) : null}
+						label={summary?.vaults[1]?.name ?? 'C2 — Investissement'}
+						value={summary ? fmt(summary.vaults[1]?.balance ?? 0, currency) : null}
 						icon={<TrendingUpIcon className="size-4" />}
 						colorClass="text-blue-600 dark:text-blue-400 bg-blue-500/10"
 						description="Bloqué"
 					/>
 					<VaultCard
-						label="Taux cotisation"
-						value={summary ? `${Math.round(summary.cotisationRateThisMonth ?? 0)}%` : null}
+						label="Membres"
+						value={summary ? `${summary.memberCount}` : null}
 						icon={<UsersIcon className="size-4" />}
-						colorClass={
-							summary && (summary.cotisationRateThisMonth ?? 0) >= 70
-								? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-								: 'text-amber-600 dark:text-amber-400 bg-amber-500/10'
-						}
-						description="Ce mois"
+						colorClass="text-violet-600 dark:text-violet-400 bg-violet-500/10"
+						description="dans ce groupe"
 						isText
 					/>
 				</div>
@@ -228,6 +226,7 @@ function WorkspacePage() {
 				<div className="flex gap-1 rounded-xl border border-border bg-muted/40 p-1 overflow-x-auto">
 					{([
 						{ key: 'overview', label: 'Ensemble', icon: TrendingUpIcon },
+						{ key: 'cotisations', label: 'Cotisations', icon: ReceiptIcon },
 						{ key: 'vaults', label: 'Coffres', icon: WalletIcon },
 						{ key: 'projects', label: 'Projets', icon: FolderOpenIcon },
 						{ key: 'members', label: 'Membres', icon: UsersIcon },
@@ -280,6 +279,18 @@ function WorkspacePage() {
 								</div>
 							)}
 						</section>
+					</motion.div>
+				)}
+
+				{tab === 'cotisations' && (
+					<motion.div
+						key="cotisations"
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -8 }}
+						transition={{ duration: 0.2 }}
+					>
+						<CotisationsTab workspaceId={id} currency={currency} />
 					</motion.div>
 				)}
 
@@ -552,13 +563,13 @@ function CotisationBatchButton({
 	const eligibleMembers = members.filter((m) => m.role !== 'observer')
 
 	const handleSubmit = () => {
+		const period = `${year}-${String(month).padStart(2, '0')}`
 		const entries: CotisationEntry[] = eligibleMembers
 			.filter((m) => amounts[m.id] && Number(amounts[m.id]) > 0)
 			.map((m) => ({
 				memberId: m.id,
 				amount: Number(amounts[m.id]),
-				month,
-				year,
+				period,
 			}))
 		if (entries.length === 0) {
 			toast.error('Saisissez au moins un montant')

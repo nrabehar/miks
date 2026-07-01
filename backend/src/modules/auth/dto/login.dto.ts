@@ -11,7 +11,7 @@ export class LoginDto {
 
 export class VerifyEmailDto {
   @IsString()
-  userId!: string;
+  registrationId!: string;
 
   @IsString()
   code!: string;
@@ -19,7 +19,7 @@ export class VerifyEmailDto {
 
 export class ResendEmailDto {
   @IsString()
-  userId!: string;
+  registrationId!: string;
 }
 
 export class RefreshTokenDto {

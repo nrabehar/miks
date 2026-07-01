@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthAuthRouteImport } from './routes/_auth/auth'
 import { Route as AuthedWorkspaceIdRouteImport } from './routes/_authed/workspace.$id'
@@ -28,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthAuthRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
+  '/settings': typeof AuthedSettingsRoute
   '/auth/forgot-password': typeof AuthAuthForgotPasswordRoute
   '/auth/login': typeof AuthAuthLoginRoute
   '/auth/register': typeof AuthAuthRegisterRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthAuthRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
+  '/settings': typeof AuthedSettingsRoute
   '/auth/forgot-password': typeof AuthAuthForgotPasswordRoute
   '/auth/login': typeof AuthAuthLoginRoute
   '/auth/register': typeof AuthAuthRegisterRoute
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_auth/auth': typeof AuthAuthRouteWithChildren
   '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/settings': typeof AuthedSettingsRoute
   '/_auth/auth/forgot-password': typeof AuthAuthForgotPasswordRoute
   '/_auth/auth/login': typeof AuthAuthLoginRoute
   '/_auth/auth/register': typeof AuthAuthRegisterRoute
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/settings'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/settings'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_auth/auth'
     | '/_authed/dashboard'
+    | '/_authed/settings'
     | '/_auth/auth/forgot-password'
     | '/_auth/auth/login'
     | '/_auth/auth/register'
@@ -163,6 +175,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/settings': {
+      id: '/_authed/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedSettingsRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/dashboard': {
       id: '/_authed/dashboard'
@@ -225,11 +244,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedSettingsRoute: typeof AuthedSettingsRoute
   AuthedWorkspaceIdRoute: typeof AuthedWorkspaceIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedSettingsRoute: AuthedSettingsRoute,
   AuthedWorkspaceIdRoute: AuthedWorkspaceIdRoute,
 }
 

@@ -8,7 +8,7 @@ export class TwoFaCodeDto {
 
 export class TwoFaVerifyLoginDto {
   @IsString()
-  tempToken!: string;
+  challengeId!: string;
 
   @IsString()
   @Length(6, 6)

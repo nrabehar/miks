@@ -10,7 +10,7 @@ export class ResetPasswordDto {
   userId!: string;
 
   @IsString()
-  token!: string;
+  code!: string;
 
   @IsString()
   @MinLength(8)

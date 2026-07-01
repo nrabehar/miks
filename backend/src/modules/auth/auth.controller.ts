@@ -55,14 +55,14 @@ export class AuthController {
   @Public()
   @Post('verify-email')
   verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.auth.verifyEmail(dto.userId, dto.code);
+    return this.auth.verifyEmail(dto.registrationId, dto.code);
   }
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
   @Post('resend-email')
   resendEmail(@Body() dto: ResendEmailDto) {
-    return this.auth.resendEmailCode(dto.userId);
+    return this.auth.resendEmailCode(dto.registrationId);
   }
 
   @Public()
@@ -71,7 +71,7 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await this.auth.login(dto, req.headers['user-agent'], req.ip);
-    if (!result.requiresTwoFa && (result as any).refreshToken) {
+    if (!result.requires2FA && (result as any).refreshToken) {
       res.cookie(this.COOKIE_NAME, (result as any).refreshToken, this.COOKIE_OPTS);
     }
     const { refreshToken: _, ...safe } = result as any;
@@ -86,7 +86,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.auth.verifyTwoFaLogin(dto.tempToken, dto.code, req.headers['user-agent'], req.ip);
+    const result = await this.auth.verifyTwoFaLogin(dto.challengeId, dto.code, req.headers['user-agent'], req.ip);
     res.cookie(this.COOKIE_NAME, result.refreshToken, this.COOKIE_OPTS);
     const { refreshToken: _, ...safe } = result;
     return safe;
@@ -135,7 +135,7 @@ export class AuthController {
   @Public()
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.auth.resetPassword(dto.userId, dto.token, dto.newPassword);
+    return this.auth.resetPassword(dto.userId, dto.code, dto.newPassword);
   }
 
   @Get('me')

@@ -23,9 +23,26 @@ export type LoginResponse =
 	| { requires2FA: false; accessToken: string; user: AuthUser }
 
 export interface TwoFactorSetupResponse {
-	otpauthUrl: string
+	otpAuthUrl: string
 	secret: string
-	recoveryCodes: string[]
+}
+
+export interface UpdateProfilePayload {
+	firstName?: string
+	lastName?: string
+	phone?: string
+	language?: string
+	avatarUrl?: string
+}
+
+export interface UpdateProfileResponse {
+	id: string
+	email: string
+	firstName: string
+	lastName: string | null
+	avatarUrl: string | null
+	phone: string | null
+	language: string
 }
 
 export const authApi = {
@@ -52,4 +69,16 @@ export const authApi = {
 
 	me: () => apiClient.get<AuthUser>('/auth/me').then((r) => r.data),
 	logout: () => apiClient.post<void>('/auth/logout').then((r) => r.data),
+
+	updateProfile: (data: UpdateProfilePayload) =>
+		apiClient.patch<UpdateProfileResponse>('/auth/profile', data).then((r) => r.data),
+
+	setup2FA: () =>
+		apiClient.post<TwoFactorSetupResponse>('/auth/2fa/setup').then((r) => r.data),
+
+	enable2FA: (code: string) =>
+		apiClient.post<{ enabled: boolean }>('/auth/2fa/enable', { code }).then((r) => r.data),
+
+	disable2FA: (code: string) =>
+		apiClient.post<{ disabled: boolean }>('/auth/2fa/disable', { code }).then((r) => r.data),
 }
