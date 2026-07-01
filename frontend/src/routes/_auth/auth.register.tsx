@@ -96,7 +96,9 @@ function RegisterPage() {
 			}
 		>
 			<form
-				onSubmit={handleSubmit((v) => mutation.mutate(v))}
+				onSubmit={handleSubmit(({ firstName, lastName, email, password }) =>
+				mutation.mutate({ firstName, lastName, email, password })
+			)}
 				className="space-y-4"
 			>
 				<div className="grid grid-cols-2 gap-3">

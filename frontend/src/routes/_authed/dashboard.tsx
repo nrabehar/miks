@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-	ArrowRightIcon,
 	BuildingIcon,
 	CheckIcon,
 	ChevronRightIcon,
@@ -28,7 +27,7 @@ const FADE_UP = {
 	show: (i: number) => ({
 		opacity: 1,
 		y: 0,
-		transition: { duration: 0.3, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] },
+		transition: { duration: 0.3, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
 	}),
 }
 
@@ -274,7 +273,7 @@ function DashboardPage() {
 				) : (
 					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 						{workspaces.map((ws, i) => (
-							<WorkspaceCard key={ws.id} workspace={ws} index={i} />
+							<WorkspaceCard key={ws.id} workspace={ws} index={i} userId={user?.id} />
 						))}
 					</div>
 				)}
@@ -329,9 +328,21 @@ function KpiCard({
 
 // ─── Workspace Card ───────────────────────────────────────────────────────────
 
-function WorkspaceCard({ workspace, index }: { workspace: Workspace; index: number }) {
+const ROLE_LABELS: Record<string, string> = {
+	admin: 'Admin',
+	member: 'Membre',
+	observer: 'Observateur',
+}
+
+const ROLE_COLORS: Record<string, string> = {
+	admin: 'text-amber-600 dark:text-amber-400 bg-amber-500/10',
+	member: 'text-blue-600 dark:text-blue-400 bg-blue-500/10',
+	observer: 'text-muted-foreground bg-muted/60',
+}
+
+function WorkspaceCard({ workspace, index, userId }: { workspace: Workspace; index: number; userId?: string }) {
 	const memberCount = workspace.workspaceMembers.length
-	const myMember = workspace.workspaceMembers.find(() => true)
+	const myMember = workspace.workspaceMembers.find((m) => m.userId === userId)
 	const role = myMember?.role ?? 'member'
 	const initials = workspace.name
 		.split(' ')
@@ -339,12 +350,6 @@ function WorkspaceCard({ workspace, index }: { workspace: Workspace; index: numb
 		.map((w) => w[0])
 		.join('')
 		.toUpperCase()
-
-	const roleColors: Record<string, string> = {
-		admin: 'text-amber-600 dark:text-amber-400 bg-amber-500/10',
-		member: 'text-blue-600 dark:text-blue-400 bg-blue-500/10',
-		observer: 'text-muted-foreground bg-muted/60',
-	}
 
 	return (
 		<motion.article
@@ -364,8 +369,8 @@ function WorkspaceCard({ workspace, index }: { workspace: Workspace; index: numb
 					</h3>
 					<p className="text-xs text-muted-foreground">/{workspace.slug}</p>
 				</div>
-				<span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${roleColors[role] ?? roleColors.member}`}>
-					{role}
+				<span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${ROLE_COLORS[role] ?? ROLE_COLORS.member}`}>
+					{ROLE_LABELS[role] ?? role}
 				</span>
 			</div>
 
