@@ -18,7 +18,9 @@
     "db:migrate:dev": "prisma migrate dev --name init",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:reset": "prisma migrate reset",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@keyv/redis": "^5.1.6",
@@ -72,7 +74,9 @@
     "ts-loader": "^9.6.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.9"
   },
   "jest": {
     "moduleFileExtensions": [
