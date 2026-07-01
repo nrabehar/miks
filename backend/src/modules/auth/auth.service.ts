@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -24,6 +25,8 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -58,9 +61,19 @@ export class AuthService {
       select: { id: true, email: true, firstName: true, lastName: true, emailVerified: true },
     });
 
+    this.logger.log(`User registered: ${user.id} (${user.email})`);
+
     const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ');
     const code = await this.tokens.generateEmailCode(user.id);
-    await this.email.sendVerificationCode(user.email, displayName, code);
+    try {
+      await this.email.sendVerificationCode(user.email, displayName, code);
+    } catch (err) {
+      this.logger.error(
+        `Failed to send verification email to ${user.email} (user ${user.id})`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw err;
+    }
 
     return { registrationId: user.id, emailSent: true };
   }
@@ -68,6 +81,7 @@ export class AuthService {
   async verifyEmail(userId: string, code: string) {
     await this.tokens.verifyEmailCode(userId, code);
     await this.prisma.user.update({ where: { id: userId }, data: { emailVerified: true } });
+    this.logger.log(`Email verified for user ${userId}`);
     return { verified: true };
   }
 
@@ -78,7 +92,15 @@ export class AuthService {
 
     const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ');
     const code = await this.tokens.generateEmailCode(userId);
-    await this.email.sendVerificationCode(user.email, displayName, code);
+    try {
+      await this.email.sendVerificationCode(user.email, displayName, code);
+    } catch (err) {
+      this.logger.error(
+        `Failed to resend verification email to ${user.email} (user ${userId})`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw err;
+    }
     return { message: 'Code resent' };
   }
 
@@ -226,7 +248,15 @@ export class AuthService {
 
     const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ');
     const token = await this.tokens.generatePasswordResetToken(user.id);
-    await this.email.sendPasswordReset(email, displayName, user.id, token);
+    try {
+      await this.email.sendPasswordReset(email, displayName, user.id, token);
+    } catch (err) {
+      this.logger.error(
+        `Failed to send password reset email to ${email} (user ${user.id})`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw err;
+    }
     return { message: 'If that email exists, a reset link has been sent' };
   }
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from './mail.service.js';
 
@@ -23,24 +23,37 @@ const BRAND = {
 
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
+
   constructor(private readonly mail: MailService, private readonly config: ConfigService) {}
 
   async sendVerificationCode(to: string, name: string, code: string) {
+    this.logger.log(`Sending verification code email to ${to}`);
     await this.mail.send(
       to,
       'Vérification de votre adresse email — MIKS',
       this.verificationTemplate(name, code),
+      this.senderAddress('security'),
     );
   }
 
   async sendPasswordReset(to: string, name: string, userId: string, token: string) {
+    this.logger.log(`Sending password reset email to ${to}`);
     const frontendUrl = this.config.get('app.frontendUrl');
     const link = `${frontendUrl}/auth/reset-password?userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(token)}`;
     await this.mail.send(
       to,
       'Réinitialisation de mot de passe — MIKS',
       this.passwordResetTemplate(name, link),
+      this.senderAddress('security'),
     );
+  }
+
+  /** Builds a `Name <local-part@domain>` sender address for a given email category (e.g. 'security', 'hello'). */
+  private senderAddress(localPart: string): string {
+    const fromName = this.config.get<string>('email.fromName', 'MIKS');
+    const domain = this.config.get<string>('email.domain', 'miks.dedyn.io');
+    return `${fromName} <${localPart}@${domain}>`;
   }
 
   // ─── Private template builders ─────────────────────────────────────
