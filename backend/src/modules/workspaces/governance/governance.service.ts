@@ -1,14 +1,38 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../../core/prisma/prisma.service.js';
+import { NotificationsService } from '../../notifications/notifications.service.js';
 
 @Injectable()
 export class GovernanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(GovernanceService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async closeExpiredVotes() {
+    const expired = await this.prisma.vote.findMany({
+      where: { status: 'OPEN', closesAt: { lt: new Date() } },
+      select: { id: true, workspaceId: true },
+    });
+
+    for (const vote of expired) {
+      try {
+        await this.closeVote(vote.id, vote.workspaceId);
+      } catch (err) {
+        this.logger.error(`Failed to auto-close vote ${vote.id}`, err as Error);
+      }
+    }
+  }
 
   async getVote(voteId: string, workspaceId: string) {
     const vote = await this.prisma.vote.findFirst({
@@ -83,7 +107,6 @@ export class GovernanceService {
     if (vote.status !== 'OPEN') throw new BadRequestException('Vote is already closed');
 
     const total = vote.yesCount + vote.noCount + vote.abstainCount;
-    const memberCount = await this.prisma.workspaceMember.count({ where: { workspaceId } });
 
     let result: string | null = null;
 
@@ -94,7 +117,7 @@ export class GovernanceService {
       result = yesPercent >= vote.threshold ? 'APPROVED' : 'REJECTED';
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    const project = await this.prisma.$transaction(async (tx) => {
       await tx.vote.update({
         where: { id: voteId },
         data: { status: 'CLOSED', result, closedAt: new Date() },
@@ -107,13 +130,58 @@ export class GovernanceService {
             ? 'REJECTED'
             : 'CANCELLED';
 
-      await tx.project.update({
+      return tx.project.update({
         where: { id: vote.projectId },
         data: { status: newProjectStatus },
       });
     });
 
+    await this.notifyVoteResult(workspaceId, voteId, project.id, project.title, result);
+
     return { closed: true, result };
+  }
+
+  private async notifyVoteResult(
+    workspaceId: string,
+    voteId: string,
+    projectId: string,
+    title: string,
+    result: string | null,
+  ) {
+    const [voters, proposer] = await Promise.all([
+      this.prisma.voteChoice.findMany({
+        where: { voteId },
+        select: { member: { select: { userId: true } } },
+      }),
+      this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { proposedBy: { select: { userId: true } } },
+      }),
+    ]);
+
+    const userIds = new Set(voters.map((v) => v.member.userId));
+    if (proposer?.proposedBy) userIds.add(proposer.proposedBy.userId);
+
+    const resultLabel =
+      result === 'APPROVED'
+        ? 'approuvé'
+        : result === 'REJECTED'
+          ? 'rejeté'
+          : 'invalidé (quorum non atteint)';
+
+    await Promise.all(
+      Array.from(userIds).map((userId) =>
+        this.notifications.send({
+          userId,
+          workspaceId,
+          type: 'VOTE_RESULT',
+          title: 'Résultat du vote',
+          body: `Le vote pour le projet "${title}" a été ${resultLabel}.`,
+          referenceType: 'PROJECT',
+          referenceId: projectId,
+        }),
+      ),
+    );
   }
 
   async getMyVote(voteId: string, memberId: string) {

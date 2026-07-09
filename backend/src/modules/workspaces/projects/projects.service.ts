@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service.js';
+import { NotificationsService } from '../../notifications/notifications.service.js';
 import type { CreateProjectDto } from './dto/create-project.dto.js';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(workspaceId: string, proposedByMemberId: string, dto: CreateProjectDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const project = await this.prisma.$transaction(async (tx) => {
       const project = await tx.project.create({
         data: {
           workspaceId,
@@ -34,6 +38,36 @@ export class ProjectsService {
 
       return project;
     });
+
+    await this.notifyVoteOpened(workspaceId, proposedByMemberId, project.id, project.title);
+
+    return project;
+  }
+
+  private async notifyVoteOpened(
+    workspaceId: string,
+    proposedByMemberId: string,
+    projectId: string,
+    title: string,
+  ) {
+    const members = await this.prisma.workspaceMember.findMany({
+      where: { workspaceId, id: { not: proposedByMemberId } },
+      select: { userId: true },
+    });
+
+    await Promise.all(
+      members.map((m) =>
+        this.notifications.send({
+          userId: m.userId,
+          workspaceId,
+          type: 'VOTE_OPENED',
+          title: 'Nouveau vote ouvert',
+          body: `Un vote a été ouvert pour le projet "${title}".`,
+          referenceType: 'PROJECT',
+          referenceId: projectId,
+        }),
+      ),
+    );
   }
 
   async list(workspaceId: string, status?: string) {

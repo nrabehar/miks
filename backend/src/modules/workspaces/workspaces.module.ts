@@ -17,9 +17,10 @@ import { WorkspaceAuditController } from './audit/workspace-audit.controller.js'
 import { WorkspaceMemberGuard } from './guards/workspace-member.guard.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { EmailModule } from '../email/email.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 
 @Module({
-  imports: [AuditModule, EmailModule],
+  imports: [AuditModule, EmailModule, NotificationsModule],
   controllers: [
     WorkspacesController,
     MembersController,

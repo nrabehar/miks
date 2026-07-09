@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import appConfig from './config/app.config.js';
 import authConfig from './config/auth.config.js';
@@ -27,6 +28,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module.js';
       expandVariables: true,
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
+    ScheduleModule.forRoot(),
     PrismaModule,
     RedisModule,
     AuthModule,
