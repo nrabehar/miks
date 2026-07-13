@@ -1,0 +1,1228 @@
+<title>MIKS — Comprendre le concept</title>
+<style>
+  :root {
+    --ink:       #1B2338;
+    --paper:     #F5F7FB;
+    --surface:   #FFFFFF;
+    --rule:      #DFE5EF;
+    --secondary: #5C6B82;
+    --muted:     #8E9BB5;
+    --accent:    #2D5FD6;
+    --callout:   #EEF2FC;
+    --callout-b: #C0CFED;
+    --green:     #1E7E5A;
+    --green-bg:  #EAF5F0;
+    --amber:     #9B6000;
+    --amber-bg:  #FFF8ED;
+    --amber-b:   #D4933A;
+    --red:       #8A1E1E;
+    --red-bg:    #FDF0F0;
+    --red-b:     #C94040;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: var(--paper); }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 64px 32px 120px;
+  }
+
+  /* ── Masthead ── */
+  .masthead {
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .masthead-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .masthead h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 32px;
+    font-weight: normal;
+    font-style: italic;
+    color: var(--ink);
+    line-height: 1.25;
+    margin-bottom: 14px;
+    text-wrap: balance;
+  }
+  .masthead-sub {
+    font-size: 16px;
+    color: var(--secondary);
+    line-height: 1.6;
+    max-width: 560px;
+  }
+  .masthead-meta {
+    margin-top: 20px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .meta-dot {
+    width: 5px;
+    height: 5px;
+    background: var(--rule);
+    border-radius: 50%;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 56px;
+  }
+  .toc-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .toc ol {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    counter-reset: toc;
+  }
+  .toc ol li {
+    counter-increment: toc;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 13.5px;
+  }
+  .toc ol li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-size: 10px;
+    font-family: "SF Mono", "Consolas", monospace;
+    color: var(--muted);
+    flex-shrink: 0;
+    width: 20px;
+  }
+  .toc ol li a {
+    color: var(--secondary);
+    text-decoration: none;
+  }
+  .toc ol li a:hover { color: var(--accent); }
+
+  /* ── Sections ── */
+  .section { margin-bottom: 56px; }
+  .divider {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 0 0 56px;
+  }
+  .section-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .section h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 22px;
+    font-weight: normal;
+    font-style: italic;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 20px;
+    text-wrap: balance;
+  }
+  .section p {
+    color: var(--secondary);
+    margin-bottom: 14px;
+    max-width: 62ch;
+  }
+  .section p strong { color: var(--ink); font-weight: 600; }
+
+  /* ── Subsections ── */
+  .subsection {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+  .subsection:first-of-type {
+    margin-top: 24px;
+    padding-top: 0;
+    border-top: none;
+  }
+  .subsection h3 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  /* ── Lists ── */
+  ul.doc-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 14px;
+  }
+  ul.doc-list li {
+    color: var(--secondary);
+    padding-left: 18px;
+    position: relative;
+    max-width: 62ch;
+  }
+  ul.doc-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 5px;
+    height: 1.5px;
+    background: var(--muted);
+  }
+  ul.doc-list li strong { color: var(--ink); font-weight: 600; }
+
+  /* ── Callout ── */
+  .callout {
+    background: var(--callout);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 16px 20px;
+    margin: 20px 0;
+  }
+  .callout-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .callout p {
+    font-size: 13.5px;
+    color: #3A4F7A;
+    line-height: 1.6;
+    margin-bottom: 8px;
+    max-width: 100% !important;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* ── Note (warning/amber) ── */
+  .note {
+    background: var(--amber-bg);
+    border-left: 3px solid var(--amber-b);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 20px 0;
+    font-size: 13.5px;
+    color: #7A5820;
+    line-height: 1.55;
+    max-width: 62ch;
+  }
+  .note strong { color: #5C3D10; }
+
+  /* ── Problem note (red) ── */
+  .problem-note {
+    background: var(--red-bg);
+    border-left: 3px solid var(--red-b);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 20px 0;
+    font-size: 13.5px;
+    color: #6B1A1A;
+    line-height: 1.55;
+    max-width: 62ch;
+  }
+  .problem-note strong { color: #4A0E0E; }
+
+  /* ── Concept cards ── */
+  .concept-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  @media (max-width: 520px) { .concept-grid { grid-template-columns: 1fr; } }
+  .concept-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .concept-card-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .concept-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .concept-card p {
+    font-size: 12.5px;
+    color: var(--secondary);
+    line-height: 1.5;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* ── Scenario box (how it works without) ── */
+  .scenario {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin: 20px 0;
+  }
+  .scenario-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary);
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .scenario ol {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .scenario ol li {
+    counter-increment: step;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 13.5px;
+    color: var(--secondary);
+    line-height: 1.55;
+  }
+  .scenario ol li::before {
+    content: counter(step);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--rule);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .scenario ol li strong { color: var(--ink); }
+
+  /* ── Competitor cards ── */
+  .competitor {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin: 20px 0;
+  }
+  .competitor-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+    flex-wrap: wrap;
+  }
+  .competitor-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .competitor-url {
+    font-size: 11.5px;
+    color: var(--accent);
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+  .competitor-tag {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+  .competitor p {
+    font-size: 13.5px;
+    color: var(--secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+    max-width: 100%;
+  }
+  .competitor p strong { color: var(--ink); }
+  .comp-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .comp-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 8px;
+    padding: 7px 0;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    align-items: baseline;
+  }
+  .comp-row:first-child { border-top: none; padding-top: 0; }
+  .comp-key {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .comp-val { color: var(--secondary); }
+  .comp-val strong { color: var(--ink); }
+  .tag-yes {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: var(--green-bg);
+    color: var(--green);
+  }
+  .tag-no {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: var(--paper);
+    color: var(--muted);
+    border: 1px solid var(--rule);
+  }
+  .tag-partial {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: var(--amber-bg);
+    color: var(--amber);
+  }
+
+  /* ── Comparison summary table ── */
+  .comp-table-wrap {
+    overflow-x: auto;
+    margin: 20px 0;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+  }
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    background: var(--surface);
+    min-width: 580px;
+  }
+  .comp-table thead { background: var(--paper); }
+  .comp-table th {
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  .comp-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--rule);
+    color: var(--secondary);
+    vertical-align: middle;
+  }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table td.name { font-weight: 600; color: var(--ink); }
+  .comp-table .miks-r { background: var(--callout); }
+  .comp-table .miks-r td.name { color: var(--accent); }
+
+  /* ── SW grid ── */
+  .sw-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 20px 0;
+  }
+  @media (max-width: 520px) { .sw-grid { grid-template-columns: 1fr; } }
+  .sw-block {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 18px 16px;
+  }
+  .sw-block-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .sw-block-title.plus  { color: var(--green); }
+  .sw-block-title.minus { color: var(--red); }
+  .sw-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sw-list li {
+    font-size: 13px;
+    color: var(--secondary);
+    padding-left: 18px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .sw-list li strong { color: var(--ink); }
+  .sw-list.plus  li::before { content: '+'; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 700; }
+  .sw-list.minus li::before { content: '–'; position: absolute; left: 0; top: 0; color: var(--red);   font-weight: 700; }
+
+  /* ── Why us ── */
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  @media (max-width: 520px) { .why-grid { grid-template-columns: 1fr; } }
+  .why-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .why-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .why-card p {
+    font-size: 13px;
+    color: var(--secondary);
+    line-height: 1.5;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+  .why-card p strong { color: var(--ink); }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    vertical-align: middle;
+  }
+  .badge-wip { background: #FFF3D6; color: #8A6100; }
+
+  /* ── Formula ── */
+  .formula-block {
+    background: var(--ink);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .formula-block code {
+    font-family: "SF Mono", "Cascadia Code", "Consolas", monospace;
+    font-size: 12.5px;
+    color: #A8C7FA;
+    line-height: 1.7;
+    display: block;
+    white-space: pre;
+  }
+
+  /* ── Footer ── */
+  .doc-footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+
+<div class="page">
+
+  <!-- Masthead -->
+  <div class="masthead">
+    <div class="masthead-eyebrow">Document de présentation</div>
+    <h1>MIKS — Comprendre le concept, de zéro</h1>
+    <p class="masthead-sub">
+      Ce document explique ce qu'est un groupe d'investissement collectif, comment ça marche aujourd'hui sans plateforme, quels problèmes ça pose, et pourquoi MIKS est une réponse intéressante à construire.
+    </p>
+    <div class="masthead-meta">
+      <span class="meta-item">Juillet 2026 <span class="meta-dot"></span> Pour l'équipe</span>
+      <span class="meta-item">Non technique <span class="meta-dot"></span> <span class="badge badge-wip">En cours</span></span>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">Sommaire</div>
+    <ol>
+      <li><a href="#concept">C'est quoi un groupe d'investissement collectif ?</a></li>
+      <li><a href="#sans-plateforme">Comment ça marche sans plateforme</a></li>
+      <li><a href="#problemes">Les problèmes concrets que ça génère</a></li>
+      <li><a href="#miks">Ce que MIKS apporte</a></li>
+      <li><a href="#concurrents">Ce qui existe déjà</a></li>
+      <li><a href="#difference">Ce qui distingue MIKS</a></li>
+      <li><a href="#swot">Points forts et limites honnêtes</a></li>
+      <li><a href="#pourquoi">Pourquoi c'est intéressant pour nous</a></li>
+    </ol>
+  </div>
+
+  <!-- ─────────────────────────────────── SECTION 1 ──── -->
+  <div class="section" id="concept">
+    <div class="section-label">Section 1</div>
+    <h2>C'est quoi un groupe d'investissement collectif ?</h2>
+
+    <p>
+      L'idée de base est simple : <strong>un groupe de personnes décide de mettre de l'argent en commun</strong>, régulièrement, pour le faire fructifier ou financer des projets ensemble.
+    </p>
+    <p>
+      Ça peut prendre beaucoup de formes différentes. La tontine familiale où chacun cotise 50 000 Ar par mois. Le groupe d'amis qui met de l'argent de côté pour acheter du terrain ensemble. Les collègues qui financent collectivement de petits commerces. La diaspora qui cotise pour investir dans des projets au pays.
+    </p>
+    <p>
+      Ce type de groupe existe partout dans le monde. En Afrique on l'appelle <strong>tontine</strong>, <strong>chama</strong> (Kenya), <strong>njangi</strong> (Cameroun), <strong>susu</strong> (Nigeria), <strong>eqb</strong> (Éthiopie). En Asie du Sud c'est le <strong>chit fund</strong>. En Amérique latine la <strong>tanda</strong>. En France même, des centaines de milliers de familles pratiquent des formes d'épargne collective.
+    </p>
+
+    <div class="subsection">
+      <h3>Deux grandes familles de groupes</h3>
+      <p>Avant d'aller plus loin, il est important de distinguer deux choses qui se ressemblent mais sont très différentes :</p>
+      <div class="concept-grid">
+        <div class="concept-card">
+          <div class="concept-card-label">Modèle 1 — ROSCA</div>
+          <div class="concept-card-title">La tontine rotative</div>
+          <p>Chaque membre cotise chaque mois. À tour de rôle, <strong>un seul membre reçoit toute la cagnotte</strong>. Une fois que tout le monde a reçu son tour, le cycle recommence. L'argent ne reste pas dans le groupe.</p>
+        </div>
+        <div class="concept-card">
+          <div class="concept-card-label">Modèle 2 — Club d'investissement</div>
+          <div class="concept-card-title">Le groupe investisseur</div>
+          <p>Les membres cotisent et <strong>l'argent reste dans le groupe</strong>. Le groupe décide ensemble comment l'utiliser : acheter du terrain, financer un commerce, faire grossir un capital commun. Les membres ont des parts.</p>
+        </div>
+      </div>
+      <p>
+        <strong>MIKS cible le deuxième modèle</strong> — le club d'investissement, pas la tontine rotative. C'est un groupe qui gère du capital dans la durée, pas juste un système de rotation.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Exemple concret pour fixer les idées</h3>
+      <div class="callout">
+        <div class="callout-label">Exemple</div>
+        <p>
+          Dix amis décident de créer un groupe. Chacun cotise 100 000 Ar par mois. Au bout de six mois, le groupe a 6 000 000 Ar. Ils décident de l'utiliser pour acheter un terrain. Le terrain prend de la valeur. Deux ans plus tard, ils le revendent et répartissent les bénéfices selon les parts de chacun.
+        </p>
+        <p>
+          Pendant tout ce temps, il faut suivre qui a cotisé quoi, décider collectivement des actions, enregistrer les dépenses, savoir combien chaque membre pourrait récupérer si il voulait sortir du groupe.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─────────────────────────────────── SECTION 2 ──── -->
+  <div class="section" id="sans-plateforme">
+    <div class="section-label">Section 2</div>
+    <h2>Comment ça marche sans plateforme — la réalité d'aujourd'hui</h2>
+
+    <p>
+      L'immense majorité de ces groupes fonctionnent aujourd'hui avec trois outils : <strong>un cahier</strong>, <strong>WhatsApp</strong>, et <strong>un Excel quelque part</strong>. Regardons ce que ça donne en pratique.
+    </p>
+
+    <div class="subsection">
+      <h3>Le flux typique d'une cotisation mensuelle</h3>
+      <div class="scenario">
+        <div class="scenario-title">Ce qui se passe chaque mois</div>
+        <ol>
+          <li>Le trésorier envoie un rappel dans le groupe WhatsApp : <strong>"Cotisation de ce mois, deadline vendredi."</strong></li>
+          <li>Les membres font virement à la main vers le compte bancaire (ou en espèces) et envoient une <strong>capture d'écran dans le WhatsApp</strong>.</li>
+          <li>Le trésorier note dans son Excel ou son cahier qui a payé, la date, le montant.</li>
+          <li>En fin de mois, il fait un récap manuel dans WhatsApp : <strong>"Ont cotisé : Aina, Hery, Vola. N'ont pas cotisé : Koto."</strong></li>
+          <li>Si quelqu'un pose la question "combien on a en tout ?", le trésorier doit ouvrir son Excel et calculer.</li>
+          <li>Si quelqu'un veut savoir <strong>sa quote-part exacte</strong>, personne ne le sait vraiment sans refaire tout le calcul.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>Le flux d'une décision de projet</h3>
+      <div class="scenario">
+        <div class="scenario-title">Quand le groupe veut financer quelque chose</div>
+        <ol>
+          <li>Un membre propose une idée dans WhatsApp ou lors d'une réunion : <strong>"Je propose qu'on achète un générateur pour le louer."</strong></li>
+          <li>Les membres réagissent avec des émojis ou commentaires. Certains sont pour, d'autres contre, certains ne répondent pas.</li>
+          <li>Le président (ou le fondateur) tranche : <strong>"Bon, on est d'accord, on le fait."</strong></li>
+          <li>L'argent est sorti du compte commun. <strong>Personne n'a de trace formelle que le groupe a voté pour.</strong></li>
+          <li>Trois mois plus tard, un membre qui n'était pas là dit : <strong>"On a jamais décidé ça."</strong></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>L'état d'une réunion mensuelle typique</h3>
+      <p>
+        Dans les groupes les plus organisés, il y a une réunion mensuelle. Le trésorier lit les chiffres à voix haute. Les membres notent s'ils veulent. <strong>Il n'existe pas de tableau de bord visible par tous, en temps réel</strong>. La seule personne qui a la vue complète, c'est le trésorier — et c'est à lui de faire confiance.
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─────────────────────────────────── SECTION 3 ──── -->
+  <div class="section" id="problemes">
+    <div class="section-label">Section 3</div>
+    <h2>Les problèmes concrets que ça génère</h2>
+
+    <p>Ce mode de fonctionnement crée des problèmes récurrents, prévisibles, et souvent destructeurs pour la cohésion du groupe.</p>
+
+    <div class="subsection">
+      <h3>1. L'opacité financière</h3>
+      <p>
+        Seul le trésorier a la vue complète. Les autres membres doivent faire confiance à ce qu'il leur dit. <strong>Personne ne peut vérifier indépendamment</strong> que le montant annoncé est correct, que les dépenses étaient justifiées, que les flux ont été bien répartis.
+      </p>
+      <div class="problem-note">
+        <strong>Situation réelle :</strong> Un membre soupçonne que la répartition du mois dernier était incorrecte. Il n'a aucun moyen de vérifier. Il doit soit faire confiance, soit créer un conflit.
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>2. Les décisions sans mémoire</h3>
+      <p>
+        Les décisions prises oralement ou par échange WhatsApp n'ont pas de trace formelle. Quand une décision est contestée plus tard, <strong>les versions divergent</strong>. Qui a voté quoi ? Est-ce qu'il y avait quorum ? Est-ce que c'était une vraie décision ou juste une conversation ?
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>3. La surcharge du trésorier</h3>
+      <p>
+        Le trésorier est responsable de tout : tenir le cahier, faire les calculs, répondre aux questions des membres, produire les récap, gérer les relances. <strong>C'est ingrat, chronophage, et ça crée une dépendance dangereuse</strong> — si le trésorier part, s'il tombe malade, si la relation se dégrade, tout le système s'effondre.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>4. Le calcul des parts est impossible à suivre</h3>
+      <p>
+        Dans un groupe où les membres n'ont pas tous cotisé la même chose depuis le début, calculer la quote-part exacte de chacun est complexe. Si la règle change (ex : un nouveau membre rejoint), <strong>le recalcul manuel est source d'erreurs et de conflits</strong>.
+      </p>
+      <div class="formula-block">
+        <code>Part d'un membre (%) =
+  Cotisations cumulées de CE membre
+  ──────────────────────────────────── × 100
+  Cotisations cumulées de TOUS les membres
+
+→ Ce calcul change à chaque nouvelle cotisation.
+→ Fait à la main, il est souvent faux ou en retard.</code>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>5. La gestion des projets est chaotique</h3>
+      <p>
+        Quand le groupe finance un projet (achat, commerce, location...), il faut suivre séparément : le budget alloué, les dépenses réelles, les revenus générés, et comment ces revenus sont redistribués. <strong>Sans outil dédié, tout ça se fait dans des Excel séparés, non synchronisés, incompréhensibles pour les membres qui ne les maintiennent pas.</strong>
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─────────────────────────────────── SECTION 4 ──── -->
+  <div class="section" id="miks">
+    <div class="section-label">Section 4</div>
+    <h2>Ce que MIKS apporte</h2>
+
+    <p>
+      MIKS n'est pas une banque. Il ne détient pas d'argent, ne fait pas de virements. <strong>C'est l'outil que le groupe utilise pour être clair avec lui-même</strong> — une couche de gestion, de comptabilité et de gouvernance posée par-dessus le fonctionnement habituel du groupe.
+    </p>
+
+    <div class="note">
+      <strong>Important :</strong> Le groupe continue à avoir son compte bancaire, ses méthodes de paiement habituelles. MIKS est l'endroit où on <em>enregistre</em> et <em>visualise</em> tout ce qui se passe — pas l'endroit où l'argent est stocké.
+    </div>
+
+    <div class="subsection">
+      <h3>Les coffres — organiser le capital collectif</h3>
+      <p>
+        Plutôt qu'un seul solde global, le groupe crée autant de <strong>coffres</strong> que nécessaire selon sa logique propre. Par exemple : un coffre "Fonds commun", un coffre "Réserve", un coffre "Logistique". MIKS ne prescrit rien — c'est le groupe qui décide.
+      </p>
+      <p>
+        En plus des coffres du groupe, <strong>chaque membre a un coffre rétirable personnel</strong> — son compte individuel, automatiquement alimenté selon les règles de distribution.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Les flux — la répartition automatique</h3>
+      <p>
+        Le groupe configure des <strong>règles de flux</strong> : chaque source d'argent (cotisation, revenu de projet…) est automatiquement répartie entre les coffres selon des pourcentages définis. Fini le calcul manuel à chaque entrée.
+      </p>
+      <div class="callout">
+        <div class="callout-label">Exemple de règle de flux</div>
+        <p>
+          À chaque cotisation mensuelle : 40% → Coffre Fonds commun, 35% → Coffre Réserve, 25% → Coffres retirables des membres (répartis selon leurs parts).
+        </p>
+        <p>
+          Dès qu'une cotisation est enregistrée, MIKS calcule et applique cette règle automatiquement. Chaque membre voit son coffre rétirable mis à jour.
+        </p>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>Les parts — chaque membre connaît sa situation exacte</h3>
+      <p>
+        Les parts de chaque membre sont calculées en temps réel selon ses cotisations cumulées. <strong>Chaque membre voit sa quote-part exacte</strong>, son évolution dans le temps, et le solde de son coffre rétirable — sans dépendre du trésorier pour cette information.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Les projets — financer et suivre collectivement</h3>
+      <p>
+        Un membre peut soumettre un projet au groupe. Le projet a son propre budget (prélevé sur un coffre du groupe), ses propres coffres internes, et ses propres règles de flux pour les revenus. MIKS suit tout ça en temps réel, de façon totalement séparée des autres finances du groupe.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Le vote — décider formellement, tracer la décision</h3>
+      <p>
+        Tout projet soumis passe par un vote avec des règles configurables : seuil d'approbation (ex : 60%), quorum (ex : au moins 7 membres sur 10 doivent voter), durée (ex : 72h). Le résultat — avec les votes individuels et la date — est <strong>enregistré dans le journal et ne peut pas être modifié</strong>.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Le journal immuable — la transparence totale</h3>
+      <p>
+        Chaque action dans MIKS — cotisation enregistrée, flux appliqué, vote exprimé, projet approuvé — est tracée dans un journal chronologique que tous les membres peuvent lire et que <strong>personne ne peut modifier ni supprimer</strong>. C'est l'arbitre neutre du groupe.
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─────────────────────────────────── SECTION 5 ──── -->
+  <div class="section" id="concurrents">
+    <div class="section-label">Section 5</div>
+    <h2>Ce qui existe déjà</h2>
+
+    <p>
+      Des gens ont déjà essayé de résoudre une partie de ce problème. Voici un tour d'horizon honnête de ce qui existe, de ce qu'ils font bien, et de leurs limites.
+    </p>
+
+    <!-- Chamasoft -->
+    <div class="competitor">
+      <div class="competitor-header">
+        <div>
+          <div class="competitor-name">Chamasoft</div>
+          <div class="competitor-url">chamasoft.com</div>
+        </div>
+        <div class="competitor-tag">Kenya · Afrique de l'Est</div>
+      </div>
+      <p>
+        Chamasoft est probablement le produit le plus avancé dans cet espace. Lancé au Kenya, il s'adresse aux <em>chamas</em> — les groupes d'investissement informels très répandus en Afrique de l'Est. C'est un logiciel cloud complet, disponible en web et en application Android.
+      </p>
+      <p>
+        <strong>Ce qu'il fait bien :</strong> Gestion des membres, suivi des cotisations, gestion des prêts internes, amendes, rapports financiers, SMS automatiques de rappel. Il couvre vraiment le quotidien d'un groupe actif et remplace efficacement l'Excel du trésorier.
+      </p>
+      <p>
+        <strong>Son positionnement :</strong> Il s'est construit sur le marché kenyan avec une intégration forte à l'écosystème local (M-Pesa, Equity Bank via EazzyChama). Les groupes qui l'utilisent sont des chamas structurées, souvent enregistrées légalement.
+      </p>
+      <div class="comp-rows">
+        <div class="comp-row">
+          <div class="comp-key">Prix</div>
+          <div class="comp-val">Gratuit (basique) → <strong>~72€/an</strong> pour 20 membres, ~0,22€ par membre supplémentaire/mois</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Paiement</div>
+          <div class="comp-val"><span class="tag-yes">Oui</span> M-Pesa intégré (Kenya)</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Vote / gouvernance</div>
+          <div class="comp-val"><span class="tag-no">Non</span> Pas de système de vote formel</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Gestion de projets</div>
+          <div class="comp-val"><span class="tag-no">Non</span> Pas de module projet dédié</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Structure libre</div>
+          <div class="comp-val"><span class="tag-partial">Partiel</span> Cotisation + prêts, mais pas de règles de flux configurables</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Journal immuable</div>
+          <div class="comp-val"><span class="tag-no">Non</span> Rapports financiers, mais backdating possible (admin peut modifier)</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Zone cible</div>
+          <div class="comp-val">Kenya principalement, quelques déploiements dans d'autres pays d'Afrique de l'Est</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EazzyChama -->
+    <div class="competitor">
+      <div class="competitor-header">
+        <div>
+          <div class="competitor-name">EazzyChama</div>
+          <div class="competitor-url">equitygroupholdings.com/ke/open-an-account/chamagroups/eazzychama</div>
+        </div>
+        <div class="competitor-tag">Kenya · Banque</div>
+      </div>
+      <p>
+        EazzyChama est le white-label de Chamasoft par <strong>Equity Bank Kenya</strong>. C'est fondamentalement le même produit, mais intégré directement à l'infrastructure bancaire d'Equity. Les transactions du groupe se synchronisent automatiquement avec le compte bancaire Equity du groupe.
+      </p>
+      <p>
+        <strong>Limite principale :</strong> Pour l'utiliser, le groupe doit avoir un compte Equity Bank. Ce n'est pas un outil indépendant — c'est un service bancaire. Ce modèle est intéressant en Kenya, mais non réplicable ailleurs sans partenariat bancaire similaire.
+      </p>
+      <div class="comp-rows">
+        <div class="comp-row">
+          <div class="comp-key">Paiement</div>
+          <div class="comp-val"><span class="tag-yes">Oui</span> Synchronisation automatique Equity Bank</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Vote / gouvernance</div>
+          <div class="comp-val"><span class="tag-no">Non</span></div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Condition d'accès</div>
+          <div class="comp-val"><strong>Compte Equity Bank obligatoire</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Djangui -->
+    <div class="competitor">
+      <div class="competitor-header">
+        <div>
+          <div class="competitor-name">Djangui</div>
+          <div class="competitor-url">djangui.net</div>
+        </div>
+        <div class="competitor-tag">Afrique francophone · Tontine rotative</div>
+      </div>
+      <p>
+        Djangui s'adresse aux tontines rotatives en Afrique francophone. La dernière version intègre une IA (coach financier) et supporte plusieurs méthodes de paiement mobile (MTN, Orange, Wave, mais aussi USDT). Environ 50 000 utilisateurs.
+      </p>
+      <p>
+        <strong>Limite fondamentale :</strong> Djangui est <em>exclusivement</em> conçu pour le modèle ROSCA — un pot qui tourne entre les membres. Il n'existe pas de concept de capital collectif qui reste dans le groupe, ni de projet commun, ni de parts. Ce n'est pas dans l'ADN du produit.
+      </p>
+      <div class="comp-rows">
+        <div class="comp-row">
+          <div class="comp-key">Modèle supporté</div>
+          <div class="comp-val">Tontine rotative uniquement (ROSCA)</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Paiement</div>
+          <div class="comp-val"><span class="tag-yes">Oui</span> Mobile money + crypto</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Club d'investissement</div>
+          <div class="comp-val"><span class="tag-no">Non</span> Pas prévu pour ce cas d'usage</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Money Fellows -->
+    <div class="competitor">
+      <div class="competitor-header">
+        <div>
+          <div class="competitor-name">Money Fellows</div>
+          <div class="competitor-url">moneyfellows.com</div>
+        </div>
+        <div class="competitor-tag">Égypte · Tontine rotative + crédit</div>
+      </div>
+      <p>
+        Money Fellows digitalise la <em>gameya</em> — la tontine égyptienne. Il va plus loin que Djangui : si un cercle manque de membres, Money Fellows finance lui-même le slot manquant, ce qui lui permet de proposer du crédit aux membres qui veulent recevoir leur pot plus tôt. C'est devenu un produit de crédit autant qu'une tontine.
+      </p>
+      <p>
+        <strong>Succès notable :</strong> Plus de $1,5 milliard de transactions traitées en Égypte. Profitable. C'est une preuve que le marché de la gestion financière collective est réel et peut être rentable — même avec un seul type de groupe (la rotation).
+      </p>
+      <div class="comp-rows">
+        <div class="comp-row">
+          <div class="comp-key">Modèle supporté</div>
+          <div class="comp-val">Tontine rotative uniquement + crédit sur slot</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Gouvernance / projets</div>
+          <div class="comp-val"><span class="tag-no">Non</span></div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Régulation</div>
+          <div class="comp-val">Établissement de paiement réglementé (plus complexe à reproduire)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bivio -->
+    <div class="competitor">
+      <div class="competitor-header">
+        <div>
+          <div class="competitor-name">Bivio</div>
+          <div class="competitor-url">bivio.com</div>
+        </div>
+        <div class="competitor-tag">États-Unis · Club boursier</div>
+      </div>
+      <p>
+        Bivio est le logiciel de référence pour les <em>investment clubs</em> américains — des groupes qui investissent collectivement en bourse. Il gère la comptabilité du club, calcule les parts, génère les formulaires fiscaux (Schedule K-1), et s'intègre avec les courtiers américains (Schwab, Fidelity...).
+      </p>
+      <p>
+        C'est le produit le plus proche de ce que MIKS vise, en termes de concept : gestion de capital collectif, calcul de parts, suivi de portefeuille. <strong>Mais il est entièrement conçu pour le marché américain et les investissements en bourse</strong>. Il n'a aucune pertinence pour les groupes en Afrique ou pour des investissements en dehors des marchés financiers.
+      </p>
+      <div class="comp-rows">
+        <div class="comp-row">
+          <div class="comp-key">Prix</div>
+          <div class="comp-val"><strong>$349/an</strong> par club</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Vote / gouvernance</div>
+          <div class="comp-val"><span class="tag-partial">Partiel</span> Fonctions administratives, pas de vote configurable</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Cas d'usage</div>
+          <div class="comp-val">Clubs boursiers uniquement (actions cotées)</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-key">Marchés émergents</div>
+          <div class="comp-val"><span class="tag-no">Non</span> US/EU uniquement</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>Résumé comparatif</h3>
+      <div class="comp-table-wrap">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Produit</th>
+              <th>Modèle</th>
+              <th>Vote</th>
+              <th>Projets</th>
+              <th>Flux libres</th>
+              <th>Journal</th>
+              <th>Zone</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="miks-r">
+              <td class="name">MIKS</td>
+              <td>Club d'investissement</td>
+              <td><span class="tag-yes">Oui</span></td>
+              <td><span class="tag-yes">Oui</span></td>
+              <td><span class="tag-yes">Oui</span></td>
+              <td><span class="tag-yes">Oui</span></td>
+              <td>Global</td>
+            </tr>
+            <tr>
+              <td class="name">Chamasoft</td>
+              <td>Chama (cotisation + prêts)</td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-partial">Partiel</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td>Kenya</td>
+            </tr>
+            <tr>
+              <td class="name">Djangui</td>
+              <td>Tontine rotative</td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td>Afrique franco.</td>
+            </tr>
+            <tr>
+              <td class="name">Money Fellows</td>
+              <td>Tontine + crédit</td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td>Égypte</td>
+            </tr>
+            <tr>
+              <td class="name">Bivio</td>
+              <td>Club boursier</td>
+              <td><span class="tag-partial">Partiel</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td><span class="tag-no">Non</span></td>
+              <td>USA / EU</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─────────────────────────────────── SECTION 6 ──── -->
+  <div class="section" id="difference">
+    <div class="section-label">Section 6</div>
+    <h2>Ce qui distingue MIKS</h2>
+
+    <p>
+      La liste des concurrents montre quelque chose d'intéressant : <strong>aucun d'eux ne répond vraiment au même problème que MIKS</strong>. Chamasoft couvre bien le quotidien d'une chama kenyane mais n'a ni vote ni projets. Djangui et Money Fellows sont des outils de rotation, pas de gestion d'investissement collectif. Bivio est excellent mais américain et boursier.
+    </p>
+    <p>
+      MIKS occupe un angle précis : <strong>un outil de gestion pour les groupes qui gardent et font travailler un capital commun</strong>, avec une vraie gouvernance, dans les marchés où ces groupes existent mais où aucun outil adapté n'existe encore.
+    </p>
+
+    <ul class="doc-list">
+      <li><strong>Structure entièrement libre</strong> — le groupe décide de ses coffres, de ses règles, de ses flux. MIKS ne suppose rien sur l'organisation du groupe.</li>
+      <li><strong>Gouvernance réelle</strong> — vote configurable avec seuil, quorum et durée. Les décisions sont formalisées, pas juste des échanges WhatsApp.</li>
+      <li><strong>Gestion de projets intégrée</strong> — un projet peut être soumis, voté, financé, et suivi dans MIKS sans outil externe.</li>
+      <li><strong>Journal immuable</strong> — personne ne peut réécrire l'histoire du groupe. C'est un arbitre neutre accessible à tous.</li>
+      <li><strong>Pas une banque</strong> — pas de licence requise, pas de risque réglementaire, déployable rapidement partout dans le monde.</li>
+    </ul>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─────────────────────────────────── SECTION 7 ──── -->
+  <div class="section" id="swot">
+    <div class="section-label">Section 7</div>
+    <h2>Points forts et limites honnêtes</h2>
+
+    <p>Une analyse franche — parce qu'un projet qu'on comprend vraiment, avec ses forces et ses vraies difficultés, est plus facile à construire et à améliorer.</p>
+
+    <div class="sw-grid">
+      <div class="sw-block">
+        <div class="sw-block-title plus">Ce que MIKS fait bien</div>
+        <ul class="sw-list plus">
+          <li><strong>Transparent par design</strong> — le journal immuable rend la confiance structurelle, pas personnelle</li>
+          <li><strong>Flexible</strong> — s'adapte à n'importe quelle organisation de groupe</li>
+          <li><strong>Gouvernance formelle</strong> — le seul outil avec un vrai système de vote configurable</li>
+          <li><strong>Gestion de projets</strong> — unique dans cet espace</li>
+          <li><strong>Multi-groupes</strong> — un compte, plusieurs groupes</li>
+          <li><strong>Sans friction réglementaire</strong> — ne manipule pas d'argent</li>
+        </ul>
+      </div>
+      <div class="sw-block">
+        <div class="sw-block-title minus">Limites et défis</div>
+        <ul class="sw-list minus">
+          <li><strong>Pas de vérification automatique</strong> — les entrées sont déclarées manuellement, MIKS ne peut pas confirmer qu'un virement a réellement eu lieu</li>
+          <li><strong>Cold start</strong> — un utilisateur seul n'a aucune valeur immédiate, il faut que tout le groupe adopte l'outil</li>
+          <li><strong>Marché à éduquer</strong> — les groupes habitués à WhatsApp et Excel ont besoin d'être convaincus de changer</li>
+          <li><strong>Pas de crédit</strong> — ne peut pas financer les membres directement</li>
+          <li><strong>Dépend de la discipline du groupe</strong> — si personne n'enregistre les mouvements, l'outil est inutile</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ─────────────────────────────────── SECTION 8 ──── -->
+  <div class="section" id="pourquoi">
+    <div class="section-label">Section 8</div>
+    <h2>Pourquoi c'est intéressant pour nous</h2>
+
+    <p>
+      Au-delà du concept, voici pourquoi ce projet mérite notre attention et notre énergie en tant qu'équipe.
+    </p>
+
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-label">Le problème est réel et proche</div>
+        <p>On connaît tous quelqu'un dans un groupe d'épargne collectif. Le problème de gestion opaque et les conflits que ça génère, c'est du vécu — pas une hypothèse de marché.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-label">Le marché n'est pas servi</div>
+        <p><strong>Aucun produit existant ne résout exactement ce problème.</strong> Chamasoft est le plus proche mais Kenya-centrique, sans gouvernance, sans projets. L'angle MIKS est disponible.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-label">Pas besoin d'être une banque</div>
+        <p>MIKS est un logiciel de gestion, pas un établissement financier. <strong>Pas de licence bancaire, pas de capital réglementaire, pas de contrainte de conformité lourde.</strong> On peut lancer et itérer librement.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-label">Modèle économique simple</div>
+        <p>Abonnement par groupe (Chamasoft fait ~72€/an, Bivio $349/an). Le modèle est prouvé. Les groupes qui ont de l'argent à gérer ont les moyens de payer un outil qui les aide à le gérer.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-label">Croissance virale par nature</div>
+        <p>Un groupe MIKS, c'est 8 à 20 personnes qui utilisent l'outil. Chacune peut créer ou rejoindre un autre groupe. <strong>Chaque groupe actif est un canal d'acquisition.</strong></p>
+      </div>
+      <div class="why-card">
+        <div class="why-label">La technologie est maîtrisée</div>
+        <p>Ce n'est pas un problème de recherche ou d'IA. C'est de la gestion, de la comptabilité, de la gouvernance — des problèmes bien définis qu'on sait résoudre avec les outils qu'on connaît déjà.</p>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>La question à se poser</h3>
+      <p>
+        La vraie question n'est pas "est-ce que ce problème existe ?" — il existe clairement. Ce n'est pas non plus "est-ce qu'on peut le résoudre techniquement ?" — oui, sans ambiguïté.
+      </p>
+      <p>
+        La question c'est : <strong>est-ce qu'on est capables d'aller là où les groupes sont — les convaincre d'adopter un outil, les garder actifs, construire quelque chose qu'ils utilisent vraiment au quotidien ?</strong> C'est un problème de distribution et d'adoption, pas un problème technique. Et c'est exactement là que ce document commence à être utile.
+      </p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <span>MIKS — Présentation concept v0.1</span>
+    <span>Document interne · Juillet 2026</span>
+  </div>
+
+</div>

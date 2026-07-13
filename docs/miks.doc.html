@@ -1,0 +1,785 @@
+<title>MIKS — Dossier Produit</title>
+<style>
+  :root {
+    --ink:       #1B2338;
+    --paper:     #F5F7FB;
+    --surface:   #FFFFFF;
+    --rule:      #DFE5EF;
+    --secondary: #5C6B82;
+    --muted:     #8E9BB5;
+    --accent:    #2D5FD6;
+    --callout:   #EEF2FC;
+    --callout-b: #C0CFED;
+    --green:     #1E7E5A;
+    --green-bg:  #EAF5F0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { background: var(--paper); }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Page shell */
+  .page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 64px 32px 120px;
+  }
+
+  /* Masthead */
+  .masthead {
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .masthead-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+
+  .masthead h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 32px;
+    font-weight: normal;
+    font-style: italic;
+    color: var(--ink);
+    line-height: 1.25;
+    margin-bottom: 14px;
+    text-wrap: balance;
+  }
+
+  .masthead-sub {
+    font-size: 16px;
+    color: var(--secondary);
+    line-height: 1.6;
+    max-width: 560px;
+  }
+
+  .masthead-meta {
+    margin-top: 20px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .meta-dot {
+    width: 5px;
+    height: 5px;
+    background: var(--rule);
+    border-radius: 50%;
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 56px;
+  }
+
+  .section-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+
+  .section h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 22px;
+    font-weight: normal;
+    font-style: italic;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 20px;
+    text-wrap: balance;
+  }
+
+  .section p {
+    color: var(--secondary);
+    margin-bottom: 14px;
+    max-width: 62ch;
+  }
+
+  .section p strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* Divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 0 0 56px;
+  }
+
+  /* Sub-sections */
+  .subsection {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .subsection:first-of-type {
+    margin-top: 24px;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .subsection h3 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+
+  /* List */
+  ul.doc-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 14px;
+  }
+
+  ul.doc-list li {
+    color: var(--secondary);
+    padding-left: 18px;
+    position: relative;
+    max-width: 62ch;
+  }
+
+  ul.doc-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 5px;
+    height: 1.5px;
+    background: var(--muted);
+  }
+
+  ul.doc-list li strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* Callout / example */
+  .callout {
+    background: var(--callout);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 16px 20px;
+    margin: 20px 0;
+  }
+
+  .callout-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .callout p {
+    font-size: 13.5px;
+    color: #3A4F7A;
+    line-height: 1.6;
+    margin-bottom: 8px;
+    max-width: 100% !important;
+  }
+
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* Note (non-banque) */
+  .note {
+    background: #FFF8ED;
+    border-left: 3px solid #D4933A;
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 20px 0;
+    font-size: 13.5px;
+    color: #7A5820;
+    line-height: 1.55;
+    max-width: 62ch;
+  }
+
+  .note strong { color: #5C3D10; }
+
+  /* Formula */
+  .formula-block {
+    background: var(--ink);
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+
+  .formula-block code {
+    font-family: "SF Mono", "Cascadia Code", "Fira Code", "Consolas", monospace;
+    font-size: 13px;
+    color: #A8C7FA;
+    line-height: 1.6;
+    display: block;
+    white-space: pre;
+  }
+
+  .formula-block .formula-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4A6080;
+    margin-bottom: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  /* Concept cards */
+  .concept-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  @media (max-width: 520px) { .concept-grid { grid-template-columns: 1fr; } }
+
+  .concept-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .concept-card-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .concept-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .concept-card p {
+    font-size: 12.5px;
+    color: var(--secondary);
+    line-height: 1.5;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Status badge */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    vertical-align: middle;
+  }
+
+  .badge-draft {
+    background: #FFF3D6;
+    color: #8A6100;
+  }
+
+  /* Footer rule */
+  .doc-footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Table of contents */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 56px;
+  }
+
+  .toc-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .toc ol {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    counter-reset: toc;
+  }
+
+  .toc ol li {
+    counter-increment: toc;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 13.5px;
+  }
+
+  .toc ol li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-size: 10px;
+    font-family: "SF Mono", "Consolas", monospace;
+    color: var(--muted);
+    flex-shrink: 0;
+    width: 20px;
+  }
+
+  .toc ol li a {
+    color: var(--secondary);
+    text-decoration: none;
+    transition: color 0.1s;
+  }
+
+  .toc ol li a:hover { color: var(--accent); }
+
+  /* Inline code */
+  code:not(.formula-block code) {
+    font-family: "SF Mono", "Cascadia Code", "Consolas", monospace;
+    font-size: 12.5px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+</style>
+
+<div class="page">
+
+  <!-- Masthead -->
+  <div class="masthead">
+    <div class="masthead-eyebrow">Dossier Produit</div>
+    <h1>MIKS — Gestion de groupes d'investissement collectif</h1>
+    <p class="masthead-sub">
+      Spécification des concepts fondamentaux, des règles de gestion et des comportements attendus de la plateforme.
+    </p>
+    <div class="masthead-meta">
+      <span class="meta-item">Version 0.1 <span class="meta-dot"></span> En cours</span>
+      <span class="meta-item">Sections 1 à 4</span>
+    </div>
+  </div>
+
+  <!-- Table of contents -->
+  <div class="toc">
+    <div class="toc-title">Sommaire</div>
+    <ol>
+      <li><a href="#vision">Vision</a></li>
+      <li><a href="#groupes">Groupes &amp; Membres</a></li>
+      <li><a href="#coffres">Coffres &amp; Flux</a></li>
+      <li><a href="#parts">Parts &amp; Comptes Retirables</a></li>
+      <li><a href="#projets">Projets</a></li>
+      <li><a href="#votes">Votes</a></li>
+      <li><a href="#logs">Logs &amp; Transparence</a></li>
+      <li><a href="#dashboard">Tableau de bord &amp; Analyses</a></li>
+      <li><a href="#notifications">Notifications</a></li>
+    </ol>
+  </div>
+
+  <!-- Section 1 -->
+  <div class="section" id="vision">
+    <div class="section-label">Section 1</div>
+    <h2>Vision</h2>
+
+    <p>
+      MIKS facilite la <strong>gestion, la comptabilité et la gouvernance</strong> de groupes d'investissement collectif — entre amis, en famille, ou toute autre forme de groupe organisé.
+    </p>
+    <p>
+      Un groupe peut se cotiser — ou non — pour faire fructifier un capital commun, financer des projets, ou simplement avoir une <strong>visibilité claire sur leurs finances collectives</strong>.
+    </p>
+
+    <div class="note">
+      <strong>MIKS n'est pas une banque.</strong> Il ne détient pas d'argent, n'exécute pas de virements. C'est un outil de gestion : il enregistre, calcule, visualise et facilite les décisions du groupe.
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 2 -->
+  <div class="section" id="groupes">
+    <div class="section-label">Section 2</div>
+    <h2>Groupes &amp; Membres</h2>
+
+    <div class="subsection">
+      <h3>Groupe</h3>
+      <p>
+        Un groupe est l'espace de travail central dans MIKS. Chaque groupe est entièrement indépendant avec ses propres membres, coffres, projets et règles de fonctionnement.
+      </p>
+      <ul class="doc-list">
+        <li>Un groupe a un <strong>créateur</strong>, mis en avant par MIKS à titre informatif</li>
+        <li><strong>Aucun rôle n'est imposé</strong> par MIKS — le groupe s'organise librement</li>
+        <li>Tous les membres ont accès aux <strong>logs en lecture seule</strong> pour la transparence et en cas de réclamation</li>
+      </ul>
+    </div>
+
+    <div class="subsection">
+      <h3>Membres</h3>
+      <ul class="doc-list">
+        <li>Un compte peut appartenir à <strong>plusieurs groupes simultanément</strong></li>
+        <li>Tout membre peut <strong>proposer un projet</strong> au groupe</li>
+        <li>Chaque membre voit en temps réel ses <strong>parts</strong> et le solde de son <strong>compte rétirable</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 3 -->
+  <div class="section" id="coffres">
+    <div class="section-label">Section 3</div>
+    <h2>Coffres &amp; Flux</h2>
+
+    <div class="subsection">
+      <h3>Coffres</h3>
+      <p>
+        Un groupe crée autant de <strong>coffres</strong> que nécessaire selon son organisation. MIKS ne prescrit ni leur nombre ni leur usage — c'est entièrement libre.
+      </p>
+      <p>
+        En plus des coffres du groupe, <strong>chaque membre possède un coffre rétirable personnel</strong> géré automatiquement par MIKS.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Flux</h3>
+      <p>
+        Le groupe configure des <strong>règles de flux</strong> qui définissent comment l'argent entrant se répartit automatiquement entre les coffres.
+      </p>
+
+      <p>Un flux est défini par :</p>
+      <ul class="doc-list">
+        <li>Une <strong>source</strong> — cotisation, revenu de projet, entrée manuelle…</li>
+        <li>Des <strong>destinations</strong> — coffres du groupe et/ou coffres retirables des membres</li>
+        <li>Un <strong>pourcentage</strong> par destination (total = 100%)</li>
+      </ul>
+
+      <p>MIKS calcule et enregistre chaque flux automatiquement selon ces règles, dès qu'une entrée est déclarée.</p>
+
+      <div class="callout">
+        <div class="callout-label">Exemple</div>
+        <p>
+          Un groupe crée 4 coffres et décide qu'à chaque cotisation, 25% va dans chaque coffre. Aucune part ne va aux coffres retirables à cette étape.
+        </p>
+        <p>
+          Le groupe lance ensuite un projet avec deux coffres dédiés : <em>Capital Projet</em> et <em>Logistique</em>. Les revenus de ce projet sont configurés ainsi : 25% → Capital Projet, 25% → Logistique, 50% → coffres retirables des membres (répartis selon leurs parts).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 4 -->
+  <div class="section" id="parts">
+    <div class="section-label">Section 4</div>
+    <h2>Parts &amp; Comptes Retirables</h2>
+
+    <div class="subsection">
+      <h3>Parts</h3>
+      <p>
+        Les <strong>parts d'un membre</strong> sont proportionnelles à ses cotisations cumulées au sein du groupe. Elles déterminent sa quote-part lors de toute distribution vers les coffres retirables.
+      </p>
+
+      <div class="formula-block">
+        <div class="formula-label">Formule</div>
+        <code>Part membre (%) =
+  Cotisations cumulées du membre
+  ─────────────────────────────── × 100
+  Cotisations cumulées du groupe</code>
+      </div>
+
+      <p>
+        Ce calcul est mis à jour en temps réel après chaque cotisation enregistrée.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Coffre Rétirable</h3>
+      <p>
+        Chaque membre possède un <strong>coffre rétirable personnel</strong> (<code>Withdrawable Vault</code>), automatiquement alimenté par MIKS selon :
+      </p>
+      <ul class="doc-list">
+        <li>Les <strong>règles de flux</strong> configurées par le groupe</li>
+        <li>La <strong>part du membre</strong> au moment de chaque distribution</li>
+      </ul>
+      <p>
+        Le membre consulte à tout moment le solde de son coffre rétirable et l'historique détaillé de ses mouvements.
+      </p>
+    </div>
+  </div>
+
+  <!-- Section 5 -->
+  <div class="section" id="projets">
+    <div class="section-label">Section 5</div>
+    <h2>Projets</h2>
+
+    <p>
+      MIKS fournit un système générique pour créer et gérer des projets au sein d'un groupe. La nature du projet est entièrement définie par le groupe — MIKS n'impose aucune catégorie ni aucun type.
+    </p>
+
+    <div class="subsection">
+      <h3>Création</h3>
+      <p>
+        Tout membre peut soumettre un projet. Une soumission comprend au minimum :
+      </p>
+      <ul class="doc-list">
+        <li>Un <strong>titre</strong> et une <strong>description</strong></li>
+        <li>Un <strong>budget demandé</strong> et le <strong>coffre source</strong> depuis lequel il sera prélevé</li>
+        <li>Les <strong>coffres du projet</strong> — le groupe en crée autant que nécessaire pour organiser les flux internes du projet</li>
+        <li>Les <strong>règles de flux</strong> propres au projet — comment les revenus ou dépenses se répartissent entre ses coffres et les coffres retirables des membres</li>
+      </ul>
+      <p>
+        Le projet passe en statut <em>En attente</em> jusqu'à l'approbation par vote du groupe.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Gestion financière</h3>
+      <p>
+        Une fois approuvé, chaque projet dispose de sa propre comptabilité indépendante :
+      </p>
+      <ul class="doc-list">
+        <li><strong>Entrées</strong> — revenus, apports, remboursements</li>
+        <li><strong>Sorties</strong> — dépenses, décaissements</li>
+        <li><strong>Solde par coffre</strong> — suivi en temps réel de chaque coffre du projet</li>
+        <li><strong>Flux automatiques</strong> — toute entrée est répartie selon les règles configurées</li>
+      </ul>
+      <p>
+        MIKS enregistre chaque mouvement financier dans un journal immuable lié au projet.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Suivi & Analyses</h3>
+      <p>
+        Pour chaque projet, le groupe dispose d'une vue synthétique :
+      </p>
+      <ul class="doc-list">
+        <li>Évolution du capital par coffre dans le temps</li>
+        <li>Total des entrées et sorties</li>
+        <li>Solde net du projet</li>
+        <li>Historique complet des opérations</li>
+      </ul>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Exemple</div>
+      <p>
+        Un groupe monte un projet de revente. Il crée deux coffres : <em>Stock</em> et <em>Logistique</em>. Les règles de flux des revenus : 30% → Stock, 20% → Logistique, 50% → coffres retirables des membres selon leurs parts.
+      </p>
+      <p>
+        Le budget initial est prélevé depuis un coffre existant du groupe. Chaque vente déclarée déclenche automatiquement la répartition configurée.
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 6 -->
+  <div class="section" id="votes">
+    <div class="section-label">Section 6</div>
+    <h2>Votes</h2>
+
+    <p>
+      Le système de vote dans MIKS est dédié à l'<strong>approbation des projets</strong> proposés par les membres. C'est le seul mécanisme de décision formelle intégré à la plateforme.
+    </p>
+
+    <div class="subsection">
+      <h3>Proposition</h3>
+      <p>
+        Tout membre peut soumettre un projet. Une fois soumis, MIKS ouvre automatiquement une session de vote pour l'ensemble du groupe.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Configuration du vote</h3>
+      <p>
+        Chaque groupe configure librement ses règles de vote :
+      </p>
+      <ul class="doc-list">
+        <li><strong>Seuil d'approbation</strong> — pourcentage minimum de votes favorables requis (ex : 50%, 70%, unanimité)</li>
+        <li><strong>Quorum</strong> — nombre minimum de membres devant voter pour que le résultat soit valide</li>
+        <li><strong>Durée</strong> — fenêtre de temps pendant laquelle les membres peuvent voter</li>
+      </ul>
+      <p>
+        Ces paramètres sont définis par le groupe et peuvent être modifiés à tout moment pour les prochains votes.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <h3>Résultat</h3>
+      <p>
+        À la clôture du vote :
+      </p>
+      <ul class="doc-list">
+        <li>Si le seuil est atteint — le projet est <strong>approuvé</strong>, le budget est prélevé depuis le coffre source et le projet passe en statut actif</li>
+        <li>Si le seuil n'est pas atteint — le projet est <strong>refusé</strong>, aucun fonds n'est prélevé</li>
+        <li>Si le quorum n'est pas atteint — le vote est <strong>invalide</strong>, le groupe peut relancer</li>
+      </ul>
+      <p>
+        Le résultat, les votes individuels et l'horodatage sont enregistrés dans les logs du groupe.
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 7 -->
+  <div class="section" id="logs">
+    <div class="section-label">Section 7</div>
+    <h2>Logs &amp; Transparence</h2>
+
+    <p>
+      MIKS enregistre l'ensemble des événements dans un <strong>journal immuable</strong>. Chaque entrée est horodatée et ne peut être ni modifiée ni supprimée.
+    </p>
+
+    <div class="subsection">
+      <h3>Ce qui est tracé</h3>
+      <ul class="doc-list">
+        <li>Toutes les <strong>opérations financières</strong> — entrées, sorties, flux entre coffres</li>
+        <li>Tous les <strong>votes</strong> — proposition, participation individuelle, résultat</li>
+        <li>Les <strong>changements de configuration</strong> — règles de flux, paramètres de vote</li>
+        <li>Les <strong>événements membres</strong> — adhésion, sortie, cotisations</li>
+        <li>Toute autre <strong>action significative</strong> dans le groupe</li>
+      </ul>
+    </div>
+
+    <div class="subsection">
+      <h3>Accès</h3>
+      <p>
+        Tous les membres du groupe ont accès aux logs <strong>en lecture seule</strong>. Aucun membre ne peut modifier ou supprimer une entrée du journal.
+      </p>
+      <p>
+        En cas de désaccord ou de réclamation, les membres peuvent consulter l'historique complet pour vérifier la conformité d'une opération avec les règles du groupe.
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 8 -->
+  <div class="section" id="dashboard">
+    <div class="section-label">Section 8</div>
+    <h2>Tableau de bord &amp; Analyses</h2>
+
+    <p>
+      MIKS offre une vue en temps réel de la santé financière du groupe et de la situation individuelle de chaque membre.
+    </p>
+
+    <div class="subsection">
+      <h3>Vue groupe</h3>
+      <ul class="doc-list">
+        <li><strong>Solde de chaque coffre</strong> — montant actuel et évolution dans le temps</li>
+        <li><strong>Capital total du groupe</strong> — somme de tous les coffres</li>
+        <li><strong>Cotisations</strong> — taux de participation, historique, retards éventuels</li>
+        <li><strong>Projets actifs</strong> — état, budget consommé, revenus générés, solde net</li>
+        <li><strong>Votes en cours</strong> — participation, résultats</li>
+        <li><strong>Flux récents</strong> — dernières entrées et sorties enregistrées</li>
+      </ul>
+    </div>
+
+    <div class="subsection">
+      <h3>Vue membre</h3>
+      <ul class="doc-list">
+        <li><strong>Parts actuelles</strong> — pourcentage et valeur en devise</li>
+        <li><strong>Évolution des parts</strong> — graphique historique</li>
+        <li><strong>Solde du coffre rétirable</strong> — montant disponible et historique des crédits reçus</li>
+        <li><strong>Historique des cotisations</strong> — régularité, montants, dates</li>
+        <li><strong>Participation aux votes</strong> — historique des votes exprimés</li>
+      </ul>
+    </div>
+
+    <div class="subsection">
+      <h3>Extensibilité</h3>
+      <p>
+        Le tableau de bord est conçu pour être enrichi. De nouvelles métriques et visualisations peuvent être ajoutées selon les besoins du groupe ou les évolutions de la plateforme.
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 9 -->
+  <div class="section" id="notifications">
+    <div class="section-label">Section 9</div>
+    <h2>Notifications</h2>
+
+    <p>
+      MIKS notifie chaque membre de <strong>tous les événements</strong> qui le concernent — dans son compte personnel et dans chacun de ses groupes.
+    </p>
+
+    <div class="subsection">
+      <h3>Événements notifiés</h3>
+      <ul class="doc-list">
+        <li><strong>Coffres</strong> — mouvement enregistré, flux appliqué, crédit sur le coffre rétirable</li>
+        <li><strong>Cotisations</strong> — cotisation enregistrée, rappel de cotisation</li>
+        <li><strong>Projets</strong> — nouvelle proposition, mise à jour, clôture</li>
+        <li><strong>Votes</strong> — vote ouvert, rappel avant clôture, résultat publié</li>
+        <li><strong>Groupe</strong> — nouveau membre, changement de configuration, événement important</li>
+        <li><strong>Compte</strong> — connexion depuis un nouvel appareil, modification du profil</li>
+      </ul>
+    </div>
+
+    <div class="subsection">
+      <h3>Canaux</h3>
+      <p>
+        Les notifications sont envoyées via les canaux disponibles selon la configuration du membre : in-app, email, SMS, ou autres canaux intégrés à la plateforme.
+      </p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <span>MIKS — Dossier Produit v0.1</span>
+    <span>Sections 1–9 · Première version complète</span>
+  </div>
+
+</div>
