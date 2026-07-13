@@ -1,0 +1,15 @@
+model MemberShareCache {
+  id               String      @id @default(uuid())
+  groupId          String      @map("group_id")
+  memberId         String      @unique @map("member_id")
+  member           GroupMember @relation(fields: [memberId], references: [id])
+  percentage       Decimal     @db.Decimal(7, 4)
+  totalContributed Decimal     @map("total_contributed") @db.Decimal(18, 2)
+  computedAt       DateTime    @default(now()) @map("computed_at")
+  // NB: also keep a SQL view `v_member_shares` computed on the fly from
+  // `contributions` (see original SQL schema) to audit this cache at any
+  // time — Prisma can query it via $queryRaw.
+
+  @@id([groupId, memberId])
+  @@map("member_share_cache")
+}

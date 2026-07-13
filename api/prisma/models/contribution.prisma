@@ -1,0 +1,16 @@
+model Contribution {
+  id                String         @id @default(uuid())
+  groupId           String         @map("group_id")
+  group             Group          @relation(fields: [groupId], references: [id])
+  memberId          String         @map("member_id")
+  member            GroupMember    @relation(fields: [memberId], references: [id])
+  amount            Decimal        @db.Decimal(18, 2)
+  transactionId     String?        @unique @map("transaction_id")
+  paymentMethodCode String?        @map("payment_method_code") @db.VarChar(32)
+  paymentMethod     PaymentMethod? @relation(fields: [paymentMethodCode], references: [code])
+  contributedAt     DateTime       @default(now()) @map("contributed_at")
+  metadata          Json           @default("{}")
+
+  @@index([memberId, contributedAt])
+  @@map("contributions")
+}

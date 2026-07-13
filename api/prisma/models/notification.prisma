@@ -1,0 +1,30 @@
+model Notification {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId       String?   @map("group_id") // NULL for an account-level notification (outside any group)
+  group         Group?    @relation(fields: [groupId], references: [id])
+  eventTypeCode String    @map("event_type_code") @db.VarChar(64)
+  eventType     EventType @relation(fields: [eventTypeCode], references: [code])
+  payload       Json      @default("{}")
+  readAt        DateTime? @map("read_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, readAt])
+  @@index([groupId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id            String              @id @default(uuid())
+  userId        String              @map("user_id")
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventTypeCode String              @map("event_type_code") @db.VarChar(64)
+  eventType     EventType           @relation(fields: [eventTypeCode], references: [code])
+  channelId     String              @map("channel_id")
+  channel       NotificationChannel @relation(fields: [channelId], references: [id])
+  enabled       Boolean             @default(true)
+
+  @@unique([userId, eventTypeCode, channelId])
+  @@map("notification_preferences")
+}

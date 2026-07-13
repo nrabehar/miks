@@ -1,0 +1,206 @@
+enum AppRoleType {
+  ADMIN
+  USER
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String?  @unique @db.VarChar(255)
+  phone       String?  @unique @db.VarChar(32)
+  displayName String   @map("display_name")
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  role        AppRoleType @default(USER)
+
+  identities              UserIdentity[]
+  verificationTokens      VerificationToken[]
+  sessions                Session[]
+  devices                 Device[]
+  groupsCreated           Group[]                  @relation("GroupCreator")
+  memberships             GroupMember[]
+  transactionsCreated     Transaction[]
+  auditLogActions         AuditLog[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  kycVerifications        KycVerification[]
+
+  @@map("users")
+}
+
+// ---- Multi-method authentication -------------------------------------------
+// A `User` = a person. A `UserIdentity` = one login method linked to that
+// person. A user can stack several identities (email+password AND Google
+// AND Facebook) that all point to the same `userId` — that's what lets
+// "the user picks their own login method".
+//
+// Adding a new provider (Apple, GitHub, a future enterprise SSO...) = one
+// row in `auth_providers`, NEVER a new column on `User` or `UserIdentity`.
+
+enum AuthProviderCategory {
+  LOCAL // credential managed by MIKS itself (email+password, phone+OTP)
+  OAUTH // delegated to a third-party provider (Google, Facebook, future Apple...)
+
+  @@map("auth_provider_category")
+}
+
+model AuthProvider {
+  id       String               @id @default(uuid())
+  code     String               @unique @db.VarChar(32) // 'email', 'phone', 'google', 'facebook', future 'apple'...
+  name     String
+  category AuthProviderCategory
+  active   Boolean              @default(true)
+  config   Json                 @default("{}") // OAuth client_id, scopes, endpoints...
+
+  identities UserIdentity[]
+
+  @@map("auth_providers")
+}
+
+model UserIdentity {
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerCode String       @map("provider_code") @db.VarChar(32)
+  provider     AuthProvider @relation(fields: [providerCode], references: [code])
+
+  // --- Only set when provider.category = LOCAL ---
+  identifier String? // the email or phone number used to log in
+  secretHash String? @map("secret_hash") // hash of the password or validated OTP — never stored in plain text
+
+  // --- Only set when provider.category = OAUTH ---
+  providerAccountId String?   @map("provider_account_id") // Google's "sub", Facebook's "id"...
+  accessToken       String?   @map("access_token") @db.Text
+  refreshToken      String?   @map("refresh_token") @db.Text
+  tokenExpiresAt    DateTime? @map("token_expires_at")
+
+  emailVerified Boolean   @default(false) @map("email_verified")
+  lastUsedAt    DateTime? @map("last_used_at")
+  metadata      Json      @default("{}") // e.g. profile picture and name returned by the provider
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  verificationTokens VerificationToken[]
+
+  // Prevents the same Google/Facebook account from being linked to two MIKS accounts.
+  @@unique([providerCode, providerAccountId])
+  // Prevents the same email/phone from being used for two local accounts.
+  @@unique([providerCode, identifier])
+  @@index([userId])
+  @@map("user_identities")
+}
+
+// ---- Verification tokens ----------------------------------------------------
+// One generic model for every "one-time secret with an expiry" flow: email
+// verification, phone OTP, password reset, future magic-link login,
+// account-deletion confirmation, 2FA... The `purpose` is a reference table
+// (not an enum) because new flows of this kind get added over a product's
+// life far more often than the core auth model changes.
+//
+// Only a HASH of the token/code is ever stored — never the raw value — so a
+// database leak doesn't hand out usable codes.
+
+model VerificationTokenPurpose {
+  id          String  @id @default(uuid())
+  code        String  @unique @db.VarChar(32) // 'email_verification', 'phone_otp', 'password_reset', future 'magic_link', 'account_deletion'...
+  name        String
+  description String?
+
+  tokens VerificationToken[]
+
+  @@map("verification_token_purposes")
+}
+
+model VerificationToken {
+  id          String                   @id @default(uuid())
+  userId      String                   @map("user_id")
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purposeCode String                   @map("purpose_code") @db.VarChar(32)
+  purpose     VerificationTokenPurpose @relation(fields: [purposeCode], references: [code])
+
+  // Which identity this token is meant to verify/reset, when relevant (e.g.
+  // confirming ONE specific email among several linked identities). Nullable
+  // because some purposes (e.g. a generic 2FA code) aren't tied to one.
+  identityId String?       @map("identity_id")
+  identity   UserIdentity? @relation(fields: [identityId], references: [id], onDelete: Cascade)
+
+  // Snapshot of where the code/link was sent, kept even if the user later
+  // changes their email/phone — so the audit trail stays accurate.
+  sentTo String? @map("sent_to")
+
+  tokenHash   String    @map("token_hash") // hash of the code/link, never the raw value
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5) @map("max_attempts")
+  expiresAt   DateTime  @map("expires_at")
+  consumedAt  DateTime? @map("consumed_at") // set once successfully used — a token is single-use
+  createdAt   DateTime  @default(now()) @map("created_at")
+  metadata    Json      @default("{}")
+
+  @@index([userId, purposeCode])
+  @@index([tokenHash])
+  @@map("verification_tokens")
+}
+
+// ---- Devices ----------------------------------------------------------------
+// A `Device` is recognized by a stable client-generated identifier (mobile:
+// a UUID stored in secure storage; web: a browser fingerprint) — this is
+// what lets the system say "we already know this device" instead of
+// treating every login as a brand-new device.
+//
+// A device is independent of the auth method used: the same phone can log
+// in via Google one day and via email/password another day — both
+// resulting `Session` rows point to the same `Device`.
+
+enum DeviceType {
+  MOBILE
+  TABLET
+  DESKTOP
+  WEB
+  OTHER
+
+  @@map("device_type")
+}
+
+enum DeviceStatus {
+  ACTIVE
+  REVOKED
+
+  @@map("device_status")
+}
+
+model Device {
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         DeviceType
+  platform     String?
+  deviceName   String?      @map("device_name")
+  deviceId     String       @map("device_id")
+  pushToken    String?      @map("push_token") @db.Text
+  status       DeviceStatus @default(ACTIVE)
+  firstSeenAt  DateTime     @default(now()) @map("first_seen_at")
+  lastActiveAt DateTime     @default(now()) @map("last_active_at")
+  metadata     Json         @default("{}")
+
+  sessions Session[]
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@map("devices")
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId     String?   @map("device_id")
+  device       Device?   @relation(fields: [deviceId], references: [id])
+  refreshToken String    @unique @map("refresh_token")
+  userAgent    String?   @map("user_agent")
+  ip           String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  expiresAt    DateTime  @map("expires_at")
+  revokedAt    DateTime? @map("revoked_at")
+
+  @@index([userId])
+  @@index([deviceId])
+  @@map("sessions")
+}

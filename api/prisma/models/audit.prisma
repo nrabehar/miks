@@ -1,0 +1,19 @@
+model AuditLog {
+  id        BigInt    @id @default(autoincrement())
+  groupId   String?   @map("group_id") // NULL for an account-level event (outside any group)
+  group     Group?    @relation(fields: [groupId], references: [id])
+  eventType String    @map("event_type") @db.VarChar(64)
+  type      EventType @relation(fields: [eventType], references: [code])
+  actorId   String?   @map("actor_id")
+  actor     User?     @relation(fields: [actorId], references: [id])
+  payload   Json      @default("{}")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // MANUAL MIGRATION: trigger forbidding UPDATE/DELETE on this table (see
+  // trg_audit_log_immutable in the original SQL schema) — the protection
+  // must NEVER rely solely on Prisma application-layer discipline.
+
+  @@index([groupId, createdAt])
+  @@index([eventType])
+  @@map("audit_log")
+}

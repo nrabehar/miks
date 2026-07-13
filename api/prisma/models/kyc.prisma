@@ -1,0 +1,55 @@
+enum KycStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+
+  @@map("kyc_status")
+}
+
+model KycVerification {
+  id                String      @id @default(uuid())
+  userId            String      @map("user_id")
+  user              User        @relation(fields: [userId], references: [id])
+  levelCode         String      @map("level_code") @db.VarChar(32)
+  level             KycLevel    @relation(fields: [levelCode], references: [code])
+  providerCode      String      @map("provider_code") @db.VarChar(32)
+  provider          KycProvider @relation(fields: [providerCode], references: [code])
+  status            KycStatus   @default(PENDING)
+  externalReference String?     @map("external_reference") // the file ID at the third-party provider, once integrated
+  rejectionReason   String?     @map("rejection_reason")
+  submittedAt       DateTime    @default(now()) @map("submitted_at")
+  processedAt       DateTime?   @map("processed_at")
+  expiresAt         DateTime?   @map("expires_at") // to force periodic renewal
+  metadata          Json        @default("{}")
+
+  documents KycDocument[]
+
+  @@index([userId, status])
+  @@map("kyc_verifications")
+}
+
+enum KycDocumentStatus {
+  PENDING
+  VALID
+  REJECTED
+
+  @@map("kyc_document_status")
+}
+
+model KycDocument {
+  id                String            @id @default(uuid())
+  kycVerificationId String            @map("kyc_verification_id")
+  kycVerification   KycVerification   @relation(fields: [kycVerificationId], references: [id], onDelete: Cascade)
+  documentTypeCode  String            @map("document_type_code") @db.VarChar(32)
+  documentType      KycDocumentType   @relation(fields: [documentTypeCode], references: [code])
+  // The file itself lives outside the database (S3, GCS...); only the
+  // reference is stored — never a blob in the database.
+  fileUrl           String            @map("file_url")
+  status            KycDocumentStatus @default(PENDING)
+  metadata          Json              @default("{}")
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  @@map("kyc_documents")
+}

@@ -1,0 +1,58 @@
+enum TransactionDirection {
+  CREDIT
+  DEBIT
+
+  @@map("transaction_direction")
+}
+
+enum TransactionType {
+  CONTRIBUTION
+  INTERNAL_FLOW
+  PROJECT_PAYOUT
+  MANUAL_ENTRY
+  ADJUSTMENT
+  OTHER
+
+  @@map("transaction_type")
+}
+
+model Transaction {
+  id        String               @id @default(uuid())
+  groupId   String               @map("group_id")
+  group     Group                @relation(fields: [groupId], references: [id])
+  vaultId   String               @map("vault_id")
+  vault     Vault                @relation(fields: [vaultId], references: [id])
+  direction TransactionDirection
+  amount    Decimal              @db.Decimal(18, 2)
+  type      TransactionType
+
+  // Polymorphic reference to the origin of the transaction
+  sourceType  String? @map("source_type")
+  sourceRefId String? @map("source_ref_id")
+
+  // Extension point for "payment methods": nullable today, ready for a
+  // future integration (mobile money, tracked bank transfer...) without any
+  // further migration.
+  paymentMethodCode String?        @map("payment_method_code") @db.VarChar(32)
+  paymentMethod     PaymentMethod? @relation(fields: [paymentMethodCode], references: [code])
+  externalReference String?        @map("external_reference") // e.g. a mobile money transaction ID
+
+  // To cancel a transaction: insert a reversing transaction that points
+  // back here. Never UPDATE/DELETE an existing row.
+  reversedTransactionId String?       @map("reversed_transaction_id")
+  reversedTransaction   Transaction?  @relation("TransactionReversal", fields: [reversedTransactionId], references: [id])
+  reversals             Transaction[] @relation("TransactionReversal")
+
+  description String?
+  createdById String?  @map("created_by")
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // MANUAL MIGRATION: trigger forbidding UPDATE/DELETE on this table (see
+  // trg_transactions_immutable in the original SQL schema).
+
+  @@index([vaultId, createdAt])
+  @@index([groupId, createdAt])
+  @@map("transactions")
+}

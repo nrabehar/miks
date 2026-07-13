@@ -1,0 +1,52 @@
+model Group {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  creatorId    String   @map("creator_id")
+  creator      User     @relation("GroupCreator", fields: [creatorId], references: [id])
+  currencyCode String   @default("MGA") @map("currency_code") @db.VarChar(8)
+  currency     Currency @relation(fields: [currencyCode], references: [code])
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  members       GroupMember[]
+  vaults        Vault[]
+  projects      Project[]
+  flowRules     FlowRule[]
+  transactions  Transaction[]
+  contributions Contribution[]
+  auditLog      AuditLog[]
+  notifications Notification[]
+
+  @@map("groups")
+}
+
+enum MemberStatus {
+  ACTIVE
+  LEFT
+
+  @@map("member_status")
+}
+
+model GroupMember {
+  id       String       @id @default(uuid())
+  groupId  String       @map("group_id")
+  group    Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String       @map("user_id")
+  user     User         @relation(fields: [userId], references: [id])
+  status   MemberStatus @default(ACTIVE)
+  joinedAt DateTime     @default(now()) @map("joined_at")
+  leftAt   DateTime?    @map("left_at")
+  // Deliberately no "role" field: MIKS imposes no role. A group's own free
+  // labels (e.g. "treasurer") live in `metadata`.
+  metadata Json         @default("{}")
+
+  withdrawableVault Vault?
+  contributions     Contribution[]
+  projectsProposed  Project[]
+  voteResponses     VoteResponse[]
+  shareCache        MemberShareCache?
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}

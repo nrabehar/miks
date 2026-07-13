@@ -1,0 +1,102 @@
+model Currency {
+  id     String  @id @default(cuid())
+  code   String  @unique @db.VarChar(3)
+  name   String  @db.VarChar(100)
+  symbol String? @db.VarChar(8)
+  active Boolean @default(true)
+
+  groups Group[]
+
+  @@map("currencies")
+}
+
+model PaymentMethod {
+  id        String   @id @default(cuid())
+  code      String   @unique @db.VarChar(32)
+  name      String
+  active    Boolean  @default(true)
+  config    Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  contributions Contribution[]
+  transactions  Transaction[]
+
+  @@map("payment_methods")
+}
+
+model NotificationChannel {
+  id     String  @id @default(cuid())
+  name   String
+  active Boolean @default(true)
+
+  preferences NotificationPreference[]
+
+  @@map("notification_channels")
+}
+
+enum EventCategory {
+  FINANCIAL
+  VOTE
+  PROJECT
+  MEMBER
+  CONFIGURATION
+  ACCOUNT
+  KYC
+
+  @@map("event_category")
+}
+
+model EventType {
+  // Extensible catalog of events that get logged / notified.
+  id          String        @id @default(cuid())
+  code        String        @unique @db.VarChar(64) // 'contribution_recorded', 'kyc_approved', ...
+  category    EventCategory
+  description String?
+
+  auditLogEntries         AuditLog[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+
+  @@map("event_types")
+}
+
+// ---- KYC reference tables --------------------------------------------------
+
+model KycLevel {
+  // Verification tiers, extensible (e.g. 'light', 'full', future 'enhanced'
+  // for higher contribution amounts).
+  id          String  @id @default(cuid())
+  code        String  @unique @db.VarChar(32)
+  name        String
+  description String?
+  order       Int     @default(0) // ranks tiers from weakest to strongest
+
+  verifications KycVerification[]
+
+  @@map("kyc_levels")
+}
+
+model KycProvider {
+  // Who performed the check: manual today, a third party tomorrow (Smile
+  // Identity, Onfido, Veriff...). Changing or adding a provider = one row,
+  // never a migration.
+  id     String  @id @default(cuid())
+  code   String  @unique @db.VarChar(32) // 'manual', 'smile_identity', 'onfido'...
+  name   String
+  active Boolean @default(true)
+  config Json    @default("{}") // API keys, endpoints, confidence thresholds...
+
+  verifications KycVerification[]
+
+  @@map("kyc_providers")
+}
+
+model KycDocumentType {
+  id   String @id @default(cuid())
+  code String @unique @db.VarChar(32) // 'national_id', 'passport', 'proof_of_address', 'selfie'...
+  name String
+
+  documents KycDocument[]
+
+  @@map("kyc_document_types")
+}
