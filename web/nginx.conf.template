@@ -1,0 +1,103 @@
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+	worker_connections 1024;
+	use epoll;
+	multi_accept on;
+}
+
+http {
+	include /etc/nginx/mime.types;
+	default_type application/octet-stream;
+
+	log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+					'$status $body_bytes_sent "$http_referer" '
+					'rt=$request_time uct="$upstream_connect_time" '
+					'urt="$upstream_response_time" uht="$upstream_header_time" ';
+	
+	#logs
+	access_log /var/log/nginx/access.log main;
+
+	# Performance optimizations
+	sendfile on;
+	tcp_nopush on;
+	tcp_nodelay on;
+	keepalive_timeout 65;
+	types_hash_max_size 2048;
+
+	# Security headers
+	add_header X-Frame-Options "SAMEORIGIN" always;
+	add_header X-Content-Type-Options "nosniff" always;
+	add_header X-XSS-Protection "1; mode=block" always;
+	add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+	# Gzip compression
+	gzip on;
+	gzip_vary on;
+	gzip_proxied any;
+	gzip_comp_level 6;
+	gzip_types text/plain text/css text/xml application/json application/javascript application/rss+xml application/atom+xml image/svg+xml;
+
+	# Rate limiting
+	limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+
+	# HTTP server
+	server {
+		listen 80;
+		http2 on;
+		server_name localhost;
+
+		# CSP header
+		add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none';" always;
+
+		# Proxy settings — applied per location, not globally, to avoid leaking the
+		# public Host header to the internal backend container.
+		proxy_http_version 1.1;
+		proxy_read_timeout 86400;
+		proxy_send_timeout 86400;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto $scheme;
+
+		# Docker internal DNS resolver to prevent IP caching
+		resolver 127.0.0.11 valid=10s;
+
+		location / {
+			root /usr/share/nginx/html;
+			index index.html index.htm;
+			try_files $uri $uri/ /index.html;
+		}
+
+		location /assets/ {
+			root /usr/share/nginx/html;
+			expires 1y;
+			add_header Cache-Control "public, no-transform";
+		}
+
+		error_page 500 502 503 504 /50x.html;
+		location = /50x.html {
+			root /usr/share/nginx/html;
+		}
+
+		location /api/ {
+			limit_req zone=api_limit burst=20 nodelay;
+			set $backend "${VITE_API_URL}";
+			rewrite ^/api/?(.*)$ /$1 break;
+			proxy_pass $backend;
+			proxy_set_header Host $proxy_host;
+			proxy_set_header X-Real-IP $remote_addr;
+			proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+			proxy_set_header X-Forwarded-Proto $scheme;
+			proxy_http_version 1.1;
+			proxy_set_header Connection "";
+			proxy_ssl_server_name on;
+		}
+
+		location ~ /\. {
+			deny all;
+			log_not_found off;
+			access_log off;
+		}
+	}
+}

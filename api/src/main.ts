@@ -1,13 +1,13 @@
+import { HttpExceptionFilter } from '$common/filters/http-exception.filter';
+import { PrismaExceptionFilter } from '$common/filters/prisma-exception.filter';
+import { LoggingInterceptor } from '$common/interceptors/logging.interceptor';
+import { TransformInterceptor } from '$common/interceptors/transform.interceptor';
+import { ConfigService } from '$lib/config/config.service';
+import { AppModule } from '@/app.module';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import 'dotenv/config';
-import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { ConfigService } from './lib/config/config.service';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
