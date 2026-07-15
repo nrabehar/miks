@@ -30,8 +30,14 @@ async function bootstrap() {
 		}),
 	);
 
-	app.useGlobalFilters(new PrismaExceptionFilter(), new HttpExceptionFilter());
-	app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
+	app.useGlobalFilters(
+		new PrismaExceptionFilter(),
+		new HttpExceptionFilter(),
+	);
+	app.useGlobalInterceptors(
+		new LoggingInterceptor(),
+		new TransformInterceptor(),
+	);
 
 	await app.listen(config.app.port);
 }

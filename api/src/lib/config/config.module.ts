@@ -6,15 +6,15 @@ import { validate } from './config.validation';
 
 @Global()
 @Module({
-  imports: [
-    NestConfigModule.forRoot({
-      isGlobal: true,
-      expandVariables: true,
-      load: [configuration],
-      validate,
-    }),
-  ],
-  providers: [ConfigService],
-  exports: [ConfigService],
+	imports: [
+		NestConfigModule.forRoot({
+			isGlobal: true,
+			expandVariables: true,
+			load: [configuration],
+			validate,
+		}),
+	],
+	providers: [ConfigService],
+	exports: [ConfigService],
 })
 export class ConfigModule {}

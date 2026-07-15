@@ -19,6 +19,14 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+			"#/*": ["./src/*"],
+			"@/*": ["./src/*"],
+      "$common/*": ["./src/common/*"],
+      "$prisma/*": ["./src/generated/prisma/*"],
+      "$/*": ["./src/modules/*"],
+      "$lib/*": ["./src/lib/*"]
+		}
   }
 }
