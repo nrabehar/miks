@@ -67,6 +67,9 @@ model UserIdentity {
   metadata      Json      @default("{}")
   createdAt     DateTime  @default(now()) @map("created_at")
 
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lockedUntil    DateTime? @map("locked_until")
+
   verificationTokens VerificationToken[]
 
   @@unique([providerCode, providerAccountId])
