@@ -21,8 +21,13 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyDto } from './dto/verify.dto';
 import { LocalAuthGuard } from './local-auth.guard';
+import { VerificationService } from './verification.service';
 
 @Controller('auth')
 export class AuthController {
@@ -30,6 +35,7 @@ export class AuthController {
 		private readonly authService: AuthService,
 		private readonly tokenService: TokenService,
 		private readonly prisma: PrismaService,
+		private readonly verificationService: VerificationService,
 	) {}
 
 	@Public()
@@ -108,6 +114,36 @@ export class AuthController {
 		}
 
 		this.tokenService.clearAuthCookies(res);
+	}
+
+	@Public()
+	@Post('verify')
+	@HttpCode(HttpStatus.OK)
+	async verify(@Body() dto: VerifyDto) {
+		await this.verificationService.verify(dto.token);
+		return { verified: true };
+	}
+
+	@Public()
+	@Post('resend-verification')
+	@HttpCode(HttpStatus.ACCEPTED)
+	async resendVerification(@Body() dto: ResendVerificationDto) {
+		await this.verificationService.requestVerification(dto.identifier);
+	}
+
+	@Public()
+	@Post('forgot-password')
+	@HttpCode(HttpStatus.ACCEPTED)
+	async forgotPassword(@Body() dto: ForgotPasswordDto) {
+		await this.verificationService.requestPasswordReset(dto.identifier);
+	}
+
+	@Public()
+	@Post('reset-password')
+	@HttpCode(HttpStatus.OK)
+	async resetPassword(@Body() dto: ResetPasswordDto) {
+		await this.verificationService.resetPassword(dto.token, dto.password);
+		return { reset: true };
 	}
 
 	@Get('me')

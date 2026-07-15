@@ -17,9 +17,14 @@ export interface AppConfig {
 		resendApiKey: string;
 		domain: string;
 	};
+	whatsapp: {
+		apiKey: string;
+		apiUrl: string;
+	};
 	auth: {
 		lockoutMaxAttempts: number;
 		lockoutDurationMinutes: number;
+		verificationTokenExpiryMinutes: number;
 		cookieDomain: string | undefined;
 		cookieSecure: boolean;
 	};
@@ -44,6 +49,10 @@ export default (): AppConfig => ({
 		resendApiKey: process.env.RESEND_API_KEY ?? '',
 		domain: process.env.RESEND_DOMAIN ?? '',
 	},
+	whatsapp: {
+		apiKey: process.env.WHATSAPP_API_KEY ?? '',
+		apiUrl: process.env.WHATSAPP_API_URL ?? '',
+	},
 	auth: {
 		lockoutMaxAttempts: parseInt(
 			process.env.AUTH_LOCKOUT_MAX_ATTEMPTS ?? '5',
@@ -51,6 +60,10 @@ export default (): AppConfig => ({
 		),
 		lockoutDurationMinutes: parseInt(
 			process.env.AUTH_LOCKOUT_DURATION_MINUTES ?? '15',
+			10,
+		),
+		verificationTokenExpiryMinutes: parseInt(
+			process.env.AUTH_VERIFICATION_TOKEN_EXPIRY_MINUTES ?? '15',
 			10,
 		),
 		cookieDomain: process.env.COOKIE_DOMAIN,

@@ -5,6 +5,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { VerificationService } from './verification.service';
 
 function makeResponse(): Response {
 	return {} as unknown as Response;
@@ -63,6 +64,7 @@ describe('AuthController', () => {
 			authService as unknown as AuthService,
 			tokenService as unknown as TokenService,
 			prisma as unknown as PrismaService,
+			{} as unknown as VerificationService,
 		);
 	});
 

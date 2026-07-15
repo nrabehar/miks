@@ -133,14 +133,14 @@ Everything else is used as is:
 
 No project wide build approach is recorded yet in `AGENTS.md` or a scope file (none exist), so this plan defaults to end to end (Tracer Bullet) slices: stand up one thin, fully working login path first, then broaden to the remaining methods and features. This assumption should be confirmed once a project wide `AGENTS.md` exists.
 
-1. [~] Add the `UserIdentity.failedAttempts` / `lockedUntil` migration; seed `AuthProvider` (`local`, `google`, `facebook`, `apple`), `VerificationTokenPurpose` (`EMAIL_VERIFICATION`, `PHONE_VERIFICATION`, `PASSWORD_RESET`), satisfies **AC-7**. Migration and seed script written (`prisma/migrations/20260715120000_add_identity_lockout/`, `prisma/seed.ts`); not yet applied to a real database (a write action, left to the engineer to run: `npm run db:migrate` then `npm run db:seed`).
+1. [x] Add the `UserIdentity.failedAttempts` / `lockedUntil` migration; seed `AuthProvider` (`local`, `google`, `facebook`, `apple`), `VerificationTokenPurpose` (`EMAIL_VERIFICATION`, `PHONE_VERIFICATION`, `PASSWORD_RESET`), satisfies **AC-7**. Migration and seed applied and confirmed live 2026-07-15 (via `/check verify`).
 2. [x] Build `src/lib/auth-token/` (token service: sign/verify access + refresh JWTs, cookie helpers) and `src/lib/password/` (argon2 hash/verify), as `@Global()` infra modules per the project's convention, satisfies **AC-2**, **AC-6**.
 3. [x] Build `src/modules/auth/` with `LocalStrategy` + `POST /auth/register` + `POST /auth/login`, wiring lockout checks, satisfies **AC-1** (email + phone locally), **AC-3**, **AC-7**. (Path is `src/modules/auth/`, plural, matching the `$/*` alias already in `tsconfig.json`; this spec and `CLAUDE.md` said `src/module/`, singular — flagging for `/sync` to reconcile.)
 4. [x] Add `JwtStrategy` + `JwtAuthGuard` + `RolesGuard` + `@CurrentUser()`/`@Roles()` decorators in `src/common/`, plus `GET /auth/me`, satisfies **AC-11**, **AC-12**.
 5. [x] Add `POST /auth/refresh` with rotation and reuse detection, and `POST /auth/logout`, satisfies **AC-6**.
-6. [ ] Build `src/lib/mail/` (Resend) if not already present, and `src/lib/whatsapp/` (WhatsApp Cloud API), behind one `NotificationDeliveryService` interface keyed by identifier type, satisfies **AC-8**.
-7. [ ] Add verification flow: `POST /auth/verify`, `POST /auth/resend-verification`, satisfies **AC-10**.
-8. [ ] Add password reset flow: `POST /auth/forgot-password`, `POST /auth/reset-password`, satisfies **AC-4**, **AC-10**.
+6. [x] Build `src/lib/mail/` (Resend) and `src/lib/whatsapp/` (WhatsApp Cloud API), behind one `NotificationDeliveryService` interface keyed by identifier type, satisfies **AC-8**.
+7. [x] Add verification flow: `POST /auth/verify`, `POST /auth/resend-verification`, satisfies **AC-10**.
+8. [x] Add password reset flow: `POST /auth/forgot-password`, `POST /auth/reset-password`, satisfies **AC-4**, **AC-10**. (Verification/reset codes are 6 digit, sha256 hashed for direct lookup, 15 minute expiry; `VerificationToken.attempts` is not incremented since a direct hash lookup makes per row retry counting moot, noted for a future revisit if brute force protection on the code itself is wanted.)
 9. [x] Add `GET /auth/sessions`, `DELETE /auth/sessions/:id`, with ownership checks, satisfies **AC-9**.
 10. [ ] Add `GoogleStrategy`, `FacebookStrategy`, `AppleStrategy` plus their `GET /auth/:provider` and `GET /auth/:provider/callback` routes, including the auto link on verified email match, satisfies **AC-1** (OAuth), **AC-5**.
 11. [ ] Add `ThrottlerModule` rate limiting on `/auth/*`, tuned tighter for `/auth/login`, `/auth/forgot-password`, `/auth/resend-verification`.
