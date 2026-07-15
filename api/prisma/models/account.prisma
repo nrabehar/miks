@@ -27,29 +27,20 @@ model User {
   @@map("users")
 }
 
-// ---- Multi-method authentication -------------------------------------------
-// A `User` = a person. A `UserIdentity` = one login method linked to that
-// person. A user can stack several identities (email+password AND Google
-// AND Facebook) that all point to the same `userId` — that's what lets
-// "the user picks their own login method".
-//
-// Adding a new provider (Apple, GitHub, a future enterprise SSO...) = one
-// row in `auth_providers`, NEVER a new column on `User` or `UserIdentity`.
-
 enum AuthProviderCategory {
-  LOCAL // credential managed by MIKS itself (email+password, phone+OTP)
-  OAUTH // delegated to a third-party provider (Google, Facebook, future Apple...)
+  LOCAL
+  OAUTH
 
   @@map("auth_provider_category")
 }
 
 model AuthProvider {
   id       String               @id @default(uuid())
-  code     String               @unique @db.VarChar(32) // 'email', 'phone', 'google', 'facebook', future 'apple'...
+  code     String               @unique @db.VarChar(32)
   name     String
   category AuthProviderCategory
   active   Boolean              @default(true)
-  config   Json                 @default("{}") // OAuth client_id, scopes, endpoints...
+  config   Json                 @default("{}")
 
   identities UserIdentity[]
 
@@ -63,44 +54,30 @@ model UserIdentity {
   providerCode String       @map("provider_code") @db.VarChar(32)
   provider     AuthProvider @relation(fields: [providerCode], references: [code])
 
-  // --- Only set when provider.category = LOCAL ---
-  identifier String? // the email or phone number used to log in
-  secretHash String? @map("secret_hash") // hash of the password or validated OTP — never stored in plain text
+  identifier String?
+  secretHash String? @map("secret_hash")
 
-  // --- Only set when provider.category = OAUTH ---
-  providerAccountId String?   @map("provider_account_id") // Google's "sub", Facebook's "id"...
+  providerAccountId String?   @map("provider_account_id")
   accessToken       String?   @map("access_token") @db.Text
   refreshToken      String?   @map("refresh_token") @db.Text
   tokenExpiresAt    DateTime? @map("token_expires_at")
 
   emailVerified Boolean   @default(false) @map("email_verified")
   lastUsedAt    DateTime? @map("last_used_at")
-  metadata      Json      @default("{}") // e.g. profile picture and name returned by the provider
+  metadata      Json      @default("{}")
   createdAt     DateTime  @default(now()) @map("created_at")
 
   verificationTokens VerificationToken[]
 
-  // Prevents the same Google/Facebook account from being linked to two MIKS accounts.
   @@unique([providerCode, providerAccountId])
-  // Prevents the same email/phone from being used for two local accounts.
   @@unique([providerCode, identifier])
   @@index([userId])
   @@map("user_identities")
 }
 
-// ---- Verification tokens ----------------------------------------------------
-// One generic model for every "one-time secret with an expiry" flow: email
-// verification, phone OTP, password reset, future magic-link login,
-// account-deletion confirmation, 2FA... The `purpose` is a reference table
-// (not an enum) because new flows of this kind get added over a product's
-// life far more often than the core auth model changes.
-//
-// Only a HASH of the token/code is ever stored — never the raw value — so a
-// database leak doesn't hand out usable codes.
-
 model VerificationTokenPurpose {
   id          String  @id @default(uuid())
-  code        String  @unique @db.VarChar(32) // 'email_verification', 'phone_otp', 'password_reset', future 'magic_link', 'account_deletion'...
+  code        String  @unique @db.VarChar(32)
   name        String
   description String?
 
@@ -115,22 +92,16 @@ model VerificationToken {
   user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   purposeCode String                   @map("purpose_code") @db.VarChar(32)
   purpose     VerificationTokenPurpose @relation(fields: [purposeCode], references: [code])
-
-  // Which identity this token is meant to verify/reset, when relevant (e.g.
-  // confirming ONE specific email among several linked identities). Nullable
-  // because some purposes (e.g. a generic 2FA code) aren't tied to one.
   identityId String?       @map("identity_id")
   identity   UserIdentity? @relation(fields: [identityId], references: [id], onDelete: Cascade)
 
-  // Snapshot of where the code/link was sent, kept even if the user later
-  // changes their email/phone — so the audit trail stays accurate.
   sentTo String? @map("sent_to")
 
-  tokenHash   String    @map("token_hash") // hash of the code/link, never the raw value
+  tokenHash   String    @map("token_hash")
   attempts    Int       @default(0)
   maxAttempts Int       @default(5) @map("max_attempts")
   expiresAt   DateTime  @map("expires_at")
-  consumedAt  DateTime? @map("consumed_at") // set once successfully used — a token is single-use
+  consumedAt  DateTime? @map("consumed_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   metadata    Json      @default("{}")
 
@@ -138,16 +109,6 @@ model VerificationToken {
   @@index([tokenHash])
   @@map("verification_tokens")
 }
-
-// ---- Devices ----------------------------------------------------------------
-// A `Device` is recognized by a stable client-generated identifier (mobile:
-// a UUID stored in secure storage; web: a browser fingerprint) — this is
-// what lets the system say "we already know this device" instead of
-// treating every login as a brand-new device.
-//
-// A device is independent of the auth method used: the same phone can log
-// in via Google one day and via email/password another day — both
-// resulting `Session` rows point to the same `Device`.
 
 enum DeviceType {
   MOBILE

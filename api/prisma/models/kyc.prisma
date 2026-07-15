@@ -17,11 +17,11 @@ model KycVerification {
   providerCode      String      @map("provider_code") @db.VarChar(32)
   provider          KycProvider @relation(fields: [providerCode], references: [code])
   status            KycStatus   @default(PENDING)
-  externalReference String?     @map("external_reference") // the file ID at the third-party provider, once integrated
+  externalReference String?     @map("external_reference")
   rejectionReason   String?     @map("rejection_reason")
   submittedAt       DateTime    @default(now()) @map("submitted_at")
   processedAt       DateTime?   @map("processed_at")
-  expiresAt         DateTime?   @map("expires_at") // to force periodic renewal
+  expiresAt         DateTime?   @map("expires_at")
   metadata          Json        @default("{}")
 
   documents KycDocument[]
@@ -44,8 +44,6 @@ model KycDocument {
   kycVerification   KycVerification   @relation(fields: [kycVerificationId], references: [id], onDelete: Cascade)
   documentTypeCode  String            @map("document_type_code") @db.VarChar(32)
   documentType      KycDocumentType   @relation(fields: [documentTypeCode], references: [code])
-  // The file itself lives outside the database (S3, GCS...); only the
-  // reference is stored — never a blob in the database.
   fileUrl           String            @map("file_url")
   status            KycDocumentStatus @default(PENDING)
   metadata          Json              @default("{}")

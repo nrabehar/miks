@@ -44,20 +44,15 @@ model Vault {
   type    VaultType
   name    String
 
-  // only set when type = WITHDRAWABLE
   memberId String?      @unique @map("member_id")
   member   GroupMember? @relation(fields: [memberId], references: [id])
 
-  // only set when type = PROJECT
   projectId String?  @map("project_id")
   project   Project? @relation("VaultOfProject", fields: [projectId], references: [id])
 
-  cachedBalance Decimal  @default(0) @map("cached_balance") @db.Decimal(18, 2) // denormalized, recomputable from Transaction
+  cachedBalance Decimal  @default(0) @map("cached_balance") @db.Decimal(18, 2)
   metadata      Json     @default("{}")
   createdAt     DateTime @default(now()) @map("created_at")
-
-  // MANUAL MIGRATION: add a CHECK enforcing type/memberId/projectId
-  // coherence (see chk_vault_coherence in the original SQL schema).
 
   projectsAsSourceVault Project[]         @relation("ProjectSourceVault")
   transactions          Transaction[]

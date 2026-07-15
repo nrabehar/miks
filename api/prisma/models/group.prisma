@@ -37,8 +37,6 @@ model GroupMember {
   status   MemberStatus @default(ACTIVE)
   joinedAt DateTime     @default(now()) @map("joined_at")
   leftAt   DateTime?    @map("left_at")
-  // Deliberately no "role" field: MIKS imposes no role. A group's own free
-  // labels (e.g. "treasurer") live in `metadata`.
   metadata Json         @default("{}")
 
   withdrawableVault Vault?

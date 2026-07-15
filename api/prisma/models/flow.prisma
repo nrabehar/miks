@@ -13,7 +13,7 @@ model FlowRule {
   group       Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
   name        String?
   sourceType  FlowSourceType @map("source_type")
-  sourceRefId String?        @map("source_ref_id") // e.g. projectId if sourceType = PROJECT_REVENUE (polymorphic reference, not an FK)
+  sourceRefId String?        @map("source_ref_id")
   active      Boolean        @default(true)
   metadata    Json           @default("{}")
   createdAt   DateTime       @default(now()) @map("created_at")
@@ -35,13 +35,9 @@ model FlowDestination {
   flowRuleId      String              @map("flow_rule_id")
   flowRule        FlowRule            @relation(fields: [flowRuleId], references: [id], onDelete: Cascade)
   destinationType FlowDestinationType @map("destination_type")
-  vaultId         String?             @map("vault_id") // required if destinationType = VAULT
+  vaultId         String?             @map("vault_id")
   vault           Vault?              @relation(fields: [vaultId], references: [id])
   percentage      Decimal             @db.Decimal(5, 2)
-
-  // MANUAL MIGRATION: trigger checking that `percentage` sums to 100% for a
-  // given flowRuleId (can't be expressed as a simple CHECK — multi-row
-  // aggregation).
 
   @@map("flow_destinations")
 }

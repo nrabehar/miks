@@ -47,9 +47,8 @@ enum EventCategory {
 }
 
 model EventType {
-  // Extensible catalog of events that get logged / notified.
   id          String        @id @default(cuid())
-  code        String        @unique @db.VarChar(64) // 'contribution_recorded', 'kyc_approved', ...
+  code        String        @unique @db.VarChar(64)
   category    EventCategory
   description String?
 
@@ -60,16 +59,12 @@ model EventType {
   @@map("event_types")
 }
 
-// ---- KYC reference tables --------------------------------------------------
-
 model KycLevel {
-  // Verification tiers, extensible (e.g. 'light', 'full', future 'enhanced'
-  // for higher contribution amounts).
   id          String  @id @default(cuid())
   code        String  @unique @db.VarChar(32)
   name        String
   description String?
-  order       Int     @default(0) // ranks tiers from weakest to strongest
+  order       Int     @default(0)
 
   verifications KycVerification[]
 
@@ -77,14 +72,11 @@ model KycLevel {
 }
 
 model KycProvider {
-  // Who performed the check: manual today, a third party tomorrow (Smile
-  // Identity, Onfido, Veriff...). Changing or adding a provider = one row,
-  // never a migration.
   id     String  @id @default(cuid())
-  code   String  @unique @db.VarChar(32) // 'manual', 'smile_identity', 'onfido'...
+  code   String  @unique @db.VarChar(32)
   name   String
   active Boolean @default(true)
-  config Json    @default("{}") // API keys, endpoints, confidence thresholds...
+  config Json    @default("{}")
 
   verifications KycVerification[]
 
@@ -93,7 +85,7 @@ model KycProvider {
 
 model KycDocumentType {
   id   String @id @default(cuid())
-  code String @unique @db.VarChar(32) // 'national_id', 'passport', 'proof_of_address', 'selfie'...
+  code String @unique @db.VarChar(32)
   name String
 
   documents KycDocument[]

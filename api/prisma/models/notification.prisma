@@ -2,7 +2,7 @@ model Notification {
   id            String    @id @default(uuid())
   userId        String    @map("user_id")
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  groupId       String?   @map("group_id") // NULL for an account-level notification (outside any group)
+  groupId       String?   @map("group_id")
   group         Group?    @relation(fields: [groupId], references: [id])
   eventTypeCode String    @map("event_type_code") @db.VarChar(64)
   eventType     EventType @relation(fields: [eventTypeCode], references: [code])
