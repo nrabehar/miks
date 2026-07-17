@@ -4,11 +4,11 @@
 
 | Feature | Status | Spec |
 |---|---|---|
-| Authentication | in-progress | [0001](../../specs/api/0001-authentication/index.md) |
+| Authentication | done | [0001](../../specs/api/0001-authentication/index.md) |
 | Group membership | done | [0002](../../specs/api/0002-group-membership/index.md) |
 | Vaults, contributions, flow rules, and shares | done | [0003](../../specs/api/0003-vaults-contributions-flows/index.md) |
 
-## Authentication (in-progress)
+## Authentication (done)
 
 Sign up and log in with email + password or OAuth (Google, Facebook), backed by JWT access/refresh tokens usable from both the web app (cookies) and a future mobile app (Bearer header). Includes password reset, account lockout after repeated failed logins, session/device listing and revocation, and the reusable auth guards other modules will depend on. Phone + password and Apple OAuth are deferred (see spec [0001](../../specs/api/0001-authentication/index.md)'s 2026-07-17 addendum).
 
@@ -22,8 +22,8 @@ Sign up and log in with email + password or OAuth (Google, Facebook), backed by 
   - [x] Refresh rotation, logout, session listing/revocation — AC-6, AC-9
   - [x] Verification + password reset delivery (email via Resend) — AC-4, AC-8, AC-10. (WhatsApp/phone delivery removed 2026-07-17, deferred, see spec addendum.)
   - [x] OAuth providers: Google, Facebook, with account auto linking, plus /auth/* rate limiting — AC-1 (OAuth), AC-5 (built 2026-07-17, now with real Google/Facebook client keys configured; Apple removed 2026-07-17, deferred, see spec addendum)
-- [ ] Verify it: /check verify authentication (local auth core and email verification/reset delivery verified 2026-07-15; OAuth built with real Google/Facebook keys but not yet verified end to end against the live provider flow)
-- [x] Test it: /test authentication (local auth core slice tested 2026-07-15: 67 tests across PasswordService, TokenService, AuthService, guards, decorators, RegisterDto, AuthController; OAuth slice tested 2026-07-17: 32 more tests across the 3 strategies (incl. the /debug boot-crash regression test), the 3 OAuth guards, AuthService.validateOAuthLogin auto-link/create paths, and the new oauth config block, 99 total, all passing; verification/reset delivery, MailService, WhatsappService, NotificationDeliveryService, VerificationService still not yet tested)
+- [x] Verify it: /check verify authentication (full pass 2026-07-17: local auth core, lockout incl. reset-after-window, email verification/reset delivery incl. expired-token case, session ownership, rate limiting, and the ADMIN role guard all directly re-exercised live; OAuth redirect leg confirmed live against real Google/Facebook client IDs, full consent completion user-attested)
+- [x] Test it: /test authentication (local auth core slice tested 2026-07-15: 67 tests across PasswordService, TokenService, AuthService, guards, decorators, RegisterDto, AuthController; OAuth slice tested 2026-07-17: 32 more tests across the 3 strategies (incl. the /debug boot-crash regression test), the 3 OAuth guards, AuthService.validateOAuthLogin auto-link/create paths, and the new oauth config block; VerificationService tested 2026-07-17: 15 more tests covering the expired/consumed/valid token paths (AC-10), request-verification/request-password-reset invalidate-and-resend behavior (AC-4, AC-8), and the reset-password happy path, closing the last untested file in the module. 114 total, all passing)
 
 ## Group membership (done)
 
