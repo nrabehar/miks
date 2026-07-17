@@ -24,6 +24,9 @@ export interface AppConfig {
 		cookieDomain: string | undefined;
 		cookieSecure: boolean;
 	};
+	groups: {
+		inviteExpiryDays: number;
+	};
 	oauth: {
 		webUrl: string;
 		google: {
@@ -73,6 +76,12 @@ export default (): AppConfig => ({
 		),
 		cookieDomain: process.env.COOKIE_DOMAIN,
 		cookieSecure: process.env.COOKIE_SECURE === 'true',
+	},
+	groups: {
+		inviteExpiryDays: parseInt(
+			process.env.GROUP_INVITE_EXPIRY_DAYS ?? '7',
+			10,
+		),
 	},
 	oauth: {
 		webUrl: process.env.WEB_URL ?? 'http://localhost:5173',

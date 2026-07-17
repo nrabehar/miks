@@ -23,6 +23,32 @@ async function main() {
 		],
 		skipDuplicates: true,
 	});
+
+	await prisma.currency.createMany({
+		data: [
+			{ code: 'MGA', name: 'Malagasy ariary', symbol: 'Ar' },
+			{ code: 'USD', name: 'US dollar', symbol: '$' },
+			{ code: 'EUR', name: 'Euro', symbol: '€' },
+		],
+		skipDuplicates: true,
+	});
+
+	await prisma.eventType.createMany({
+		data: [
+			{ code: 'GROUP_CREATED', category: 'MEMBER', description: 'Group created' },
+			{ code: 'GROUP_EDITED', category: 'MEMBER', description: 'Group name/description/currency edited' },
+			{ code: 'GROUP_CLOSED', category: 'MEMBER', description: 'Group closed by its last active member' },
+			{ code: 'INVITE_SENT', category: 'MEMBER', description: 'Group invite sent by email' },
+			{ code: 'INVITE_ACCEPTED', category: 'MEMBER', description: 'Group invite accepted, new membership created' },
+			{ code: 'INVITE_REVOKED', category: 'MEMBER', description: 'Pending group invite revoked' },
+			{ code: 'INVITE_EXPIRED', category: 'MEMBER', description: 'Group invite expired (checked lazily)' },
+			{ code: 'MEMBER_LEFT', category: 'MEMBER', description: 'Member left a group voluntarily' },
+			{ code: 'MEMBER_REMOVAL_VOTE_PROPOSED', category: 'MEMBER', description: 'Removal vote proposed against a member' },
+			{ code: 'MEMBER_REMOVAL_VOTE_DECIDED', category: 'MEMBER', description: 'Removal vote decided (approved/rejected/invalid)' },
+			{ code: 'MEMBER_REMOVED', category: 'MEMBER', description: 'Member removed following an approved removal vote' },
+		],
+		skipDuplicates: true,
+	});
 }
 
 main()

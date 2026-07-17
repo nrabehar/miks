@@ -5,6 +5,7 @@
 | Feature | Status | Spec |
 |---|---|---|
 | Authentication | in-progress | [0001](../../specs/api/0001-authentication/index.md) |
+| Group membership | done | [0002](../../specs/api/0002-group-membership/index.md) |
 
 ## Authentication (in-progress)
 
@@ -23,7 +24,25 @@ Sign up and log in with email + password or OAuth (Google, Facebook), backed by 
 - [ ] Verify it: /check verify authentication (local auth core and email verification/reset delivery verified 2026-07-15; OAuth built with real Google/Facebook keys but not yet verified end to end against the live provider flow)
 - [x] Test it: /test authentication (local auth core slice tested 2026-07-15: 67 tests across PasswordService, TokenService, AuthService, guards, decorators, RegisterDto, AuthController; OAuth slice tested 2026-07-17: 32 more tests across the 3 strategies (incl. the /debug boot-crash regression test), the 3 OAuth guards, AuthService.validateOAuthLogin auto-link/create paths, and the new oauth config block, 99 total, all passing; verification/reset delivery, MailService, WhatsappService, NotificationDeliveryService, VerificationService still not yet tested)
 
+## Group membership (done)
+
+Create a group, invite and join it by email, edit its basic details, leave it, and the two ways a membership can end against someone's will: a formal vote to remove a member, or the last remaining member closing the group outright. MIKS imposes no hierarchical role inside a group, so every active member has the same rights, and group data is fully isolated, with zero exception even for a platform admin. This is a foundational module: contributions, projects, and votes all depend on a group and its members existing first.
+
+**Done when:** a user can create a group, invite someone by email, have them accept and join, leave a group, propose and carry out a fair vote based removal of another member, and close a group as its last member, all matching the acceptance criteria in spec [0002](../../specs/api/0002-group-membership/index.md), with group data completely inaccessible to any non member.
+
+- [x] Design it (spec): [0002](../../specs/api/0002-group-membership/index.md)
+- [x] Build it: /develop group membership — code in `api/src/modules/groups`, `api/src/lib/audit`, `api/src/common/guards/group-membership.guard.ts`
+  - [x] Data model + core group CRUD (create, list, edit) — AC-1, AC-6, AC-9, AC-12
+  - [x] Membership guard + invite by email flow (send, revoke, accept) — AC-2, AC-3, AC-4, AC-5, AC-13
+  - [x] Member listing + voluntary leave (blocked for the last active member) — AC-6, AC-7
+  - [x] Generalized Vote mechanism + member removal flow (propose, respond, lazy close, quorum floor) — AC-9, AC-10, AC-11
+  - [x] Group closure by the last active member + audit logging of every membership event — AC-8, AC-14
+- [x] Verify it: /check verify group membership (re-run after /debug's fix; the mail-delivery-failure bug is confirmed gone, no orphaned invite on a failed send, retry no longer hits a false 409)
+- [x] Test it: /test group membership
+
 ## Deferred
 
-- Per group authorization (who can act inside a given group) — explicitly out of scope for spec 0001, to be designed alongside the group module.
 - Mandatory identity verification gate — currently deferred by product decision (account usable immediately); revisit if a future feature needs a "verified only" rule.
+- Withdrawal policy for a member's frozen withdrawable vault balance after leaving or removal — undefined product decision, see spec [0002](../../specs/api/0002-group-membership/index.md) Follow-up.
+- Whether a closed group can ever be reopened — this spec treats closure as terminal, see spec [0002](../../specs/api/0002-group-membership/index.md) Follow-up.
+- Platform ADMIN's scope for support/moderation purposes outside group data — group data itself is now fully isolated per spec [0002](../../specs/api/0002-group-membership/index.md), but ADMIN's broader scope is still otherwise undefined.

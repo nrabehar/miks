@@ -7,21 +7,36 @@ enum VoteStatus {
   @@map("vote_status")
 }
 
+enum VoteSubjectType {
+  PROJECT
+  MEMBER_REMOVAL
+
+  @@map("vote_subject_type")
+}
+
 model Vote {
-  id                String     @id @default(uuid())
-  projectId         String     @map("project_id")
-  project           Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  approvalThreshold Decimal    @map("approval_threshold") @db.Decimal(5, 2)
-  minQuorum         Int        @map("min_quorum")
-  durationHours     Int        @map("duration_hours")
-  openedAt          DateTime   @default(now()) @map("opened_at")
-  scheduledCloseAt  DateTime   @map("scheduled_close_at")
-  actualCloseAt     DateTime?  @map("actual_close_at")
-  status            VoteStatus @default(OPEN)
-  metadata          Json       @default("{}")
+  id                String          @id @default(uuid())
+  subjectType       VoteSubjectType @default(PROJECT) @map("subject_type")
+  groupId           String          @map("group_id")
+  group             Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  projectId         String?         @map("project_id")
+  project           Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  targetMemberId    String?         @map("target_member_id")
+  targetMember      GroupMember?    @relation("VoteTarget", fields: [targetMemberId], references: [id])
+  approvalThreshold Decimal         @map("approval_threshold") @db.Decimal(5, 2)
+  minQuorum         Int             @map("min_quorum")
+  durationHours     Int             @map("duration_hours")
+  openedAt          DateTime        @default(now()) @map("opened_at")
+  scheduledCloseAt  DateTime        @map("scheduled_close_at")
+  actualCloseAt     DateTime?       @map("actual_close_at")
+  status            VoteStatus      @default(OPEN)
+  metadata          Json            @default("{}")
 
   responses VoteResponse[]
 
+  // A migration-level CHECK constraint enforces exactly one of projectId /
+  // targetMemberId set, matching subjectType (Prisma schema cannot express
+  // a conditional constraint across columns).
   @@map("votes")
 }
 

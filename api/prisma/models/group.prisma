@@ -1,17 +1,28 @@
+enum GroupStatus {
+  ACTIVE
+  CLOSED
+
+  @@map("group_status")
+}
+
 model Group {
-  id           String   @id @default(uuid())
+  id           String      @id @default(uuid())
   name         String
   description  String?
-  creatorId    String   @map("creator_id")
-  creator      User     @relation("GroupCreator", fields: [creatorId], references: [id])
-  currencyCode String   @default("MGA") @map("currency_code") @db.VarChar(8)
-  currency     Currency @relation(fields: [currencyCode], references: [code])
-  metadata     Json     @default("{}")
-  createdAt    DateTime @default(now()) @map("created_at")
+  creatorId    String      @map("creator_id")
+  creator      User        @relation("GroupCreator", fields: [creatorId], references: [id])
+  currencyCode String      @default("MGA") @map("currency_code") @db.VarChar(8)
+  currency     Currency    @relation(fields: [currencyCode], references: [code])
+  status       GroupStatus @default(ACTIVE)
+  closedAt     DateTime?   @map("closed_at")
+  metadata     Json        @default("{}")
+  createdAt    DateTime    @default(now()) @map("created_at")
 
   members       GroupMember[]
+  invites       GroupInvite[]
   vaults        Vault[]
   projects      Project[]
+  votes         Vote[]
   flowRules     FlowRule[]
   transactions  Transaction[]
   contributions Contribution[]
@@ -43,8 +54,41 @@ model GroupMember {
   contributions     Contribution[]
   projectsProposed  Project[]
   voteResponses     VoteResponse[]
+  votesTargeted     Vote[]            @relation("VoteTarget")
+  invitesSent       GroupInvite[]
   shareCache        MemberShareCache?
 
-  @@unique([groupId, userId])
+  // Uniqueness among ACTIVE rows only is enforced by a partial index in the
+  // migration SQL (Prisma schema syntax cannot express a WHERE-scoped unique
+  // constraint); a LEFT row for the same (groupId, userId) can coexist with a
+  // later new ACTIVE row created by rejoining through a fresh invite.
+  @@index([groupId, userId])
   @@map("group_members")
+}
+
+enum GroupInviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+
+  @@map("group_invite_status")
+}
+
+model GroupInvite {
+  id                String            @id @default(uuid())
+  groupId           String            @map("group_id")
+  group             Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  email             String
+  tokenHash         String            @map("token_hash")
+  status            GroupInviteStatus @default(PENDING)
+  invitedByMemberId String            @map("invited_by_member_id")
+  invitedByMember   GroupMember       @relation(fields: [invitedByMemberId], references: [id])
+  expiresAt         DateTime          @map("expires_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  acceptedAt        DateTime?         @map("accepted_at")
+
+  @@index([tokenHash])
+  @@index([groupId, email, status])
+  @@map("group_invites")
 }

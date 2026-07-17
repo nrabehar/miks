@@ -4,12 +4,12 @@ enum AppRoleType {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String?  @unique @db.VarChar(255)
-  phone       String?  @unique @db.VarChar(32)
-  displayName String   @map("display_name")
-  metadata    Json     @default("{}")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id          String      @id @default(uuid())
+  email       String?     @unique @db.VarChar(255)
+  phone       String?     @unique @db.VarChar(32)
+  displayName String      @map("display_name")
+  metadata    Json        @default("{}")
+  createdAt   DateTime    @default(now()) @map("created_at")
   role        AppRoleType @default(USER)
 
   identities              UserIdentity[]
@@ -95,8 +95,8 @@ model VerificationToken {
   user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   purposeCode String                   @map("purpose_code") @db.VarChar(32)
   purpose     VerificationTokenPurpose @relation(fields: [purposeCode], references: [code])
-  identityId String?       @map("identity_id")
-  identity   UserIdentity? @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  identityId  String?                  @map("identity_id")
+  identity    UserIdentity?            @relation(fields: [identityId], references: [id], onDelete: Cascade)
 
   sentTo String? @map("sent_to")
 

@@ -1,5 +1,32 @@
 import configuration from './configuration';
 
+describe('configuration (groups block)', () => {
+	const originalEnv = process.env;
+
+	beforeEach(() => {
+		process.env = { ...originalEnv };
+		delete process.env.GROUP_INVITE_EXPIRY_DAYS;
+	});
+
+	afterAll(() => {
+		process.env = originalEnv;
+	});
+
+	it('defaults inviteExpiryDays to 7 when GROUP_INVITE_EXPIRY_DAYS is unset', () => {
+		const config = configuration();
+
+		expect(config.groups).toEqual({ inviteExpiryDays: 7 });
+	});
+
+	it('reads inviteExpiryDays from GROUP_INVITE_EXPIRY_DAYS when set', () => {
+		process.env.GROUP_INVITE_EXPIRY_DAYS = '14';
+
+		const config = configuration();
+
+		expect(config.groups).toEqual({ inviteExpiryDays: 14 });
+	});
+});
+
 describe('configuration (oauth block)', () => {
 	const originalEnv = process.env;
 
