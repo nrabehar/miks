@@ -9,6 +9,7 @@ model Contribution {
   paymentMethodCode String?        @map("payment_method_code") @db.VarChar(32)
   paymentMethod     PaymentMethod? @relation(fields: [paymentMethodCode], references: [code])
   contributedAt     DateTime       @default(now()) @map("contributed_at")
+  reversedAt        DateTime?      @map("reversed_at")
   metadata          Json           @default("{}")
 
   @@index([memberId, contributedAt])

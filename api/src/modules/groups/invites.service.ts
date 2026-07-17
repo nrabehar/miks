@@ -2,6 +2,7 @@ import { AuditService } from '$lib/audit/audit.service';
 import { ConfigService } from '$lib/config/config.service';
 import { PrismaService } from '$lib/database/prisma.service';
 import { NotificationDeliveryService } from '$lib/notification-delivery/notification-delivery.service';
+import { VaultsService } from '$/vaults/vaults.service';
 import type { GroupInvite, GroupMember } from '$prisma/client';
 import {
 	ConflictException,
@@ -22,6 +23,7 @@ export class InvitesService {
 		private readonly config: ConfigService,
 		private readonly audit: AuditService,
 		private readonly groups: GroupsService,
+		private readonly vaults: VaultsService,
 	) {}
 
 	async create(
@@ -198,9 +200,19 @@ export class InvitesService {
 				);
 			}
 
-			return tx.groupMember.create({
+			const newMember = await tx.groupMember.create({
 				data: { groupId: invite.groupId, userId },
 			});
+
+			// AC-2: every ACTIVE member gets a WITHDRAWABLE vault the moment
+			// they become one, created automatically.
+			await this.vaults.createWithdrawableVault(
+				tx,
+				invite.groupId,
+				newMember.id,
+			);
+
+			return newMember;
 		});
 
 		await this.audit.log({

@@ -1,5 +1,6 @@
 import { AuditService } from '$lib/audit/audit.service';
 import { PrismaService } from '$lib/database/prisma.service';
+import { VaultsService } from '$/vaults/vaults.service';
 import type { Group, GroupMember } from '$prisma/client';
 import {
 	ConflictException,
@@ -15,6 +16,7 @@ export class GroupsService {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly audit: AuditService,
+		private readonly vaults: VaultsService,
 	) {}
 
 	async create(userId: string, dto: CreateGroupDto): Promise<Group> {
@@ -36,9 +38,17 @@ export class GroupsService {
 				},
 			});
 
-			await tx.groupMember.create({
+			const creatorMember = await tx.groupMember.create({
 				data: { groupId: created.id, userId },
 			});
+
+			// AC-2: every ACTIVE member gets a WITHDRAWABLE vault the moment
+			// they become one, including the creator, created automatically.
+			await this.vaults.createWithdrawableVault(
+				tx,
+				created.id,
+				creatorMember.id,
+			);
 
 			return created;
 		});

@@ -1,5 +1,6 @@
 import { AuditService } from '$lib/audit/audit.service';
 import { PrismaService } from '$lib/database/prisma.service';
+import { VaultsService } from '$/vaults/vaults.service';
 import {
 	ConflictException,
 	UnprocessableEntityException,
@@ -47,26 +48,40 @@ function makePrisma() {
 }
 
 function makeAudit() {
-	return { log: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService & {
+	return {
+		log: jest.fn().mockResolvedValue(undefined),
+	} as unknown as AuditService & {
 		log: jest.Mock;
 	};
+}
+
+function makeVaults() {
+	return {
+		createWithdrawableVault: jest.fn().mockResolvedValue(undefined),
+	} as unknown as VaultsService & { createWithdrawableVault: jest.Mock };
 }
 
 describe('GroupsService', () => {
 	let prisma: ReturnType<typeof makePrisma>;
 	let audit: ReturnType<typeof makeAudit>;
+	let vaults: ReturnType<typeof makeVaults>;
 	let service: GroupsService;
 
 	beforeEach(() => {
 		prisma = makePrisma();
 		audit = makeAudit();
-		service = new GroupsService(prisma, audit);
+		vaults = makeVaults();
+		service = new GroupsService(prisma, audit, vaults);
 	});
 
 	describe('create', () => {
 		it('creates the group and auto-joins the creator as its first active member (AC-1)', async () => {
 			prisma.currency.findUnique.mockResolvedValue({ code: 'MGA' });
-			const group = { id: 'group-1', name: 'My Group', currencyCode: 'MGA' };
+			const group = {
+				id: 'group-1',
+				name: 'My Group',
+				currencyCode: 'MGA',
+			};
 			prisma.group.create.mockResolvedValue(group);
 			prisma.groupMember.create.mockResolvedValue({ id: 'member-1' });
 
@@ -88,7 +103,31 @@ describe('GroupsService', () => {
 				data: { groupId: 'group-1', userId: 'user-1' },
 			});
 			expect(audit.log).toHaveBeenCalledWith(
-				expect.objectContaining({ eventType: 'GROUP_CREATED', groupId: 'group-1' }),
+				expect.objectContaining({
+					eventType: 'GROUP_CREATED',
+					groupId: 'group-1',
+				}),
+			);
+		});
+
+		it('auto creates the withdrawable vault for the creator inside the same transaction (AC-2)', async () => {
+			prisma.currency.findUnique.mockResolvedValue({ code: 'MGA' });
+			prisma.group.create.mockResolvedValue({
+				id: 'group-1',
+				name: 'My Group',
+				currencyCode: 'MGA',
+			});
+			prisma.groupMember.create.mockResolvedValue({ id: 'member-1' });
+
+			await service.create('user-1', {
+				name: 'My Group',
+				currencyCode: 'MGA',
+			});
+
+			expect(vaults.createWithdrawableVault).toHaveBeenCalledWith(
+				prisma,
+				'group-1',
+				'member-1',
 			);
 		});
 
@@ -96,7 +135,10 @@ describe('GroupsService', () => {
 			prisma.currency.findUnique.mockResolvedValue(null);
 
 			await expect(
-				service.create('user-1', { name: 'My Group', currencyCode: 'ZZZ' }),
+				service.create('user-1', {
+					name: 'My Group',
+					currencyCode: 'ZZZ',
+				}),
 			).rejects.toThrow(UnprocessableEntityException);
 
 			expect(prisma.group.create).not.toHaveBeenCalled();
@@ -105,11 +147,14 @@ describe('GroupsService', () => {
 	});
 
 	describe('listForUser', () => {
-		it('paginates the caller\'s active-membership groups', async () => {
+		it("paginates the caller's active-membership groups", async () => {
 			prisma.group.findMany.mockResolvedValue([{ id: 'group-1' }]);
 			prisma.group.count.mockResolvedValue(1);
 
-			const result = await service.listForUser('user-1', { page: 2, limit: 10 });
+			const result = await service.listForUser('user-1', {
+				page: 2,
+				limit: 10,
+			});
 
 			expect(result).toEqual({
 				data: [{ id: 'group-1' }],
@@ -136,7 +181,9 @@ describe('GroupsService', () => {
 
 	describe('update', () => {
 		it('edits name, description, and currency for an open group (AC-12)', async () => {
-			prisma.group.findUniqueOrThrow.mockResolvedValue({ status: 'ACTIVE' });
+			prisma.group.findUniqueOrThrow.mockResolvedValue({
+				status: 'ACTIVE',
+			});
 			prisma.currency.findUnique.mockResolvedValue({ code: 'USD' });
 			const updated = { id: 'group-1', name: 'Renamed' };
 			prisma.group.update.mockResolvedValue(updated);
@@ -148,12 +195,17 @@ describe('GroupsService', () => {
 
 			expect(result).toBe(updated);
 			expect(audit.log).toHaveBeenCalledWith(
-				expect.objectContaining({ eventType: 'GROUP_EDITED', groupId: 'group-1' }),
+				expect.objectContaining({
+					eventType: 'GROUP_EDITED',
+					groupId: 'group-1',
+				}),
 			);
 		});
 
 		it('rejects editing a closed group with 409 (AC-12)', async () => {
-			prisma.group.findUniqueOrThrow.mockResolvedValue({ status: 'CLOSED' });
+			prisma.group.findUniqueOrThrow.mockResolvedValue({
+				status: 'CLOSED',
+			});
 
 			await expect(
 				service.update('group-1', 'user-1', { name: 'Renamed' }),
@@ -163,7 +215,9 @@ describe('GroupsService', () => {
 		});
 
 		it('rejects an unknown currency code on edit with 422', async () => {
-			prisma.group.findUniqueOrThrow.mockResolvedValue({ status: 'ACTIVE' });
+			prisma.group.findUniqueOrThrow.mockResolvedValue({
+				status: 'ACTIVE',
+			});
 			prisma.currency.findUnique.mockResolvedValue(null);
 
 			await expect(
@@ -175,7 +229,11 @@ describe('GroupsService', () => {
 	describe('leave', () => {
 		it('flips the member to LEFT when other active members remain (AC-7)', async () => {
 			prisma.groupMember.count.mockResolvedValue(2);
-			const member = { id: 'member-1', groupId: 'group-1', userId: 'user-1' };
+			const member = {
+				id: 'member-1',
+				groupId: 'group-1',
+				userId: 'user-1',
+			};
 
 			await service.leave('group-1', member as never);
 
@@ -184,17 +242,24 @@ describe('GroupsService', () => {
 				data: { status: 'LEFT', leftAt: expect.any(Date) },
 			});
 			expect(audit.log).toHaveBeenCalledWith(
-				expect.objectContaining({ eventType: 'MEMBER_LEFT', groupId: 'group-1' }),
+				expect.objectContaining({
+					eventType: 'MEMBER_LEFT',
+					groupId: 'group-1',
+				}),
 			);
 		});
 
 		it('blocks the last remaining active member from leaving with 409 (AC-7)', async () => {
 			prisma.groupMember.count.mockResolvedValue(1);
-			const member = { id: 'member-1', groupId: 'group-1', userId: 'user-1' };
+			const member = {
+				id: 'member-1',
+				groupId: 'group-1',
+				userId: 'user-1',
+			};
 
-			await expect(service.leave('group-1', member as never)).rejects.toThrow(
-				ConflictException,
-			);
+			await expect(
+				service.leave('group-1', member as never),
+			).rejects.toThrow(ConflictException);
 			expect(prisma.groupMember.update).not.toHaveBeenCalled();
 		});
 	});
@@ -204,7 +269,11 @@ describe('GroupsService', () => {
 			prisma.groupMember.count.mockResolvedValue(1);
 			const closedGroup = { id: 'group-1', status: 'CLOSED' };
 			prisma.group.update.mockResolvedValue(closedGroup);
-			const member = { id: 'member-1', groupId: 'group-1', userId: 'user-1' };
+			const member = {
+				id: 'member-1',
+				groupId: 'group-1',
+				userId: 'user-1',
+			};
 
 			const result = await service.close('group-1', member as never);
 
@@ -214,38 +283,55 @@ describe('GroupsService', () => {
 				data: { status: 'CLOSED', closedAt: expect.any(Date) },
 			});
 			expect(audit.log).toHaveBeenCalledWith(
-				expect.objectContaining({ eventType: 'GROUP_CLOSED', groupId: 'group-1' }),
+				expect.objectContaining({
+					eventType: 'GROUP_CLOSED',
+					groupId: 'group-1',
+				}),
 			);
 		});
 
 		it('rejects closing when more than one active member remains with 409 (AC-8)', async () => {
 			prisma.groupMember.count.mockResolvedValue(2);
-			const member = { id: 'member-1', groupId: 'group-1', userId: 'user-1' };
+			const member = {
+				id: 'member-1',
+				groupId: 'group-1',
+				userId: 'user-1',
+			};
 
-			await expect(service.close('group-1', member as never)).rejects.toThrow(
-				ConflictException,
-			);
+			await expect(
+				service.close('group-1', member as never),
+			).rejects.toThrow(ConflictException);
 		});
 
 		it('rejects closing when zero active members remain (defensive) with 409', async () => {
 			prisma.groupMember.count.mockResolvedValue(0);
-			const member = { id: 'member-1', groupId: 'group-1', userId: 'user-1' };
+			const member = {
+				id: 'member-1',
+				groupId: 'group-1',
+				userId: 'user-1',
+			};
 
-			await expect(service.close('group-1', member as never)).rejects.toThrow(
-				ConflictException,
-			);
+			await expect(
+				service.close('group-1', member as never),
+			).rejects.toThrow(ConflictException);
 		});
 	});
 
 	describe('assertNotClosed', () => {
 		it('resolves without throwing for an active group', async () => {
-			prisma.group.findUniqueOrThrow.mockResolvedValue({ status: 'ACTIVE' });
+			prisma.group.findUniqueOrThrow.mockResolvedValue({
+				status: 'ACTIVE',
+			});
 
-			await expect(service.assertNotClosed('group-1')).resolves.toBeUndefined();
+			await expect(
+				service.assertNotClosed('group-1'),
+			).resolves.toBeUndefined();
 		});
 
 		it('throws ConflictException for a closed group', async () => {
-			prisma.group.findUniqueOrThrow.mockResolvedValue({ status: 'CLOSED' });
+			prisma.group.findUniqueOrThrow.mockResolvedValue({
+				status: 'CLOSED',
+			});
 
 			await expect(service.assertNotClosed('group-1')).rejects.toThrow(
 				ConflictException,

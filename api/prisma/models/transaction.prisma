@@ -12,6 +12,7 @@ enum TransactionType {
   MANUAL_ENTRY
   ADJUSTMENT
   OTHER
+  WITHDRAWAL
 
   @@map("transaction_type")
 }

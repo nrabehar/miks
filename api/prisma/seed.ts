@@ -46,6 +46,13 @@ async function main() {
 			{ code: 'MEMBER_REMOVAL_VOTE_PROPOSED', category: 'MEMBER', description: 'Removal vote proposed against a member' },
 			{ code: 'MEMBER_REMOVAL_VOTE_DECIDED', category: 'MEMBER', description: 'Removal vote decided (approved/rejected/invalid)' },
 			{ code: 'MEMBER_REMOVED', category: 'MEMBER', description: 'Member removed following an approved removal vote' },
+			{ code: 'VAULT_CREATED', category: 'FINANCIAL', description: 'A group vault created by a member' },
+			{ code: 'CONTRIBUTION_RECORDED', category: 'FINANCIAL', description: 'A member recorded a contribution' },
+			{ code: 'CONTRIBUTION_REVERSED', category: 'FINANCIAL', description: 'A contribution and its distribution transactions reversed' },
+			{ code: 'FLOW_RULE_CREATED', category: 'FINANCIAL', description: 'A flow rule created for a group' },
+			{ code: 'FLOW_RULE_REPLACED', category: 'FINANCIAL', description: 'A flow rule replaced by a new version' },
+			{ code: 'WITHDRAWAL_DECLARED', category: 'FINANCIAL', description: 'A member declared a withdrawal from their withdrawable vault' },
+			{ code: 'TRANSACTION_REVERSED', category: 'FINANCIAL', description: 'A single transaction reversed' },
 		],
 		skipDuplicates: true,
 	});

@@ -18,6 +18,10 @@ model FlowRule {
   metadata    Json           @default("{}")
   createdAt   DateTime       @default(now()) @map("created_at")
 
+  replacesRuleId String?    @map("replaces_rule_id")
+  replacesRule   FlowRule?  @relation("FlowRuleReplacement", fields: [replacesRuleId], references: [id])
+  replacedBy     FlowRule[] @relation("FlowRuleReplacement")
+
   destinations FlowDestination[]
 
   @@map("flow_rules")
@@ -38,6 +42,7 @@ model FlowDestination {
   vaultId         String?             @map("vault_id")
   vault           Vault?              @relation(fields: [vaultId], references: [id])
   percentage      Decimal             @db.Decimal(5, 2)
+  sortOrder       Int                 @default(0) @map("sort_order")
 
   @@map("flow_destinations")
 }

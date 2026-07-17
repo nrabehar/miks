@@ -2,6 +2,7 @@ import { AuditService } from '$lib/audit/audit.service';
 import { ConfigService } from '$lib/config/config.service';
 import { PrismaService } from '$lib/database/prisma.service';
 import { NotificationDeliveryService } from '$lib/notification-delivery/notification-delivery.service';
+import { VaultsService } from '$/vaults/vaults.service';
 import {
 	ConflictException,
 	ForbiddenException,
@@ -12,7 +13,11 @@ import { GroupsService } from './groups.service';
 
 function makePrisma() {
 	const prisma = {
-		groupMember: { findFirst: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn() },
+		groupMember: {
+			findFirst: jest.fn(),
+			findUniqueOrThrow: jest.fn(),
+			create: jest.fn(),
+		},
 		groupInvite: {
 			findFirst: jest.fn(),
 			create: jest.fn(),
@@ -49,7 +54,9 @@ function makePrisma() {
 }
 
 function makeAudit() {
-	return { log: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService & {
+	return {
+		log: jest.fn().mockResolvedValue(undefined),
+	} as unknown as AuditService & {
 		log: jest.Mock;
 	};
 }
@@ -73,6 +80,12 @@ function makeGroups() {
 	} as unknown as GroupsService & { assertNotClosed: jest.Mock };
 }
 
+function makeVaults() {
+	return {
+		createWithdrawableVault: jest.fn().mockResolvedValue(undefined),
+	} as unknown as VaultsService & { createWithdrawableVault: jest.Mock };
+}
+
 const member = { id: 'member-1', groupId: 'group-1', userId: 'user-1' };
 
 describe('InvitesService', () => {
@@ -80,6 +93,7 @@ describe('InvitesService', () => {
 	let audit: ReturnType<typeof makeAudit>;
 	let notifications: ReturnType<typeof makeNotifications>;
 	let groups: ReturnType<typeof makeGroups>;
+	let vaults: ReturnType<typeof makeVaults>;
 	let service: InvitesService;
 
 	beforeEach(() => {
@@ -87,12 +101,14 @@ describe('InvitesService', () => {
 		audit = makeAudit();
 		notifications = makeNotifications();
 		groups = makeGroups();
+		vaults = makeVaults();
 		service = new InvitesService(
 			prisma,
 			notifications,
 			makeConfig(),
 			audit,
-			groups as unknown as GroupsService,
+			groups,
+			vaults,
 		);
 	});
 
@@ -102,13 +118,13 @@ describe('InvitesService', () => {
 			prisma.groupInvite.findFirst.mockResolvedValue(null);
 			const invite = { id: 'invite-1', email: 'invitee@example.test' };
 			prisma.groupInvite.create.mockResolvedValue(invite);
-			prisma.group.findUniqueOrThrow.mockResolvedValue({ name: 'My Group' });
+			prisma.group.findUniqueOrThrow.mockResolvedValue({
+				name: 'My Group',
+			});
 
-			const result = await service.create(
-				'group-1',
-				member as never,
-				{ email: 'invitee@example.test' },
-			);
+			const result = await service.create('group-1', member as never, {
+				email: 'invitee@example.test',
+			});
 
 			expect(result).toBe(invite);
 			expect(groups.assertNotClosed).toHaveBeenCalledWith('group-1');
@@ -118,12 +134,17 @@ describe('InvitesService', () => {
 				expect.stringContaining('http://localhost:5173/invites/'),
 			);
 			expect(audit.log).toHaveBeenCalledWith(
-				expect.objectContaining({ eventType: 'INVITE_SENT', groupId: 'group-1' }),
+				expect.objectContaining({
+					eventType: 'INVITE_SENT',
+					groupId: 'group-1',
+				}),
 			);
 		});
 
 		it('rejects inviting an email that already belongs to an active member with 409 (AC-2)', async () => {
-			prisma.groupMember.findFirst.mockResolvedValue({ id: 'existing-member' });
+			prisma.groupMember.findFirst.mockResolvedValue({
+				id: 'existing-member',
+			});
 
 			await expect(
 				service.create('group-1', member as never, {
@@ -135,7 +156,9 @@ describe('InvitesService', () => {
 
 		it('rejects a duplicate pending invite for the same email with 409 (AC-2)', async () => {
 			prisma.groupMember.findFirst.mockResolvedValue(null);
-			prisma.groupInvite.findFirst.mockResolvedValue({ id: 'existing-invite' });
+			prisma.groupInvite.findFirst.mockResolvedValue({
+				id: 'existing-invite',
+			});
 
 			await expect(
 				service.create('group-1', member as never, {
@@ -150,7 +173,9 @@ describe('InvitesService', () => {
 			prisma.groupInvite.findFirst.mockResolvedValue(null);
 			const invite = { id: 'invite-1', email: 'invitee@example.test' };
 			prisma.groupInvite.create.mockResolvedValue(invite);
-			prisma.group.findUniqueOrThrow.mockResolvedValue({ name: 'My Group' });
+			prisma.group.findUniqueOrThrow.mockResolvedValue({
+				name: 'My Group',
+			});
 			notifications.sendCode.mockRejectedValue(
 				new Error('Failed to send email: bounced'),
 			);
@@ -218,7 +243,9 @@ describe('InvitesService', () => {
 				expiresAt: new Date('2030-01-01'),
 				invitedByMemberId: 'member-1',
 			});
-			prisma.group.findUniqueOrThrow.mockResolvedValue({ name: 'My Group' });
+			prisma.group.findUniqueOrThrow.mockResolvedValue({
+				name: 'My Group',
+			});
 			prisma.groupMember.findUniqueOrThrow.mockResolvedValue({
 				user: { displayName: 'Ada' },
 			});
@@ -235,7 +262,9 @@ describe('InvitesService', () => {
 		it('rejects an unknown token with 404 (AC-5)', async () => {
 			prisma.groupInvite.findFirst.mockResolvedValue(null);
 
-			await expect(service.preview('nope')).rejects.toThrow(NotFoundException);
+			await expect(service.preview('nope')).rejects.toThrow(
+				NotFoundException,
+			);
 		});
 
 		it('rejects an already accepted invite with 404 (AC-5)', async () => {
@@ -282,7 +311,11 @@ describe('InvitesService', () => {
 				expiresAt: new Date('2030-01-01'),
 			});
 			prisma.groupInvite.updateMany.mockResolvedValue({ count: 1 });
-			const newMember = { id: 'member-2', groupId: 'group-1', userId: 'user-2' };
+			const newMember = {
+				id: 'member-2',
+				groupId: 'group-1',
+				userId: 'user-2',
+			};
 			prisma.groupMember.create.mockResolvedValue(newMember);
 
 			const result = await service.accept(
@@ -304,6 +337,30 @@ describe('InvitesService', () => {
 			);
 		});
 
+		it('auto creates the withdrawable vault for the joining member inside the same transaction (AC-2)', async () => {
+			prisma.groupInvite.findFirst.mockResolvedValue({
+				id: 'invite-1',
+				groupId: 'group-1',
+				status: 'PENDING',
+				email: 'invitee@example.test',
+				expiresAt: new Date('2030-01-01'),
+			});
+			prisma.groupInvite.updateMany.mockResolvedValue({ count: 1 });
+			prisma.groupMember.create.mockResolvedValue({
+				id: 'member-2',
+				groupId: 'group-1',
+				userId: 'user-2',
+			});
+
+			await service.accept('raw-token', 'user-2', 'invitee@example.test');
+
+			expect(vaults.createWithdrawableVault).toHaveBeenCalledWith(
+				prisma,
+				'group-1',
+				'member-2',
+			);
+		});
+
 		it('rejects when the accepting account email does not match the invite with 403 (AC-3)', async () => {
 			prisma.groupInvite.findFirst.mockResolvedValue({
 				id: 'invite-1',
@@ -314,7 +371,11 @@ describe('InvitesService', () => {
 			});
 
 			await expect(
-				service.accept('raw-token', 'user-2', 'someone-else@example.test'),
+				service.accept(
+					'raw-token',
+					'user-2',
+					'someone-else@example.test',
+				),
 			).rejects.toThrow(ForbiddenException);
 			expect(prisma.groupMember.create).not.toHaveBeenCalled();
 		});

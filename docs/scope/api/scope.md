@@ -6,7 +6,7 @@
 |---|---|---|
 | Authentication | in-progress | [0001](../../specs/api/0001-authentication/index.md) |
 | Group membership | done | [0002](../../specs/api/0002-group-membership/index.md) |
-| Vaults, contributions, flow rules, and shares | in-progress | [0003](../../specs/api/0003-vaults-contributions-flows/index.md) |
+| Vaults, contributions, flow rules, and shares | done | [0003](../../specs/api/0003-vaults-contributions-flows/index.md) |
 
 ## Authentication (in-progress)
 
@@ -41,21 +41,21 @@ Create a group, invite and join it by email, edit its basic details, leave it, a
 - [x] Verify it: /check verify group membership (re-run after /debug's fix; the mail-delivery-failure bug is confirmed gone, no orphaned invite on a failed send, retry no longer hits a false 409)
 - [x] Test it: /test group membership
 
-## Vaults, contributions, flow rules, and shares (in-progress)
+## Vaults, contributions, flow rules, and shares (done)
 
 The financial core every group needs: vaults to hold money declarations, recording a contribution, flow rules that automatically split a contribution across vaults the moment it lands, and each member's proportional share. Adds a declared withdrawal action and a way to reverse a mistaken entry. Nothing here moves real money, every entry is a member's own declaration, matching MIKS's rule that the platform never holds funds. `PROJECT_REVENUE` flows and `PROJECT` type vaults wait for the later projects feature (see spec [0003](../../specs/api/0003-vaults-contributions-flows/index.md)).
 
 **Done when:** a member can create a vault, is auto given a withdrawable vault on joining, records a contribution that automatically distributes across every active flow rule, sees their share and the group's full transaction ledger, declares a withdrawal, and reverses their own mistaken entry, all matching the acceptance criteria in spec [0003](../../specs/api/0003-vaults-contributions-flows/index.md).
 
 - [x] Design it (spec): [0003](../../specs/api/0003-vaults-contributions-flows/index.md)
-- [ ] Build it: /develop vaults contributions flows and shares
-  - [ ] Data model + migration (WITHDRAWAL transaction type, FlowRule.replacesRuleId, Contribution.reversedAt) — AC-8, AC-9, AC-14
-  - [ ] Vaults: create a group vault, auto create the withdrawable vault on joining — AC-1, AC-2
-  - [ ] Contribution recording + automatic flow distribution + share recompute (the core end to end slice) — AC-3, AC-4, AC-5, AC-6, AC-7
-  - [ ] Flow rule management: create + atomic replace — AC-4, AC-8
-  - [ ] Withdrawal, transaction reversal, contribution level reversal, ledger/share read surfaces, and audit logging — AC-9, AC-10, AC-11, AC-12, AC-13, AC-14
-- [ ] Verify it: /check verify vaults contributions flows and shares
-- [ ] Test it: /test vaults contributions flows and shares
+- [x] Build it: /develop vaults contributions flows and shares — code in `api/src/modules/vaults`, hooks in `api/src/modules/groups/groups.service.ts` and `api/src/modules/groups/invites.service.ts`
+  - [x] Data model + migration (WITHDRAWAL transaction type, FlowRule.replacesRuleId, Contribution.reversedAt, FlowDestination.sortOrder) — AC-8, AC-9, AC-14
+  - [x] Vaults: create a group vault, auto create the withdrawable vault on joining — AC-1, AC-2
+  - [x] Contribution recording + automatic flow distribution + share recompute (the core end to end slice) — AC-3, AC-4, AC-5, AC-6, AC-7
+  - [x] Flow rule management: create + atomic replace — AC-4, AC-8
+  - [x] Withdrawal, transaction reversal, contribution level reversal, ledger/share read surfaces, and audit logging — AC-9, AC-10, AC-11, AC-12, AC-13, AC-14
+- [x] Verify it: /check verify vaults contributions flows and shares
+- [x] Test it: /test vaults contributions flows and shares (63 new tests across vaults.service, shares.service, flow-rules.service, contributions.service, transactions.service, and the 4 controllers, plus 2 assertions added to groups.service.spec.ts and invites.service.spec.ts for the auto vault creation hook)
 
 ## Deferred
 

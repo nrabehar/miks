@@ -38,3 +38,4 @@ REQUIRED - do not skip, do not wait to be asked:
 
 - [src/modules/auth/AGENTS.md](src/modules/auth/AGENTS.md): authentication (JWT access/refresh, email + Google/Facebook OAuth, guards/decorators, verification/reset delivery), spec [0001](../docs/specs/api/0001-authentication/index.md).
 - [src/modules/groups/AGENTS.md](src/modules/groups/AGENTS.md): group membership (create/invite/join/leave, vote based removal, closure, the zero-exception membership guard, the generalized `Vote` model, the audit log), spec [0002](../docs/specs/api/0002-group-membership/index.md).
+- [src/modules/vaults/AGENTS.md](src/modules/vaults/AGENTS.md): vaults, contributions, flow rules, and shares (declared contributions split automatically across vaults, member shares, withdrawal and reversal, the full transaction ledger), spec [0003](../docs/specs/api/0003-vaults-contributions-flows/index.md).
