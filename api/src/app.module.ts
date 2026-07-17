@@ -5,7 +5,6 @@ import { PrismaModule } from '$lib/database/prisma.module';
 import { MailModule } from '$lib/mail/mail.module';
 import { NotificationDeliveryModule } from '$lib/notification-delivery/notification-delivery.module';
 import { PasswordModule } from '$lib/password/password.module';
-import { WhatsappModule } from '$lib/whatsapp/whatsapp.module';
 import { AuthModule } from '$/auth/auth.module';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
@@ -21,7 +20,6 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 		AuthTokenModule,
 		PasswordModule,
 		MailModule,
-		WhatsappModule,
 		NotificationDeliveryModule,
 		AuthModule,
 	],

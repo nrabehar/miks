@@ -18,35 +18,14 @@ describe('RegisterDto', () => {
 		expect(errors).toHaveLength(0);
 	});
 
-	it('is valid with a phone instead of an email', async () => {
-		const errors = await errorsFor({
-			phone: '+261340000000',
-			password: 'super-secret-1',
-			displayName: 'Ada',
-		});
-
-		expect(errors).toHaveLength(0);
-	});
-
-	it('is valid when both email and phone are provided', async () => {
-		const errors = await errorsFor({
-			email: 'ada@example.test',
-			phone: '+261340000000',
-			password: 'super-secret-1',
-			displayName: 'Ada',
-		});
-
-		expect(errors).toHaveLength(0);
-	});
-
-	it('fails when neither email nor phone is provided', async () => {
+	it('fails when email is missing', async () => {
 		const errors = await errorsFor({
 			password: 'super-secret-1',
 			displayName: 'Ada',
 		});
 
 		const properties = errors.map((error) => error.property);
-		expect(properties).toEqual(expect.arrayContaining(['email', 'phone']));
+		expect(properties).toContain('email');
 	});
 
 	it('fails when the password is shorter than 8 characters', async () => {

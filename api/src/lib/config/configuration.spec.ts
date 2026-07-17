@@ -12,11 +12,6 @@ describe('configuration (oauth block)', () => {
 		delete process.env.FACEBOOK_CLIENT_ID;
 		delete process.env.FACEBOOK_CLIENT_SECRET;
 		delete process.env.FACEBOOK_REDIRECT_URI;
-		delete process.env.APPLE_CLIENT_ID;
-		delete process.env.APPLE_TEAM_ID;
-		delete process.env.APPLE_KEY_ID;
-		delete process.env.APPLE_PRIVATE_KEY;
-		delete process.env.APPLE_REDIRECT_URI;
 	});
 
 	afterAll(() => {
@@ -30,13 +25,6 @@ describe('configuration (oauth block)', () => {
 			webUrl: 'http://localhost:5173',
 			google: { clientId: '', clientSecret: '', redirectUri: '' },
 			facebook: { clientId: '', clientSecret: '', redirectUri: '' },
-			apple: {
-				clientId: '',
-				teamId: '',
-				keyId: '',
-				privateKey: '',
-				redirectUri: '',
-			},
 		});
 	});
 
@@ -49,11 +37,6 @@ describe('configuration (oauth block)', () => {
 		process.env.FACEBOOK_CLIENT_SECRET = 'facebook-secret';
 		process.env.FACEBOOK_REDIRECT_URI =
 			'https://api.miks.mg/auth/facebook/callback';
-		process.env.APPLE_CLIENT_ID = 'apple-id';
-		process.env.APPLE_TEAM_ID = 'apple-team';
-		process.env.APPLE_KEY_ID = 'apple-key';
-		process.env.APPLE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----';
-		process.env.APPLE_REDIRECT_URI = 'https://api.miks.mg/auth/apple/callback';
 
 		const config = configuration();
 
@@ -68,13 +51,6 @@ describe('configuration (oauth block)', () => {
 				clientId: 'facebook-id',
 				clientSecret: 'facebook-secret',
 				redirectUri: 'https://api.miks.mg/auth/facebook/callback',
-			},
-			apple: {
-				clientId: 'apple-id',
-				teamId: 'apple-team',
-				keyId: 'apple-key',
-				privateKey: '-----BEGIN PRIVATE KEY-----',
-				redirectUri: 'https://api.miks.mg/auth/apple/callback',
 			},
 		});
 	});

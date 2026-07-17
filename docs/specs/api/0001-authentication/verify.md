@@ -70,6 +70,18 @@ _Steps derived from spec 0001 acceptance criteria. `/check verify` runs these; `
 - [ ] `POST /auth/resend-verification` 4 times within 60 seconds → the 4th returns 429 → satisfies the tuned `/auth/resend-verification` throttle
 - [ ] Any other `/auth/*` endpoint (e.g. `/auth/register`) allows the module wide default (100 requests / 60s) before 429ing → confirms the global throttle default doesn't over restrict less sensitive routes
 
+## Update 2026-07-17: Apple + WhatsApp + phone identifier removed for now
+
+Google and Facebook keys are now configured; Apple OAuth, WhatsApp delivery, and the phone identifier were removed from the active auth surface until Apple/WhatsApp credentials exist. This supersedes the Apple/phone/WhatsApp rows above (AC-1, AC-4, AC-8 as originally written assumed Apple + phone were live) — `/architect` should reconcile spec 0001's `## Decision`, `## Requirements`, and `## Configuration required` sections against this before the next status advance.
+
+- [x] `npm run build` (in `api/`) → typechecks clean with Apple/WhatsApp/phone code removed
+- [x] `npx jest` (in `api/`) → 85/85 tests passing after the removal (register.dto, auth.service, auth.controller, configuration specs updated)
+- [x] `npx eslint src` (in `api/`) → clean, no unused-import/dead-code warnings from the removed files
+- [ ] `POST /auth/register` with `{ phone, password, displayName }` (no email) → 400/422, phone is no longer accepted as a registration identifier
+- [ ] `GET /auth/apple`, `GET /auth/apple/callback`, `POST /auth/apple/callback` → 404, the routes no longer exist
+- [ ] `POST /auth/forgot-password` / `POST /auth/resend-verification` for a non-email identifier → no WhatsApp send is attempted (the delivery path is email-only now); confirm no `ECONNRESET`/`fetch failed` 500 reappears
+- [ ] `GET /auth/google` and `GET /auth/facebook` with the now-configured `GOOGLE_CLIENT_ID`/`FACEBOOK_APP_ID` keys → redirect to the real consent screen (first real run against live provider credentials) → AC-1 (OAuth), AC-5
+
 ## Note: delivery failure handling
 
 `resend-verification`/`forgot-password` create the `VerificationToken` row, then send the notification; if the send throws (confirmed for WhatsApp with no API key: `TypeError: fetch failed` / `ECONNRESET`), the whole request 500s even though the token row is already committed. `forgot-password`'s own "always 202, don't leak" contract only holds when the identifier isn't found; once a real send is attempted and fails, the caller sees a raw 500 instead of a graceful outcome. Worth a look in `/check review` or `/debug`, not a hard blocker for this slice (the WhatsApp path is externally gated on real credentials per this spec's own Follow-up section).

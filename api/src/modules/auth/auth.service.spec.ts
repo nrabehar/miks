@@ -83,15 +83,6 @@ describe('AuthService', () => {
 	});
 
 	describe('register', () => {
-		it('throws 422 when neither email nor phone is provided', async () => {
-			await expect(
-				service.register({
-					password: 'super-secret-1',
-					displayName: 'Ada',
-				} as never),
-			).rejects.toMatchObject({ status: 422 });
-		});
-
 		it('throws ConflictException when the identifier is already registered', async () => {
 			prisma.userIdentity.findUnique.mockResolvedValue({ id: 'existing' });
 
@@ -125,7 +116,6 @@ describe('AuthService', () => {
 			expect(prisma.user.create).toHaveBeenCalledWith({
 				data: expect.objectContaining({
 					email: 'ada@example.test',
-					phone: undefined,
 					displayName: 'Ada',
 					identities: {
 						create: {

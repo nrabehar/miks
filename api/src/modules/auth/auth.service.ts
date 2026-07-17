@@ -39,28 +39,17 @@ export class AuthService {
 	) {}
 
 	async register(dto: RegisterDto): Promise<AuthenticatedIdentity> {
-		const identifier = dto.email ?? dto.phone;
-
-		if (!identifier) {
-			throw new HttpException(
-				'Either email or phone is required',
-				HttpStatus.UNPROCESSABLE_ENTITY,
-			);
-		}
-
 		const existing = await this.prisma.userIdentity.findUnique({
 			where: {
 				providerCode_identifier: {
 					providerCode: 'local',
-					identifier,
+					identifier: dto.email,
 				},
 			},
 		});
 
 		if (existing) {
-			throw new ConflictException(
-				'This email or phone is already in use',
-			);
+			throw new ConflictException('This email is already in use');
 		}
 
 		const secretHash = await this.password.hash(dto.password);
@@ -68,12 +57,11 @@ export class AuthService {
 		const user = await this.prisma.user.create({
 			data: {
 				email: dto.email,
-				phone: dto.phone,
 				displayName: dto.displayName,
 				identities: {
 					create: {
 						providerCode: 'local',
-						identifier,
+						identifier: dto.email,
 						secretHash,
 					},
 				},

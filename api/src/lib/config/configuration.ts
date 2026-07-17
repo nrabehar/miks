@@ -17,10 +17,6 @@ export interface AppConfig {
 		resendApiKey: string;
 		domain: string;
 	};
-	whatsapp: {
-		apiKey: string;
-		apiUrl: string;
-	};
 	auth: {
 		lockoutMaxAttempts: number;
 		lockoutDurationMinutes: number;
@@ -38,13 +34,6 @@ export interface AppConfig {
 		facebook: {
 			clientId: string;
 			clientSecret: string;
-			redirectUri: string;
-		};
-		apple: {
-			clientId: string;
-			teamId: string;
-			keyId: string;
-			privateKey: string;
 			redirectUri: string;
 		};
 	};
@@ -68,10 +57,6 @@ export default (): AppConfig => ({
 	mail: {
 		resendApiKey: process.env.RESEND_API_KEY ?? '',
 		domain: process.env.RESEND_DOMAIN ?? '',
-	},
-	whatsapp: {
-		apiKey: process.env.WHATSAPP_API_KEY ?? '',
-		apiUrl: process.env.WHATSAPP_API_URL ?? '',
 	},
 	auth: {
 		lockoutMaxAttempts: parseInt(
@@ -100,13 +85,6 @@ export default (): AppConfig => ({
 			clientId: process.env.FACEBOOK_CLIENT_ID ?? '',
 			clientSecret: process.env.FACEBOOK_CLIENT_SECRET ?? '',
 			redirectUri: process.env.FACEBOOK_REDIRECT_URI ?? '',
-		},
-		apple: {
-			clientId: process.env.APPLE_CLIENT_ID ?? '',
-			teamId: process.env.APPLE_TEAM_ID ?? '',
-			keyId: process.env.APPLE_KEY_ID ?? '',
-			privateKey: process.env.APPLE_PRIVATE_KEY ?? '',
-			redirectUri: process.env.APPLE_REDIRECT_URI ?? '',
 		},
 	},
 });

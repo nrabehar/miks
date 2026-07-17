@@ -8,19 +8,19 @@
 
 ## Authentication (in-progress)
 
-Sign up and log in with email + password, phone + password, or OAuth (Google, Facebook, Apple), backed by JWT access/refresh tokens usable from both the web app (cookies) and a future mobile app (Bearer header). Includes password reset, account lockout after repeated failed logins, session/device listing and revocation, and the reusable auth guards other modules will depend on.
+Sign up and log in with email + password or OAuth (Google, Facebook), backed by JWT access/refresh tokens usable from both the web app (cookies) and a future mobile app (Bearer header). Includes password reset, account lockout after repeated failed logins, session/device listing and revocation, and the reusable auth guards other modules will depend on. Phone + password and Apple OAuth are deferred (see spec [0001](../../specs/api/0001-authentication/index.md)'s 2026-07-17 addendum).
 
 **Done when:** a user can register, log in, refresh their session, reset a forgotten password, see and revoke their own active sessions, and every endpoint correctly rejects unauthenticated or wrong role callers, all matching the acceptance criteria in spec [0001](../../specs/api/0001-authentication/index.md).
 
 - [x] Design it (spec): [0001](../../specs/api/0001-authentication/index.md)
-- [x] Build it: /develop authentication — code in `api/src/modules/auth`, `api/src/lib/auth-token`, `api/src/lib/password`, `api/src/lib/mail`, `api/src/lib/whatsapp`, `api/src/lib/notification-delivery`, `api/src/common/guards`
+- [x] Build it: /develop authentication — code in `api/src/modules/auth`, `api/src/lib/auth-token`, `api/src/lib/password`, `api/src/lib/mail`, `api/src/lib/notification-delivery`, `api/src/common/guards`
   - [x] Data model + reference seeds (lockout fields, AuthProvider/VerificationTokenPurpose rows) — AC-7
   - [x] Local auth core: register, login, lockout, JWT issuing (`src/lib/auth-token`, `src/lib/password`, `src/modules/auth`) — AC-1, AC-2, AC-3, AC-7
   - [x] Shared guards: JwtAuthGuard, RolesGuard, decorators in `src/common` — AC-11, AC-12
   - [x] Refresh rotation, logout, session listing/revocation — AC-6, AC-9
-  - [x] Verification + password reset delivery (email via Resend, phone via WhatsApp Cloud API) — AC-4, AC-8, AC-10
-  - [x] OAuth providers: Google, Facebook, Apple, with account auto linking, plus /auth/* rate limiting — AC-1 (OAuth), AC-5 (built 2026-07-17; not yet run against real provider credentials)
-- [ ] Verify it: /check verify authentication (local auth core and email verification/reset delivery verified 2026-07-15; WhatsApp/phone delivery blocked, no WHATSAPP_API_KEY configured; OAuth built but not yet verified against real Google/Facebook/Apple credentials)
+  - [x] Verification + password reset delivery (email via Resend) — AC-4, AC-8, AC-10. (WhatsApp/phone delivery removed 2026-07-17, deferred, see spec addendum.)
+  - [x] OAuth providers: Google, Facebook, with account auto linking, plus /auth/* rate limiting — AC-1 (OAuth), AC-5 (built 2026-07-17, now with real Google/Facebook client keys configured; Apple removed 2026-07-17, deferred, see spec addendum)
+- [ ] Verify it: /check verify authentication (local auth core and email verification/reset delivery verified 2026-07-15; OAuth built with real Google/Facebook keys but not yet verified end to end against the live provider flow)
 - [x] Test it: /test authentication (local auth core slice tested 2026-07-15: 67 tests across PasswordService, TokenService, AuthService, guards, decorators, RegisterDto, AuthController; OAuth slice tested 2026-07-17: 32 more tests across the 3 strategies (incl. the /debug boot-crash regression test), the 3 OAuth guards, AuthService.validateOAuthLogin auto-link/create paths, and the new oauth config block, 99 total, all passing; verification/reset delivery, MailService, WhatsappService, NotificationDeliveryService, VerificationService still not yet tested)
 
 ## Deferred

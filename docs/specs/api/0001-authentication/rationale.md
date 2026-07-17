@@ -9,6 +9,24 @@ The product targets Madagascar and similar markets first (see the product doc), 
 The account model deliberately trades some safety for less friction: an account is usable immediately after registration, and verification of the identifier (email or phone) happens after the fact rather than gating access. This means downstream modules that require a verified identity (if any ever do) must check verification status themselves; this spec only records that the identity's verification flag exists and can be set.
 
 > ⚠️ Premise note: this spec covers three OAuth providers (Google, Facebook, Apple) plus email and phone/password, all in one version. That is a wide surface for a first authentication release; a narrower first slice (email + phone/password only, OAuth as a fast follow) would ship sooner and de-risk the core flow before adding three third party integrations. The engineer explicitly requested all methods together (including anticipating a mobile app, which makes Apple's requirement relevant early), so this spec proceeds with the full scope as instructed, but the build plan sequences local auth first and OAuth last specifically so the core, most used path is solid before the third party integrations are added.
+>
+> **2026-07-17 update**: this premise note's worry played out. Apple and WhatsApp turned out to be blocked on external setup neither could complete yet (see the addendum below), while local auth + Google + Facebook shipped and are working. The scope trim below is that narrower slice arriving after the fact rather than up front.
+
+## 2026-07-17 addendum: drop Apple, WhatsApp, and the phone identifier for now
+
+**What changed**: `AppleStrategy`/`apple-auth.guard.ts`, `src/lib/whatsapp/` (`WhatsappService`/`WhatsappModule`), and the phone number identifier (`RegisterDto.phone`, `AuthService.register`'s email-or-phone branch, `NotificationDeliveryService`'s WhatsApp branch, the `apple` `AuthProvider` seed row, the `PHONE_VERIFICATION` purpose seed row) were removed from the codebase. The active surface is now email + password locally, plus Google and Facebook OAuth, both configured with real client keys.
+
+**Alternatives considered**:
+- **Keep building toward Apple + WhatsApp now, ship once credentials arrive.** Rejected: neither credential is close (Apple needs a Developer account, Services ID, and generated private key; WhatsApp needs a verified Meta Business account, a registered phone number, and approved message templates), so the code would sit unexercised and untestable for an unknown stretch, exactly the failure mode already flagged in the original Follow-up.
+- **Feature flag Apple/WhatsApp off instead of deleting the code.** Rejected for this pass: the code had never run against real credentials (Apple) or had a documented runtime failure with no credentials (WhatsApp: `TypeError: fetch failed`/`ECONNRESET` on send, see `verify.md`), so there was no working behavior to preserve behind a flag; deleting is cleaner than carrying dead branches, and re-adding later is a normal `/architect` + `/develop` pass, not a big lift.
+- **Drop the phone identifier's DB column too.** Rejected: `User.phone` stays nullable and unused rather than migrated out, so re-adding phone registration later needs no new migration, only code.
+
+**Main reason**: Google and Facebook client keys are real and ready now; Apple and WhatsApp are not, and won't be soon (both need an external account/verification step outside this codebase). Shipping the surface that actually works, and removing the surface that cannot yet run, is more honest than leaving unusable integrations in place.
+
+**Tradeoffs accepted**:
+- The product's phone number first target market reasoning (`## Context` in `index.md`, and `docs/cahier-des-charges.md` section 3.2) is now unserved until phone + WhatsApp comes back; this is explicitly a deferral, not a reversal of that market reasoning.
+- Re-adding Apple and WhatsApp later is a small implementation pass (new strategy/guard/module files, config, seed rows), not a config flip, since the code was deleted rather than disabled behind a flag.
+- The spec's original AC-1 (OAuth via Apple), AC-4/AC-8 (WhatsApp delivery) are currently not met; `index.md`'s Requirements section marks each as deferred rather than removing the criteria outright, so re-adding the feature re-activates the same ACs instead of drafting new ones.
 
 ## Options considered
 

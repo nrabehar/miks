@@ -24,10 +24,6 @@ export class ConfigService {
 		return this.nestConfigService.get('mail', { infer: true });
 	}
 
-	get whatsapp() {
-		return this.nestConfigService.get('whatsapp', { infer: true });
-	}
-
 	get auth() {
 		return this.nestConfigService.get('auth', { infer: true });
 	}

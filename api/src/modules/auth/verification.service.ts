@@ -1,9 +1,6 @@
 import { ConfigService } from '$lib/config/config.service';
 import { PrismaService } from '$lib/database/prisma.service';
-import {
-	isEmailIdentifier,
-	NotificationDeliveryService,
-} from '$lib/notification-delivery/notification-delivery.service';
+import { NotificationDeliveryService } from '$lib/notification-delivery/notification-delivery.service';
 import { PasswordService } from '$lib/password/password.service';
 import {
 	BadRequestException,
@@ -75,9 +72,7 @@ export class VerificationService {
 			return;
 		}
 
-		const purpose = isEmailIdentifier(identifier)
-			? 'EMAIL_VERIFICATION'
-			: 'PHONE_VERIFICATION';
+		const purpose = 'EMAIL_VERIFICATION';
 
 		await this.invalidatePending(identity.userId, purpose, identity.id);
 		const code = this.generateCode();
@@ -101,10 +96,7 @@ export class VerificationService {
 	}
 
 	async verify(token: string): Promise<void> {
-		const record = await this.consumeToken(token, [
-			'EMAIL_VERIFICATION',
-			'PHONE_VERIFICATION',
-		]);
+		const record = await this.consumeToken(token, 'EMAIL_VERIFICATION');
 
 		if (record.identityId) {
 			await this.prisma.userIdentity.update({

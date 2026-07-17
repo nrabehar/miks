@@ -289,16 +289,15 @@ describe('AuthController', () => {
 		});
 	});
 
-	describe('OAuth callbacks (google/facebook/apple)', () => {
+	describe('OAuth callbacks (google/facebook)', () => {
 		// The route/redirect guards (GoogleAuthGuard etc.) that gate these handlers
 		// and the passport strategy handshake are covered end to end by
-		// /check verify's /auth/google, /auth/facebook, /auth/apple checks; these
+		// /check verify's /auth/google, /auth/facebook checks; these
 		// tests cover only the shared completeOAuthLogin behavior once a guard has
 		// already resolved an AuthenticatedUser.
 		it.each([
 			['googleCallback' as const],
 			['facebookCallback' as const],
-			['appleCallback' as const],
 		])(
 			'%s creates a session, sets cookies, and redirects to the configured web app URL',
 			async (method) => {

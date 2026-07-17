@@ -1,19 +1,21 @@
-# 0001. Authentication (JWT access/refresh, email/phone/OAuth login, device sessions)
+# 0001. Authentication (JWT access/refresh, email + Google/Facebook OAuth login, device sessions)
 
-**Date**: 2026-07-15
+**Date**: 2026-07-15 (scope trimmed 2026-07-17)
 **Status**: In Progress
 
 ## Summary
 
-This spec designs the authentication module for the MIKS API. A user will be able to sign up and log in with an email and password, a phone number and password, or an OAuth provider (Google, Facebook, Apple). Every login gives back a short lived access token and a longer lived refresh token, both usable from the web app (as secure cookies) and later from a mobile app (as a header). Passwords are hashed with argon2 (a modern, OWASP recommended hashing algorithm), repeated failed logins temporarily lock the account, and a user can see and revoke their own active sessions. This spec also lays down the reusable "am I logged in / am I an admin" building blocks (guards) that every future module will plug into.
+This spec designs the authentication module for the MIKS API. A user can sign up and log in with an email and password, or an OAuth provider (Google or Facebook). Every login gives back a short lived access token and a longer lived refresh token, both usable from the web app (as secure cookies) and later from a mobile app (as a header). Passwords are hashed with argon2 (a modern, OWASP recommended hashing algorithm), repeated failed logins temporarily lock the account, and a user can see and revoke their own active sessions. This spec also lays down the reusable "am I logged in / am I an admin" building blocks (guards) that every future module will plug into.
+
+**2026-07-17 addendum**: Apple OAuth, WhatsApp delivery, and the phone number identifier, all originally in scope (see `## Context` below), are deferred for now. Their code was removed rather than feature flagged, since neither has its external prerequisite ready: no Apple Developer account/Services ID/private key, no verified Meta Business account for WhatsApp. Google and Facebook OAuth stay in, now with real client keys configured. This is a scope trim, not a reversal: the market reasoning for phone + WhatsApp below still holds, and re-adding them is tracked in `## Follow-up`.
 
 ## Context
 
 MIKS has no working authentication yet. The Prisma schema already models `User`, `AuthProvider`, `UserIdentity`, `VerificationToken`, `Device`, and `Session`, and the API configuration already reads JWT secrets and expiry settings, but no NestJS module reads or writes any of it. Every other planned feature (groups, contributions, votes) depends on knowing who is making a request, so this is a hard prerequisite that has to be settled before feature modules can be built.
 
-The product targets Madagascar and similar markets first (see the product doc), where phone number based identity and WhatsApp are often more reliable reach channels than email. The team also intends to ship a mobile app later, so the authentication mechanism cannot assume a browser (cookies alone are not viable for a native app).
+The product targets Madagascar and similar markets first (see the product doc), where phone number based identity and WhatsApp are often more reliable reach channels than email. The team also intends to ship a mobile app later, so the authentication mechanism cannot assume a browser (cookies alone are not viable for a native app). (As of the 2026-07-17 addendum, phone identity and WhatsApp delivery are deferred rather than built now; see `## Follow-up`.)
 
-The account model deliberately trades some safety for less friction: an account is usable immediately after registration, and verification of the identifier (email or phone) happens after the fact rather than gating access. This means downstream modules that require a verified identity (if any ever do) must check verification status themselves; this spec only records that the identity's verification flag exists and can be set.
+The account model deliberately trades some safety for less friction: an account is usable immediately after registration, and verification of the identifier (email, and later phone once re-added) happens after the fact rather than gating access. This means downstream modules that require a verified identity (if any ever do) must check verification status themselves; this spec only records that the identity's verification flag exists and can be set.
 
 ## Requirements
 
@@ -26,14 +28,14 @@ The account model deliberately trades some safety for less friction: an account 
 - As a future mobile app, I want to authenticate against the same endpoints as the web app, so that the backend does not need a parallel auth system later.
 
 **Acceptance criteria** (the contract, each criterion is IDed and independently checkable):
-- **AC-1**: A user can register with email + password, phone + password, or an OAuth provider (Google, Facebook, or Apple); this creates a `User` and a matching `UserIdentity`.
+- **AC-1**: A user can register with email + password, or an OAuth provider (Google or Facebook); this creates a `User` and a matching `UserIdentity`. (Phone + password and Apple OAuth are deferred as of the 2026-07-17 addendum; see `## Follow-up`.)
 - **AC-2**: A registered user can log in with correct credentials and receives an access token (15 minutes) and a refresh token (30 days).
-- **AC-3**: A newly registered account is usable immediately, without requiring email or phone verification first.
-- **AC-4**: A user can request a password reset; a single use token or code is sent to their email (via Resend) or phone (via WhatsApp), and resetting the password with a valid token succeeds.
+- **AC-3**: A newly registered account is usable immediately, without requiring email verification first.
+- **AC-4**: A user can request a password reset; a single use token or code is sent to their email (via Resend), and resetting the password with a valid token succeeds. (WhatsApp/phone delivery deferred; see `## Follow-up`.)
 - **AC-5**: Logging in via an OAuth provider whose verified email matches an existing account automatically links the new identity to that account instead of creating a duplicate account.
 - **AC-6**: Refresh tokens rotate on every use (the old one becomes invalid); replaying an already rotated refresh token revokes the session it belonged to.
-- **AC-7**: After 5 failed login attempts on the same identity (email or phone + password), that identity is locked for 15 minutes; a subsequent successful login resets the failure counter.
-- **AC-8**: Verification, password reset, and OTP messages are delivered by email (Resend) when the identifier is an email, or by WhatsApp (Cloud API) when the identifier is a phone number.
+- **AC-7**: After 5 failed login attempts on the same local identity, that identity is locked for 15 minutes; a subsequent successful login resets the failure counter.
+- **AC-8**: Verification and password reset messages are delivered by email (Resend). (WhatsApp delivery for a phone identifier is deferred; see `## Follow-up`.)
 - **AC-9**: A logged in user can list their own active sessions (device type, IP, last activity) and revoke any one of them individually; revoking a session immediately invalidates its refresh token.
 - **AC-10**: Using an expired or already consumed verification or reset token returns a clear, distinct error, and the user can immediately request a new token, which invalidates any previous unconsumed one for the same purpose.
 - **AC-11**: The same endpoints authenticate both a web caller (via httpOnly cookies) and a future mobile caller (via an `Authorization: Bearer` header), through one shared guard.
@@ -43,7 +45,7 @@ The account model deliberately trades some safety for less friction: an account 
 
 **Chosen option**: Option 1: Self hosted authentication with NestJS, Passport.js, and JWT
 
-Build authentication directly on the existing Prisma schema using `@nestjs/passport` strategies (local, JWT, Google, Facebook, Apple), argon2 for password hashing, and a shared `JwtAuthGuard` / `RolesGuard` pair in `src/common/`.
+Build authentication directly on the existing Prisma schema using `@nestjs/passport` strategies (local, JWT, Google, Facebook), argon2 for password hashing, and a shared `JwtAuthGuard` / `RolesGuard` pair in `src/common/`. (Originally `local, JWT, Google, Facebook, Apple`; the `AppleStrategy` was removed 2026-07-17, see the addendum in `## Summary`.)
 
 ## Rationale
 
@@ -59,10 +61,10 @@ The existing schema (`api/prisma/models/account.prisma`) already covers this fea
 - `UserIdentity.lockedUntil`: `DateTime`, nullable. When set and in the future, login attempts against this identity are rejected regardless of password correctness.
 
 Everything else is used as is:
-- `User` (id, email?, phone?, displayName, role, metadata) — one row per person, `email`/`phone` unique when present.
-- `AuthProvider` (code, category `LOCAL`/`OAUTH`) — seed rows: `local` (LOCAL), `google`, `facebook`, `apple` (OAUTH). Reference data, not user editable.
+- `User` (id, email?, phone?, displayName, role, metadata) — one row per person, `email`/`phone` unique when present. `phone` stays in the schema (harmless, nullable) but nothing writes it as of the 2026-07-17 addendum; re-enable at the DTO/service layer when phone registration returns, no migration needed.
+- `AuthProvider` (code, category `LOCAL`/`OAUTH`) — seed rows: `local` (LOCAL), `google`, `facebook` (OAUTH). Reference data, not user editable. (`apple` was removed from the seed 2026-07-17; existing `apple` rows already in a database are left alone, only the seed script stopped inserting it.)
 - `UserIdentity` (userId FK, providerCode FK, identifier, secretHash, providerAccountId, accessToken/refreshToken for OAuth, emailVerified, failedAttempts, lockedUntil) — one row per login method per user; unique on `(providerCode, providerAccountId)` and `(providerCode, identifier)`.
-- `VerificationTokenPurpose` (code) — seed rows: `EMAIL_VERIFICATION`, `PHONE_VERIFICATION`, `PASSWORD_RESET`.
+- `VerificationTokenPurpose` (code) — seed rows: `EMAIL_VERIFICATION`, `PASSWORD_RESET`. (`PHONE_VERIFICATION` removed from the seed 2026-07-17, same as `apple` above.)
 - `VerificationToken` (userId FK, purposeCode FK, identityId FK?, sentTo, tokenHash, attempts, maxAttempts, expiresAt, consumedAt) — single use tokens/OTPs for verification and reset.
 - `Device` (userId FK, type, deviceId, pushToken, status) — one row per physical device/browser a user has logged in from.
 - `Session` (userId FK, deviceId FK?, refreshToken, userAgent, ip, expiresAt, revokedAt) — one row per active login; `refreshToken` is rotated on every `/auth/refresh` call (the row is updated in place, not replaced), so this is a live token, not a token history table.
@@ -79,19 +81,21 @@ Everything else is used as is:
 
 | Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
 |---|---|---|---|---|---|
-| /auth/register | POST | identifier (email or phone), password, displayName | user id, access+refresh tokens | public | 409 identifier taken, 422 invalid password |
-| /auth/login | POST | identifier, password | access+refresh tokens (cookies + body) | public | 401 invalid credentials, 423 locked |
+| /auth/register | POST | email, password, displayName | user id, access+refresh tokens | public | 409 email taken, 422 invalid password |
+| /auth/login | POST | identifier (email), password | access+refresh tokens (cookies + body) | public | 401 invalid credentials, 423 locked |
 | /auth/refresh | POST | refresh token (cookie or body) | new access+refresh tokens | refresh token | 401 invalid/expired, revokes session on reuse of a rotated token |
 | /auth/logout | POST | (none, uses current session) | 204 | bearer/cookie | 401 not authenticated |
 | /auth/verify | POST | token or OTP code | 200 verified | public | 400 expired, 409 already consumed |
 | /auth/resend-verification | POST | identifier | 202 accepted | public | 429 rate limited |
 | /auth/forgot-password | POST | identifier | 202 accepted (always, to avoid leaking which identifiers exist) | public | 429 rate limited |
 | /auth/reset-password | POST | token, new password | 200 reset | public | 400 expired/invalid, 409 already consumed |
-| /auth/google, /auth/facebook, /auth/apple | GET | (provider redirect) | redirect to provider | public | 500 provider misconfigured |
-| /auth/google/callback, /auth/facebook/callback, /auth/apple/callback | GET | provider code | access+refresh tokens, redirect to web app | public (provider signed) | 401 provider denied/invalid |
-| /auth/me | GET | (none) | current user's id, email/phone, displayName, role | bearer/cookie | 401 not authenticated |
+| /auth/google, /auth/facebook | GET | (provider redirect) | redirect to provider | public | 500 provider misconfigured |
+| /auth/google/callback, /auth/facebook/callback | GET | provider code | access+refresh tokens, redirect to web app | public (provider signed) | 401 provider denied/invalid |
+| /auth/me | GET | (none) | current user's id, email, displayName, role | bearer/cookie | 401 not authenticated |
 | /auth/sessions | GET | (none) | list of the caller's sessions (id, device, ip, lastActiveAt, current flag) | bearer/cookie | 401 not authenticated |
 | /auth/sessions/:id | DELETE | session id | 204 | bearer/cookie, ownership | 403 not your session, 404 not found |
+
+`/auth/apple`, `/auth/apple/callback` are removed as of 2026-07-17 (404, not a stub); the note in `## Follow-up` covers re-adding them.
 
 **Key invariants**:
 - One `UserIdentity` per `(providerCode, identifier)` and per `(providerCode, providerAccountId)` (already enforced by unique constraints).
@@ -116,11 +120,11 @@ Everything else is used as is:
 - `AUTH_LOCKOUT_MAX_ATTEMPTS`: failed attempts before lock, recommended `5`.
 - `AUTH_LOCKOUT_DURATION_MINUTES`: lock duration, recommended `15`.
 - `RESEND_API_KEY`, `RESEND_DOMAIN`: email delivery for verification/reset (Resend; `RESEND_DOMAIN` already read by config but missing from `.env.example`).
-- `WHATSAPP_CLOUD_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`: WhatsApp Business Cloud API credentials for phone based OTP/verification/reset delivery.
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`: Google OAuth.
-- `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `FACEBOOK_CALLBACK_URL`: Facebook OAuth.
-- `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_CALLBACK_URL`: Sign in with Apple.
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`: Google OAuth. Configured with real values 2026-07-17.
+- `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET`, `FACEBOOK_REDIRECT_URI`: Facebook OAuth. Configured with real values 2026-07-17.
 - `COOKIE_DOMAIN`, `COOKIE_SECURE`: cookie scoping for the access/refresh cookies across environments.
+
+Removed 2026-07-17 (see `## Follow-up` to re-add when ready): `WHATSAPP_CLOUD_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID` (WhatsApp), `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_CALLBACK_URL` (Apple Sign In).
 
 **Critical test scenarios** (each maps to an acceptance criterion in ## Requirements):
 - Happy path: register by email, log in, call `/auth/me`, call `/auth/refresh`, call `/auth/logout`, verifies **AC-1**, **AC-2**, **AC-3**, **AC-11**.
@@ -133,17 +137,18 @@ Everything else is used as is:
 
 No project wide build approach is recorded yet in `AGENTS.md` or a scope file (none exist), so this plan defaults to end to end (Tracer Bullet) slices: stand up one thin, fully working login path first, then broaden to the remaining methods and features. This assumption should be confirmed once a project wide `AGENTS.md` exists.
 
-1. [x] Add the `UserIdentity.failedAttempts` / `lockedUntil` migration; seed `AuthProvider` (`local`, `google`, `facebook`, `apple`), `VerificationTokenPurpose` (`EMAIL_VERIFICATION`, `PHONE_VERIFICATION`, `PASSWORD_RESET`), satisfies **AC-7**. Migration and seed applied and confirmed live 2026-07-15 (via `/check verify`).
+1. [x] Add the `UserIdentity.failedAttempts` / `lockedUntil` migration; seed `AuthProvider` (`local`, `google`, `facebook`, `apple`), `VerificationTokenPurpose` (`EMAIL_VERIFICATION`, `PHONE_VERIFICATION`, `PASSWORD_RESET`), satisfies **AC-7**. Migration and seed applied and confirmed live 2026-07-15 (via `/check verify`). (The `apple` and `PHONE_VERIFICATION` seed rows were dropped from `prisma/seed.ts` 2026-07-17; no migration, existing rows in a database are untouched.)
 2. [x] Build `src/lib/auth-token/` (token service: sign/verify access + refresh JWTs, cookie helpers) and `src/lib/password/` (argon2 hash/verify), as `@Global()` infra modules per the project's convention, satisfies **AC-2**, **AC-6**.
-3. [x] Build `src/modules/auth/` with `LocalStrategy` + `POST /auth/register` + `POST /auth/login`, wiring lockout checks, satisfies **AC-1** (email + phone locally), **AC-3**, **AC-7**. (Path is `src/modules/auth/`, plural, matching the `$/*` alias already in `tsconfig.json`; this spec and `CLAUDE.md` said `src/module/`, singular — flagging for `/sync` to reconcile.)
+3. [x] Build `src/modules/auth/` with `LocalStrategy` + `POST /auth/register` + `POST /auth/login`, wiring lockout checks, satisfies **AC-1** (email locally; phone deferred, see the 2026-07-17 addendum), **AC-3**, **AC-7**. (Path is `src/modules/auth/`, plural, matching the `$/*` alias already in `tsconfig.json`; this spec and `CLAUDE.md` said `src/module/`, singular — flagging for `/sync` to reconcile.)
 4. [x] Add `JwtStrategy` + `JwtAuthGuard` + `RolesGuard` + `@CurrentUser()`/`@Roles()` decorators in `src/common/`, plus `GET /auth/me`, satisfies **AC-11**, **AC-12**.
 5. [x] Add `POST /auth/refresh` with rotation and reuse detection, and `POST /auth/logout`, satisfies **AC-6**.
-6. [x] Build `src/lib/mail/` (Resend) and `src/lib/whatsapp/` (WhatsApp Cloud API), behind one `NotificationDeliveryService` interface keyed by identifier type, satisfies **AC-8**.
+6. [x] Build `src/lib/mail/` (Resend) and `src/lib/whatsapp/` (WhatsApp Cloud API), behind one `NotificationDeliveryService` interface keyed by identifier type, satisfies **AC-8**. (`src/lib/whatsapp/` and its branch in `NotificationDeliveryService` were removed 2026-07-17; delivery is email only for now, see the 2026-07-17 addendum.)
 7. [x] Add verification flow: `POST /auth/verify`, `POST /auth/resend-verification`, satisfies **AC-10**.
 8. [x] Add password reset flow: `POST /auth/forgot-password`, `POST /auth/reset-password`, satisfies **AC-4**, **AC-10**. (Verification/reset codes are 6 digit, sha256 hashed for direct lookup, 15 minute expiry; `VerificationToken.attempts` is not incremented since a direct hash lookup makes per row retry counting moot, noted for a future revisit if brute force protection on the code itself is wanted.)
 9. [x] Add `GET /auth/sessions`, `DELETE /auth/sessions/:id`, with ownership checks, satisfies **AC-9**.
-10. [x] Add `GoogleStrategy`, `FacebookStrategy`, `AppleStrategy` plus their `GET /auth/:provider` and `GET /auth/:provider/callback` routes, including the auto link on verified email match, satisfies **AC-1** (OAuth), **AC-5**. (Apple's callback is `POST`, not `GET`, matching Apple's own `form_post` response mode; not yet run against real provider credentials, see Follow-up.)
+10. [x] Add `GoogleStrategy`, `FacebookStrategy`, `AppleStrategy` plus their `GET /auth/:provider` and `GET /auth/:provider/callback` routes, including the auto link on verified email match, satisfies **AC-1** (OAuth), **AC-5**. (`AppleStrategy`, `apple-auth.guard.ts`, and the `/auth/apple*` routes were removed 2026-07-17, see the addendum; Google and Facebook now run against real client keys.)
 11. [x] Add `ThrottlerModule` rate limiting on `/auth/*`, tuned tighter for `/auth/login`, `/auth/forgot-password`, `/auth/resend-verification`.
+12. [x] **2026-07-17**: remove `AppleStrategy`/`apple-auth.guard.ts`, `src/lib/whatsapp/`, and the phone registration path (`RegisterDto.phone`, `AuthService.register`'s email-or-phone branch); drop the corresponding config/env vars and seed rows; scope the active surface to email + Google + Facebook. Built and verified: `tsc --noEmit` clean, 85/85 Jest tests passing, `eslint src` clean.
 
 ## Consequences
 
@@ -153,22 +158,22 @@ No project wide build approach is recorded yet in `AGENTS.md` or a scope file (n
 - Immediate account usability (no verification gate) keeps signup friction low, matching the product's cold start concern already flagged in the product docs.
 
 **Negative / tradeoffs**:
-- Three OAuth providers (Google, Facebook, Apple) plus WhatsApp Cloud API integration is a wide surface for a first version; more to configure and test than a single provider MVP would need.
 - Deferred verification means an unverified account can act in the system; any feature that later needs a "verified only" rule must add its own check, since this spec does not gate access on it.
 - Session based refresh token rotation adds a small amount of write load on every token refresh (an update per `Session` row every ~15 minutes per active user).
-- WhatsApp Business Cloud API requires an approved Meta Business account, message templates, and phone number registration before any OTP can be sent; this is an external, non code dependent setup step.
+- (2026-07-17) Apple and WhatsApp were removed rather than feature flagged, so re-adding them later is a small implementation pass (new strategy/guard/module, config, seed rows), not a config flip. The tradeoff was accepted because carrying dead, uncredentialed integrations in the codebase (no Apple Developer account, no verified Meta Business account) added test/maintenance surface for paths that could not run.
+- (2026-07-17) The product's phone number first target market reasoning (see `## Context`) still holds; deferring the phone identifier means the product currently only serves email-comfortable users until phone + WhatsApp is re-added.
 
 **Neutral**:
-- Introduces two new `@Global()` infra modules (`auth-token`, `password`) plus a `whatsapp` delivery module, following the project's existing `src/lib/<name>/` convention.
-- The lockout fields live on `UserIdentity`, not `User`, so a user with both an email and a phone identity can have one locked while the other still works; this is intentional (see rationale.md) but worth remembering when debugging a "locked out" report.
+- Introduces two new `@Global()` infra modules (`auth-token`, `password`), following the project's existing `src/lib/<name>/` convention. (A third, `whatsapp`, was added 2026-07-15 and removed 2026-07-17.)
+- The lockout fields live on `UserIdentity`, not `User`; this is intentional (see rationale.md) but worth remembering when debugging a "locked out" report.
 
 ## Follow-up
 
-- [ ] No `docs/scope/` exists yet in this repo; this spec is not currently linked to a buildable scope feature. Consider running `/scope` to enroll an "Authentication" feature and link it to this spec before `/develop` begins.
 - [ ] `.env.example` in `api/` is missing `NODE_ENV`, `JWT_REFRESH_SECRET`, and `RESEND_DOMAIN`, which are already read by `configuration.ts`; add them, plus every new variable listed under Configuration required, before implementation starts.
-- [ ] Apple Sign In requires an Apple Developer account, a Services ID, and a private key generated ahead of time; this is an external prerequisite, not a code task.
-- [ ] WhatsApp Business Cloud API requires a verified Meta Business account, a registered phone number, and approved message templates for OTP/verification/reset texts; start this setup early, it is not instantaneous.
 - [ ] Once a project wide `AGENTS.md` records a build approach (Tracer Bullet, Skateboard, Facade, Journey, or a variant), reconcile the `## Build plan` ordering above against it if different from the assumed end to end default.
+- [ ] **(2026-07-17) Re-add Apple Sign In** once its external prerequisite is done: an Apple Developer account, a Services ID, and a private key generated ahead of time. When ready, run `/architect authentication: re-add Apple OAuth` before `/develop` rebuilds `AppleStrategy`/`apple-auth.guard.ts` and the `/auth/apple*` routes; they were deleted, not disabled, so this is a small rebuild, not a flag flip.
+- [ ] **(2026-07-17) Re-add WhatsApp delivery and the phone identifier** once WhatsApp's external prerequisite is done: a verified Meta Business account, a registered phone number, and approved message templates for OTP/verification/reset texts. This also means re-adding `RegisterDto.phone`, `AuthService.register`'s phone branch, and the `PHONE_VERIFICATION` purpose. Run `/architect authentication: re-add WhatsApp delivery and phone identifier` first; this is the product's originally targeted market reach channel (see `## Context`), not an abandoned idea.
+- [ ] The original `Configuration required` env var names for the removed integrations (`WHATSAPP_CLOUD_API_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID`/`WHATSAPP_BUSINESS_ACCOUNT_ID`, `APPLE_CALLBACK_URL`) never matched what `configuration.ts` actually read (`WHATSAPP_API_KEY`/`WHATSAPP_API_URL`, `APPLE_REDIRECT_URI`); same pre-existing mismatch on `FACEBOOK_APP_ID`/`FACEBOOK_APP_SECRET` vs the actual `FACEBOOK_CLIENT_ID`/`FACEBOOK_CLIENT_SECRET`. Worth reconciling whenever these are next touched (a `/sync` or the next `/architect` pass on this spec), not urgent now that Apple/WhatsApp are removed.
 
 ## Rationale
 

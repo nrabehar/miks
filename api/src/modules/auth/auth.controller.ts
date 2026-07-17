@@ -22,7 +22,6 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { AppleAuthGuard } from './apple-auth.guard';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -242,25 +241,6 @@ export class AuthController {
 	@UseGuards(FacebookAuthGuard)
 	@Get('facebook/callback')
 	async facebookCallback(
-		@CurrentUser() user: AuthenticatedUser,
-		@Req() req: Request,
-		@Res() res: Response,
-	) {
-		await this.completeOAuthLogin(user, req, res);
-	}
-
-	@Public()
-	@UseGuards(AppleAuthGuard)
-	@Get('apple')
-	appleLogin() {
-		// Guard redirects to Apple; this handler never runs.
-	}
-
-	@Public()
-	@UseGuards(AppleAuthGuard)
-	@Post('apple/callback')
-	@HttpCode(HttpStatus.OK)
-	async appleCallback(
 		@CurrentUser() user: AuthenticatedUser,
 		@Req() req: Request,
 		@Res() res: Response,

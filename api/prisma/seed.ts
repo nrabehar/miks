@@ -12,7 +12,6 @@ async function main() {
 			{ code: 'local', name: 'Local', category: 'LOCAL' },
 			{ code: 'google', name: 'Google', category: 'OAUTH' },
 			{ code: 'facebook', name: 'Facebook', category: 'OAUTH' },
-			{ code: 'apple', name: 'Apple', category: 'OAUTH' },
 		],
 		skipDuplicates: true,
 	});
@@ -20,7 +19,6 @@ async function main() {
 	await prisma.verificationTokenPurpose.createMany({
 		data: [
 			{ code: 'EMAIL_VERIFICATION', name: 'Email verification' },
-			{ code: 'PHONE_VERIFICATION', name: 'Phone verification' },
 			{ code: 'PASSWORD_RESET', name: 'Password reset' },
 		],
 		skipDuplicates: true,
