@@ -15,6 +15,7 @@ WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 
+RUN npm run db:deploy
 RUN npm run db:generate
 
 RUN npm run build
