@@ -1,7 +1,7 @@
 # 0001. Authentication (JWT access/refresh, email + Google/Facebook OAuth login, device sessions)
 
 **Date**: 2026-07-15 (scope trimmed 2026-07-17)
-**Status**: In Progress
+**Status**: Accepted
 
 ## Summary
 
