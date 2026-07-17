@@ -10,9 +10,11 @@ function makePrisma() {
 		userIdentity: {
 			findUnique: jest.fn(),
 			update: jest.fn(),
+			create: jest.fn(),
 		},
 		user: {
 			create: jest.fn(),
+			findUnique: jest.fn(),
 		},
 		session: {
 			create: jest.fn(),
@@ -24,8 +26,9 @@ function makePrisma() {
 		userIdentity: {
 			findUnique: jest.Mock;
 			update: jest.Mock;
+			create: jest.Mock;
 		};
-		user: { create: jest.Mock };
+		user: { create: jest.Mock; findUnique: jest.Mock };
 		session: {
 			create: jest.Mock;
 			findUnique: jest.Mock;
@@ -141,6 +144,146 @@ describe('AuthService', () => {
 				role: 'USER',
 			});
 			expect(result).not.toHaveProperty('secretHash');
+		});
+	});
+
+	describe('validateOAuthLogin', () => {
+		const profile = {
+			providerAccountId: 'google-account-1',
+			email: 'ada@example.test',
+			emailVerified: true,
+			displayName: 'Ada',
+			accessToken: 'provider-access-token',
+			refreshToken: 'provider-refresh-token',
+		};
+
+		it('updates tokens and returns the linked user when a matching identity already exists', async () => {
+			prisma.userIdentity.findUnique.mockResolvedValue({
+				id: 'identity-1',
+				user: {
+					id: 'user-1',
+					email: 'ada@example.test',
+					phone: null,
+					displayName: 'Ada',
+					role: 'USER',
+				},
+			});
+
+			const result = await service.validateOAuthLogin('google', profile);
+
+			expect(prisma.userIdentity.findUnique).toHaveBeenCalledWith({
+				where: {
+					providerCode_providerAccountId: {
+						providerCode: 'google',
+						providerAccountId: 'google-account-1',
+					},
+				},
+				include: { user: true },
+			});
+			expect(prisma.userIdentity.update).toHaveBeenCalledWith({
+				where: { id: 'identity-1' },
+				data: {
+					accessToken: 'provider-access-token',
+					refreshToken: 'provider-refresh-token',
+					lastUsedAt: expect.any(Date),
+				},
+			});
+			expect(prisma.user.create).not.toHaveBeenCalled();
+			expect(result).toEqual({
+				id: 'user-1',
+				email: 'ada@example.test',
+				phone: null,
+				displayName: 'Ada',
+				role: 'USER',
+			});
+		});
+
+		it('auto-links a new identity to an existing user when the provider asserts the email is verified (AC-5)', async () => {
+			prisma.userIdentity.findUnique.mockResolvedValue(null);
+			prisma.user.findUnique.mockResolvedValue({
+				id: 'existing-user-1',
+				email: 'ada@example.test',
+				phone: null,
+				displayName: 'Ada (local)',
+				role: 'USER',
+			});
+
+			const result = await service.validateOAuthLogin('google', profile);
+
+			expect(prisma.user.findUnique).toHaveBeenCalledWith({
+				where: { email: 'ada@example.test' },
+			});
+			expect(prisma.userIdentity.create).toHaveBeenCalledWith({
+				data: expect.objectContaining({
+					userId: 'existing-user-1',
+					providerCode: 'google',
+					providerAccountId: 'google-account-1',
+					emailVerified: true,
+				}),
+			});
+			expect(prisma.user.create).not.toHaveBeenCalled();
+			expect(result).toEqual({
+				id: 'existing-user-1',
+				email: 'ada@example.test',
+				phone: null,
+				displayName: 'Ada (local)',
+				role: 'USER',
+			});
+		});
+
+		it('does not auto-link, and creates a new user instead, when the provider email is not verified even if a matching user exists', async () => {
+			prisma.userIdentity.findUnique.mockResolvedValue(null);
+			prisma.user.create.mockResolvedValue({
+				id: 'new-user-1',
+				email: 'ada@example.test',
+				phone: null,
+				displayName: 'Ada',
+				role: 'USER',
+			});
+
+			await service.validateOAuthLogin('google', {
+				...profile,
+				emailVerified: false,
+			});
+
+			expect(prisma.user.findUnique).not.toHaveBeenCalled();
+			expect(prisma.userIdentity.create).not.toHaveBeenCalled();
+			expect(prisma.user.create).toHaveBeenCalledWith({
+				data: expect.objectContaining({
+					email: 'ada@example.test',
+					displayName: 'Ada',
+					identities: {
+						create: expect.objectContaining({
+							providerCode: 'google',
+							providerAccountId: 'google-account-1',
+							emailVerified: false,
+						}),
+					},
+				}),
+			});
+		});
+
+		it('creates a brand new user and identity when there is no existing identity or matching verified user', async () => {
+			prisma.userIdentity.findUnique.mockResolvedValue(null);
+			prisma.user.findUnique.mockResolvedValue(null);
+			prisma.user.create.mockResolvedValue({
+				id: 'new-user-1',
+				email: 'ada@example.test',
+				phone: null,
+				displayName: 'Ada',
+				role: 'USER',
+			});
+
+			const result = await service.validateOAuthLogin('google', profile);
+
+			expect(prisma.user.create).toHaveBeenCalled();
+			expect(result).toEqual({
+				id: 'new-user-1',
+				email: 'ada@example.test',
+				phone: null,
+				displayName: 'Ada',
+				role: 'USER',
+			});
 		});
 	});
 

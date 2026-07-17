@@ -1,4 +1,5 @@
 import { AuthenticatedUser } from '$common/guards/jwt-auth.guard';
+import { ConfigService } from '$lib/config/config.service';
 import { PrismaService } from '$lib/database/prisma.service';
 import { TokenService } from '$lib/auth-token/token.service';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
@@ -7,8 +8,14 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { VerificationService } from './verification.service';
 
+function makeConfig(): ConfigService {
+	return {
+		oauth: { webUrl: 'http://localhost:5173' },
+	} as unknown as ConfigService;
+}
+
 function makeResponse(): Response {
-	return {} as unknown as Response;
+	return { redirect: jest.fn() } as unknown as Response;
 }
 
 function makeRequest(overrides: Partial<Request> = {}): Request {
@@ -65,6 +72,7 @@ describe('AuthController', () => {
 			tokenService as unknown as TokenService,
 			prisma as unknown as PrismaService,
 			{} as unknown as VerificationService,
+			makeConfig(),
 		);
 	});
 
@@ -279,5 +287,40 @@ describe('AuthController', () => {
 				data: { revokedAt: expect.any(Date) },
 			});
 		});
+	});
+
+	describe('OAuth callbacks (google/facebook/apple)', () => {
+		// The route/redirect guards (GoogleAuthGuard etc.) that gate these handlers
+		// and the passport strategy handshake are covered end to end by
+		// /check verify's /auth/google, /auth/facebook, /auth/apple checks; these
+		// tests cover only the shared completeOAuthLogin behavior once a guard has
+		// already resolved an AuthenticatedUser.
+		it.each([
+			['googleCallback' as const],
+			['facebookCallback' as const],
+			['appleCallback' as const],
+		])(
+			'%s creates a session, sets cookies, and redirects to the configured web app URL',
+			async (method) => {
+				authService.createSession.mockResolvedValue({
+					accessToken: 'access-token',
+					refreshToken: 'refresh-token',
+				});
+				const req = makeRequest({ headers: { 'user-agent': 'jest' } });
+				const res = makeResponse();
+
+				await controller[method](user, req, res);
+
+				expect(authService.createSession).toHaveBeenCalledWith(
+					user,
+					expect.objectContaining({ userAgent: 'jest' }),
+				);
+				expect(tokenService.setAuthCookies).toHaveBeenCalledWith(res, {
+					accessToken: 'access-token',
+					refreshToken: 'refresh-token',
+				});
+				expect(res.redirect).toHaveBeenCalledWith('http://localhost:5173');
+			},
+		);
 	});
 });

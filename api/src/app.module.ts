@@ -11,10 +11,12 @@ import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
 	imports: [
 		ConfigModule,
+		ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
 		PrismaModule,
 		AuthTokenModule,
 		PasswordModule,
@@ -24,6 +26,10 @@ import { APP_GUARD } from '@nestjs/core';
 		AuthModule,
 	],
 	controllers: [AppController],
-	providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],
+	providers: [
+		AppService,
+		{ provide: APP_GUARD, useClass: ThrottlerGuard },
+		{ provide: APP_GUARD, useClass: JwtAuthGuard },
+	],
 })
 export class AppModule {}

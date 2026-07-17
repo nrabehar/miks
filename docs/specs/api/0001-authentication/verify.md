@@ -1,6 +1,6 @@
-# Verify: authentication · spec 0001 · updated 2026-07-15
+# Verify: authentication · spec 0001 · updated 2026-07-17
 
-_Steps derived from spec 0001 acceptance criteria. `/check verify` runs these; `/test` locks the durable ones. Covers the local auth core (register, login, lockout, refresh, logout, sessions, guards) and the verification/password reset delivery slice. OAuth (Google/Facebook/Apple) is not yet built; its AC-1 (OAuth) and AC-5 steps are not included here. The verification/reset steps below are written but not yet run by `/check verify`._
+_Steps derived from spec 0001 acceptance criteria. `/check verify` runs these; `/test` locks the durable ones. Covers the local auth core (register, login, lockout, refresh, logout, sessions, guards) and the verification/password reset delivery slice. OAuth (Google/Facebook/Apple) and `/auth/*` rate limiting are now built (2026-07-17); their steps below are written but not yet run, since no real `GOOGLE_CLIENT_ID`/`FACEBOOK_APP_ID`/`APPLE_*` credentials are configured. The verification/reset steps below are written but not yet run by `/check verify`._
 
 ## Commands
 
@@ -41,11 +41,11 @@ _Steps derived from spec 0001 acceptance criteria. `/check verify` runs these; `
 
 ## Acceptance-criteria coverage
 
-- AC-1 (local register/login) — covered above. AC-1 (OAuth) — not built yet, deferred.
+- AC-1 (local register/login) — covered above. AC-1 (OAuth) — built (Google/Facebook/Apple strategies + routes), not yet run against real provider credentials.
 - AC-2 (access 15m / refresh 30d tokens on login) — covered by the register/login steps above.
 - AC-3 (usable immediately, no verification gate) — covered by the login-right-after-register step.
 - AC-4 (password reset) — met for email; confirmed the old password stops working and the new one logs in.
-- AC-5 (OAuth auto link) — not built yet, deferred.
+- AC-5 (OAuth auto link) — built (`AuthService.validateOAuthLogin` links on verified email match), not yet run against real provider credentials.
 - AC-6 (refresh rotation + reuse revokes session) — covered above.
 - AC-7 (lockout after 5 failed attempts, resets on success) — lock confirmed; reset-on-success not directly re-observed this round.
 - AC-8 (email/WhatsApp delivery) — met for email (real Resend sends confirmed, no mocking); blocked for WhatsApp/phone, no `WHATSAPP_API_KEY` configured, and the failure mode there is a raw 500 rather than a graceful response (see below).
@@ -53,6 +53,22 @@ _Steps derived from spec 0001 acceptance criteria. `/check verify` runs these; `
 - AC-10 (expired/consumed token errors) — met for already-consumed and invalid/unknown; expired case not directly exercised.
 - AC-11 (one guard for cookie + Bearer callers) — covered by the `/auth/me` steps.
 - AC-12 (`@Roles('ADMIN')` guard) — still blocked, no `@Roles('ADMIN')` route exists in the app yet.
+
+## UI / manual: OAuth (requires real `GOOGLE_CLIENT_ID`/`FACEBOOK_APP_ID`/`APPLE_*` credentials, not yet configured)
+
+- [ ] `GET /auth/google` while unauthenticated → redirects to Google's consent screen → AC-1 (OAuth)
+- [ ] Complete the Google consent flow with a Google account whose email is not yet registered → `GET /auth/google/callback` creates a new `User` + `UserIdentity` (`providerCode = 'google'`), redirects to `WEB_URL` with auth cookies set → AC-1 (OAuth)
+- [ ] Complete the Google consent flow with a Google account whose **verified** email matches an existing local/email `User` → the callback links a new `UserIdentity` to that existing user instead of creating a duplicate `User` → AC-5
+- [ ] Repeat the two flows above for `GET /auth/facebook` / `GET /auth/facebook/callback` → AC-1 (OAuth), AC-5
+- [ ] Repeat for Apple: `GET /auth/apple` redirects to Apple's sign in page, and Apple's own redirect posts back to `POST /auth/apple/callback` (Apple's `form_post` response mode, not a `GET`) → AC-1 (OAuth), AC-5
+- [ ] An OAuth account whose provider does not assert the email as verified, with no existing `User` matching that email → creates a new `User` + `UserIdentity` rather than auto linking → AC-5 (negative case)
+
+## UI / manual: rate limiting
+
+- [ ] `POST /auth/login` 6 times within 60 seconds with the same caller → the 6th (and further) requests return 429 before hitting the lockout/credential check → satisfies the tuned `/auth/login` throttle
+- [ ] `POST /auth/forgot-password` 4 times within 60 seconds → the 4th returns 429 → satisfies the tuned `/auth/forgot-password` throttle
+- [ ] `POST /auth/resend-verification` 4 times within 60 seconds → the 4th returns 429 → satisfies the tuned `/auth/resend-verification` throttle
+- [ ] Any other `/auth/*` endpoint (e.g. `/auth/register`) allows the module wide default (100 requests / 60s) before 429ing → confirms the global throttle default doesn't over restrict less sensitive routes
 
 ## Note: delivery failure handling
 

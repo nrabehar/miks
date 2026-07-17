@@ -133,6 +133,82 @@ export class AuthService {
 		return this.toAuthenticatedIdentity(identity.user);
 	}
 
+	async validateOAuthLogin(
+		providerCode: string,
+		profile: {
+			providerAccountId: string;
+			email: string | null;
+			emailVerified: boolean;
+			displayName: string;
+			accessToken?: string;
+			refreshToken?: string;
+		},
+	): Promise<AuthenticatedIdentity> {
+		const existingIdentity = await this.prisma.userIdentity.findUnique({
+			where: {
+				providerCode_providerAccountId: {
+					providerCode,
+					providerAccountId: profile.providerAccountId,
+				},
+			},
+			include: { user: true },
+		});
+
+		if (existingIdentity) {
+			await this.prisma.userIdentity.update({
+				where: { id: existingIdentity.id },
+				data: {
+					accessToken: profile.accessToken,
+					refreshToken: profile.refreshToken,
+					lastUsedAt: new Date(),
+				},
+			});
+
+			return this.toAuthenticatedIdentity(existingIdentity.user);
+		}
+
+		const existingUser = profile.emailVerified
+			? await this.prisma.user.findUnique({
+					where: { email: profile.email ?? undefined },
+				})
+			: null;
+
+		if (existingUser) {
+			await this.prisma.userIdentity.create({
+				data: {
+					userId: existingUser.id,
+					providerCode,
+					providerAccountId: profile.providerAccountId,
+					accessToken: profile.accessToken,
+					refreshToken: profile.refreshToken,
+					emailVerified: true,
+					lastUsedAt: new Date(),
+				},
+			});
+
+			return this.toAuthenticatedIdentity(existingUser);
+		}
+
+		const user = await this.prisma.user.create({
+			data: {
+				email: profile.email,
+				displayName: profile.displayName,
+				identities: {
+					create: {
+						providerCode,
+						providerAccountId: profile.providerAccountId,
+						accessToken: profile.accessToken,
+						refreshToken: profile.refreshToken,
+						emailVerified: profile.emailVerified,
+						lastUsedAt: new Date(),
+					},
+				},
+			},
+		});
+
+		return this.toAuthenticatedIdentity(user);
+	}
+
 	private async registerFailedAttempt(
 		identityId: string,
 		currentAttempts: number,

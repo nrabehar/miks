@@ -142,8 +142,8 @@ No project wide build approach is recorded yet in `AGENTS.md` or a scope file (n
 7. [x] Add verification flow: `POST /auth/verify`, `POST /auth/resend-verification`, satisfies **AC-10**.
 8. [x] Add password reset flow: `POST /auth/forgot-password`, `POST /auth/reset-password`, satisfies **AC-4**, **AC-10**. (Verification/reset codes are 6 digit, sha256 hashed for direct lookup, 15 minute expiry; `VerificationToken.attempts` is not incremented since a direct hash lookup makes per row retry counting moot, noted for a future revisit if brute force protection on the code itself is wanted.)
 9. [x] Add `GET /auth/sessions`, `DELETE /auth/sessions/:id`, with ownership checks, satisfies **AC-9**.
-10. [ ] Add `GoogleStrategy`, `FacebookStrategy`, `AppleStrategy` plus their `GET /auth/:provider` and `GET /auth/:provider/callback` routes, including the auto link on verified email match, satisfies **AC-1** (OAuth), **AC-5**.
-11. [ ] Add `ThrottlerModule` rate limiting on `/auth/*`, tuned tighter for `/auth/login`, `/auth/forgot-password`, `/auth/resend-verification`.
+10. [x] Add `GoogleStrategy`, `FacebookStrategy`, `AppleStrategy` plus their `GET /auth/:provider` and `GET /auth/:provider/callback` routes, including the auto link on verified email match, satisfies **AC-1** (OAuth), **AC-5**. (Apple's callback is `POST`, not `GET`, matching Apple's own `form_post` response mode; not yet run against real provider credentials, see Follow-up.)
+11. [x] Add `ThrottlerModule` rate limiting on `/auth/*`, tuned tighter for `/auth/login`, `/auth/forgot-password`, `/auth/resend-verification`.
 
 ## Consequences
 

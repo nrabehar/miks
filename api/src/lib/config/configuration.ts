@@ -28,6 +28,26 @@ export interface AppConfig {
 		cookieDomain: string | undefined;
 		cookieSecure: boolean;
 	};
+	oauth: {
+		webUrl: string;
+		google: {
+			clientId: string;
+			clientSecret: string;
+			redirectUri: string;
+		};
+		facebook: {
+			clientId: string;
+			clientSecret: string;
+			redirectUri: string;
+		};
+		apple: {
+			clientId: string;
+			teamId: string;
+			keyId: string;
+			privateKey: string;
+			redirectUri: string;
+		};
+	};
 }
 
 export default (): AppConfig => ({
@@ -68,5 +88,25 @@ export default (): AppConfig => ({
 		),
 		cookieDomain: process.env.COOKIE_DOMAIN,
 		cookieSecure: process.env.COOKIE_SECURE === 'true',
+	},
+	oauth: {
+		webUrl: process.env.WEB_URL ?? 'http://localhost:5173',
+		google: {
+			clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+			redirectUri: process.env.GOOGLE_REDIRECT_URI ?? '',
+		},
+		facebook: {
+			clientId: process.env.FACEBOOK_CLIENT_ID ?? '',
+			clientSecret: process.env.FACEBOOK_CLIENT_SECRET ?? '',
+			redirectUri: process.env.FACEBOOK_REDIRECT_URI ?? '',
+		},
+		apple: {
+			clientId: process.env.APPLE_CLIENT_ID ?? '',
+			teamId: process.env.APPLE_TEAM_ID ?? '',
+			keyId: process.env.APPLE_KEY_ID ?? '',
+			privateKey: process.env.APPLE_PRIVATE_KEY ?? '',
+			redirectUri: process.env.APPLE_REDIRECT_URI ?? '',
+		},
 	},
 });

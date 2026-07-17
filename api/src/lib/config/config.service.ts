@@ -31,4 +31,8 @@ export class ConfigService {
 	get auth() {
 		return this.nestConfigService.get('auth', { infer: true });
 	}
+
+	get oauth() {
+		return this.nestConfigService.get('oauth', { infer: true });
+	}
 }

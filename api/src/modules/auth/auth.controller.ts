@@ -1,6 +1,7 @@
 import { Public } from '$common/decorators/public.decorator';
 import { CurrentUser } from '$common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '$common/guards/jwt-auth.guard';
+import { ConfigService } from '$lib/config/config.service';
 import { PrismaService } from '$lib/database/prisma.service';
 import { TokenService } from '$lib/auth-token/token.service';
 import {
@@ -19,13 +20,17 @@ import {
 	UnauthorizedException,
 	UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
+import { AppleAuthGuard } from './apple-auth.guard';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyDto } from './dto/verify.dto';
+import { FacebookAuthGuard } from './facebook-auth.guard';
+import { GoogleAuthGuard } from './google-auth.guard';
 import { LocalAuthGuard } from './local-auth.guard';
 import { VerificationService } from './verification.service';
 
@@ -36,6 +41,7 @@ export class AuthController {
 		private readonly tokenService: TokenService,
 		private readonly prisma: PrismaService,
 		private readonly verificationService: VerificationService,
+		private readonly config: ConfigService,
 	) {}
 
 	@Public()
@@ -58,6 +64,11 @@ export class AuthController {
 
 	@Public()
 	@UseGuards(LocalAuthGuard)
+	// Must stay above AUTH_LOCKOUT_MAX_ATTEMPTS (default 5): equal or lower
+	// budgets let the throttle's 429 fire on the very request that would
+	// reach the lockout check, so the account lockout's own 423 becomes
+	// unreachable within a single throttle window.
+	@Throttle({ default: { limit: 10, ttl: 60_000 } })
 	@Post('login')
 	@HttpCode(HttpStatus.OK)
 	async login(
@@ -125,6 +136,7 @@ export class AuthController {
 	}
 
 	@Public()
+	@Throttle({ default: { limit: 3, ttl: 60_000 } })
 	@Post('resend-verification')
 	@HttpCode(HttpStatus.ACCEPTED)
 	async resendVerification(@Body() dto: ResendVerificationDto) {
@@ -132,6 +144,7 @@ export class AuthController {
 	}
 
 	@Public()
+	@Throttle({ default: { limit: 3, ttl: 60_000 } })
 	@Post('forgot-password')
 	@HttpCode(HttpStatus.ACCEPTED)
 	async forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -198,5 +211,74 @@ export class AuthController {
 			where: { id: sessionId },
 			data: { revokedAt: new Date() },
 		});
+	}
+
+	@Public()
+	@UseGuards(GoogleAuthGuard)
+	@Get('google')
+	googleLogin() {
+		// Guard redirects to Google; this handler never runs.
+	}
+
+	@Public()
+	@UseGuards(GoogleAuthGuard)
+	@Get('google/callback')
+	async googleCallback(
+		@CurrentUser() user: AuthenticatedUser,
+		@Req() req: Request,
+		@Res() res: Response,
+	) {
+		await this.completeOAuthLogin(user, req, res);
+	}
+
+	@Public()
+	@UseGuards(FacebookAuthGuard)
+	@Get('facebook')
+	facebookLogin() {
+		// Guard redirects to Facebook; this handler never runs.
+	}
+
+	@Public()
+	@UseGuards(FacebookAuthGuard)
+	@Get('facebook/callback')
+	async facebookCallback(
+		@CurrentUser() user: AuthenticatedUser,
+		@Req() req: Request,
+		@Res() res: Response,
+	) {
+		await this.completeOAuthLogin(user, req, res);
+	}
+
+	@Public()
+	@UseGuards(AppleAuthGuard)
+	@Get('apple')
+	appleLogin() {
+		// Guard redirects to Apple; this handler never runs.
+	}
+
+	@Public()
+	@UseGuards(AppleAuthGuard)
+	@Post('apple/callback')
+	@HttpCode(HttpStatus.OK)
+	async appleCallback(
+		@CurrentUser() user: AuthenticatedUser,
+		@Req() req: Request,
+		@Res() res: Response,
+	) {
+		await this.completeOAuthLogin(user, req, res);
+	}
+
+	private async completeOAuthLogin(
+		user: AuthenticatedUser,
+		req: Request,
+		res: Response,
+	) {
+		const tokens = await this.authService.createSession(user, {
+			userAgent: req.headers['user-agent'],
+			ip: req.ip,
+		});
+
+		this.tokenService.setAuthCookies(res, tokens);
+		res.redirect(this.config.oauth.webUrl);
 	}
 }
