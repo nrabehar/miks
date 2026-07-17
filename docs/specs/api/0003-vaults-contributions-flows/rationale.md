@@ -56,6 +56,10 @@ The three product doc open points were settled directly with the engineer rather
 - **Withdrawal is declarative**: consistent with the cardinal "not a bank" rule, a withdrawal is a member's own declaration that money already left the platform's visibility, not an instruction MIKS executes. This is the same posture the product already takes toward contributions (declared, not verified).
 - **A leaving or removed member's withdrawable balance is frozen, not forfeited**: it is money the product doc's own share formula already attributed to them before they left; taking it away or handing it to the group would silently rewrite history the audit log otherwise guarantees is immutable. They keep the ability to declare a withdrawal against what's already there, they just stop accruing anything new.
 
+## Update (2026-07-17): contribution-level reversal
+
+Building `/develop` surfaced a gap the original AC-11 glossed over: it described "reversing a contribution" but the only reversal endpoint took a single `Transaction` id. A contribution can produce zero transactions (AC-6, no active flow rule yet) or several (AC-5, one per flow destination), so a single-transaction reversal can never fully undo one, and can't touch a zero-transaction contribution at all. The engineer chose to add a proper contribution-level reversal path (`Contribution.reversedAt`, a dedicated endpoint that offsets every one of the contribution's transactions atomically) rather than push the workaround onto the member (calling reverse once per transaction, with no way to fix a zero-transaction contribution). AC-11 now covers only withdrawal reversal, where a single transaction is always the right unit; AC-14 covers contribution reversal.
+
 ## References
 
 None (references consent: `none`, kept clean per the engineer's choice).

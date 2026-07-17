@@ -49,11 +49,11 @@ The financial core every group needs: vaults to hold money declarations, recordi
 
 - [x] Design it (spec): [0003](../../specs/api/0003-vaults-contributions-flows/index.md)
 - [ ] Build it: /develop vaults contributions flows and shares
-  - [ ] Data model + migration (WITHDRAWAL transaction type, FlowRule.replacesRuleId) — AC-8, AC-9
+  - [ ] Data model + migration (WITHDRAWAL transaction type, FlowRule.replacesRuleId, Contribution.reversedAt) — AC-8, AC-9, AC-14
   - [ ] Vaults: create a group vault, auto create the withdrawable vault on joining — AC-1, AC-2
   - [ ] Contribution recording + automatic flow distribution + share recompute (the core end to end slice) — AC-3, AC-4, AC-5, AC-6, AC-7
   - [ ] Flow rule management: create + atomic replace — AC-4, AC-8
-  - [ ] Withdrawal, reversal, ledger/share read surfaces, and audit logging — AC-9, AC-10, AC-11, AC-12, AC-13
+  - [ ] Withdrawal, transaction reversal, contribution level reversal, ledger/share read surfaces, and audit logging — AC-9, AC-10, AC-11, AC-12, AC-13, AC-14
 - [ ] Verify it: /check verify vaults contributions flows and shares
 - [ ] Test it: /test vaults contributions flows and shares
 

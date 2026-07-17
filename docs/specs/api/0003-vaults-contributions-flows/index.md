@@ -32,9 +32,10 @@ See [rationale.md](rationale.md) for the full problem context, forces, and the p
 - **AC-8**: A flow rule is never edited in place. Replacing it (one atomic call) deactivates the old rule and creates a new one linked back via `replacesRuleId`, so every past transaction remains attributable to the exact rule that was active when it ran.
 - **AC-9**: A member can declare a withdrawal from their own withdrawable vault, up to its current cached balance. Withdrawing more than the balance is rejected with a clear error and creates no transaction; a valid withdrawal immediately decrements the balance and appears in the ledger as a `WITHDRAWAL` transaction.
 - **AC-10**: A former member's (left or removed) withdrawable vault balance is preserved and remains declarable-withdrawable after they leave; it accrues no further distributions since they are no longer ACTIVE.
-- **AC-11**: A member can reverse their own contribution or withdrawal (not another member's). The reversal creates an offsetting `Transaction` linked via `reversedTransactionId`, adjusts the affected vault balance(s) and, for a contribution reversal, recomputes every active member's share. An already reversed transaction cannot be reversed again.
+- **AC-11**: A member can reverse their own withdrawal (not another member's). The reversal creates an offsetting `Transaction` linked via `reversedTransactionId` and adjusts the withdrawable vault's balance. An already reversed transaction cannot be reversed again. (Reversing a contribution is **AC-14**, below, a contribution can produce zero, one, or several transactions, so it is not reversible by picking a single transaction id.)
 - **AC-12**: Any ACTIVE member can view the group's full vault list, contribution history, transaction ledger (filterable by vault), and every member's share; a non member is rejected the same way every other group endpoint already rejects one (via the existing `GroupMembershipGuard`), with zero exception for the platform `ADMIN` role.
 - **AC-13**: Every mutating action in this feature (vault creation, contribution, flow rule creation and replace, withdrawal, reversal) is recorded in the existing immutable audit log, attributed to the acting member.
+- **AC-14**: A member can reverse their own contribution (not another member's), whether it produced zero, one, or several flow-distribution transactions. The reversal marks the `Contribution` reversed, creates an offsetting `Transaction` (linked via `reversedTransactionId`) for every one of its still-active transactions, adjusts every affected vault balance, and recomputes every active member's share (the reversed contribution's amount drops out of the group's total cumulative contributions). A contribution already reversed cannot be reversed again. A `CONTRIBUTION`-sourced `Transaction` can only be reversed this way, never directly through the single-transaction reverse endpoint (**AC-11**'s endpoint rejects it), so a contribution's distribution is always reversed as one atomic, all-or-nothing unit.
 
 ## Decision
 
@@ -51,12 +52,12 @@ Full reasoning, alternatives, and the product doc open points this settles: see 
 Everything below already exists in `api/prisma/models/` except the two marked NEW.
 
 - `Vault` (id, groupId FK, type `GROUP`/`WITHDRAWABLE`/`PROJECT`, name, memberId FK nullable+unique for withdrawable, projectId FK nullable, cachedBalance, metadata) — `PROJECT` type and `projectId` stay unused until the projects spec.
-- `Contribution` (id, groupId FK, memberId FK, amount, transactionId FK nullable+unique, paymentMethodCode FK nullable, contributedAt, metadata).
+- `Contribution` (id, groupId FK, memberId FK, amount, transactionId FK nullable+unique, paymentMethodCode FK nullable, contributedAt, metadata, **NEW** `reversedAt` nullable): `reversedAt` set the moment the contribution is reversed (**AC-14**); a non null `reversedAt` excludes the contribution from the group's total cumulative contributions used in every share (`MemberShareCache`) computation.
 - `FlowRule` (id, groupId FK, name nullable, sourceType `CONTRIBUTION`/`PROJECT_REVENUE`/`MANUAL_ENTRY`/`OTHER`, active, metadata, createdAt) 1:N `FlowDestination` (id, flowRuleId FK, destinationType `VAULT`/`MEMBER_WITHDRAWABLE_VAULTS`, vaultId FK nullable, percentage). **NEW**: `FlowRule.replacesRuleId` (`String?`, self FK to `FlowRule.id`, nullable): set when this rule was created to replace another.
 - `MemberShareCache` (id, groupId, memberId FK unique, percentage to 4 decimals, totalContributed, computedAt) — one row per member, recomputed on every contribution and every contribution reversal.
 - `Transaction` (id, groupId FK, vaultId FK, direction `CREDIT`/`DEBIT`, type `CONTRIBUTION`/`INTERNAL_FLOW`/`PROJECT_PAYOUT`/`MANUAL_ENTRY`/`ADJUSTMENT`/`OTHER`/**NEW `WITHDRAWAL`**, sourceType/sourceRefId tracing back to the `Contribution` or the applying `FlowRule`, paymentMethodCode nullable, reversedTransactionId FK nullable self relation, description, createdById FK, metadata, createdAt).
 
-Migration needed: add `WITHDRAWAL` to the `TransactionType` enum (`ALTER TYPE`); add `FlowRule.replacesRuleId` (nullable self FK) plus its index.
+Migration needed: add `WITHDRAWAL` to the `TransactionType` enum (`ALTER TYPE`); add `FlowRule.replacesRuleId` (nullable self FK) plus its index; add `Contribution.reversedAt` (nullable `DateTime`).
 
 **State transitions**:
 
@@ -68,6 +69,8 @@ Migration needed: add `WITHDRAWAL` to the `TransactionType` enum (`ALTER TYPE`);
 
 `MemberShareCache`: recomputed (never soft deleted or historized) every time any active member's total contributed changes, whether by a new contribution or a contribution reversal.
 
+`Contribution`: `active` (created) → `reversed` (`reversedAt` set, **AC-14**; never reactivated, matching every other reversal in this spec).
+
 **API surface**:
 
 | Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
@@ -77,13 +80,14 @@ Migration needed: add `WITHDRAWAL` to the `TransactionType` enum (`ALTER TYPE`);
 | /groups/:groupId/vaults/:id | GET | (none) | vault detail + balance | ACTIVE member | 403 not a member, 404 not found |
 | /groups/:groupId/contributions | POST | amount (req), paymentMethodCode (opt) | contribution id, amount, resulting transactions | ACTIVE member | 403 not a member, 422 invalid amount |
 | /groups/:groupId/contributions | GET | (pagination) | list of contributions | ACTIVE member | 403 not a member |
+| /groups/:groupId/contributions/:id/reverse | POST | (none) | contribution id, its offsetting transactions | ACTIVE member, owner of the contribution | 403 not a member or not the owner, 404 not found, 409 already reversed |
 | /groups/:groupId/flow-rules | POST | sourceType (req), destinations[] (req, percentages summing to 100) | flow rule id, destinations | ACTIVE member | 403 not a member, 422 percentages don't sum to 100 |
 | /groups/:groupId/flow-rules | GET | (pagination) | list of rules (active and replaced) | ACTIVE member | 403 not a member |
 | /groups/:groupId/flow-rules/:id/replace | POST | destinations[] (req, new split) | new flow rule id, replacesRuleId | ACTIVE member | 403 not a member, 404 rule not found, 409 rule already replaced |
 | /groups/:groupId/shares | GET | (none) | every active member's share percentage | ACTIVE member | 403 not a member |
 | /groups/:groupId/transactions | GET | vaultId (opt filter), pagination | list of transactions | ACTIVE member | 403 not a member |
 | /groups/:groupId/me/withdraw | POST | amount (req) | transaction id, new balance | ACTIVE member | 403 not a member, 422 insufficient balance |
-| /groups/:groupId/transactions/:id/reverse | POST | (none) | reversing transaction id | ACTIVE member, owner of the original | 403 not a member or not the original's owner, 409 already reversed |
+| /groups/:groupId/transactions/:id/reverse | POST | (none) | reversing transaction id | ACTIVE member, owner of the original | 403 not a member or not the original's owner, 409 already reversed, 422 the transaction is `CONTRIBUTION`-sourced (reverse the contribution instead, via `/contributions/:id/reverse`) |
 
 **Key invariants**:
 - A `FlowRule`'s `FlowDestination` percentages always sum to exactly 100%, checked at creation and at replace time.
@@ -91,6 +95,8 @@ Migration needed: add `WITHDRAWAL` to the `TransactionType` enum (`ALTER TYPE`);
 - `Vault.cachedBalance` is always exactly the sum of its `CREDIT` transactions minus its `DEBIT` transactions (including any reversals), recomputable from the ledger at any time as a consistency check.
 - Only the withdrawable vault's own member may withdraw from it or reverse their own contribution/withdrawal; no one else can act on another member's entries.
 - A `Transaction` can be reversed at most once (`reversedTransactionId` uniqueness on the reversing side prevents a second reversal of the same original).
+- A `CONTRIBUTION`-sourced `Transaction` is reversed only as part of reversing its parent `Contribution` (**AC-14**); it is never reversed directly through the single-transaction endpoint, so there is exactly one path to reverse a contribution's distribution, never two that could disagree.
+- Reversing a `Contribution` with zero transactions (no flow rule was active when it was recorded, **AC-6**) still sets `reversedAt` and recomputes shares; there is simply nothing to offset in the ledger.
 - Applying flow rules, updating balances, and recomputing every active member's share for one contribution all happen inside a single database transaction; a failure partway rolls back the entire contribution, never leaving a partially distributed state.
 
 **Security model**:
@@ -105,17 +111,19 @@ Migration needed: add `WITHDRAWAL` to the `TransactionType` enum (`ALTER TYPE`);
 - Failure case: two active `CONTRIBUTION` rules both apply independently to the same contribution, producing two full sets of transactions, verifies **AC-4**.
 - Failure case: a withdrawal request for more than the current balance is rejected and creates no transaction, verifies **AC-9**.
 - Failure case: reversing an already reversed transaction is rejected with 409, verifies **AC-11**.
-- Auth/permission: a non member calling any endpoint in this feature receives 403, and a member trying to withdraw or reverse another member's entry is rejected, verifies **AC-12**, **AC-11**.
+- Failure case: reversing a contribution that produced two distribution transactions offsets both and recomputes shares in one call; reversing a contribution that produced zero transactions (no flow rule was active) still sets `reversedAt` and recomputes shares with nothing to offset; reversing an already reversed contribution is rejected with 409; calling the single-transaction reverse endpoint on a `CONTRIBUTION`-sourced transaction is rejected with 422, verifies **AC-14**.
+- Auth/permission: a non member calling any endpoint in this feature receives 403, and a member trying to withdraw, reverse another member's transaction, or reverse another member's contribution is rejected, verifies **AC-12**, **AC-11**, **AC-14**.
 
 ## Build plan
 
 No project wide build approach is recorded in `AGENTS.md` or the scope header (root `AGENTS.md` does not exist yet), so this plan defaults to end to end (Tracer Bullet) slices, the same assumption spec 0001 and spec 0002 both made: stand up one thin, fully working path (a contribution that gets recorded, distributed, and reflected in a balance and a share) before broadening to rule management, withdrawal, and reversal.
 
-1. Migration: `TransactionType.WITHDRAWAL` enum value, `FlowRule.replacesRuleId` self FK plus index, satisfies **AC-8**, **AC-9**.
+1. Migration: `TransactionType.WITHDRAWAL` enum value, `FlowRule.replacesRuleId` self FK plus index, `Contribution.reversedAt` nullable column, satisfies **AC-8**, **AC-9**, **AC-14**.
 2. `VaultsModule`: create a `GROUP` vault, list/get vaults with balance, and auto create the `WITHDRAWABLE` vault the moment a `GroupMember` becomes `ACTIVE` (hook into the existing group join/accept path from spec 0002), satisfies **AC-1**, **AC-2**.
 3. `ContributionsModule` end to end thin slice: record a contribution, find every active `CONTRIBUTION` flow rule, apply each independently (percentage split, remainder to the last destination, `MEMBER_WITHDRAWABLE_VAULTS` resolved against the live `MemberShareCache`), write the resulting `Transaction`s, update `cachedBalance`, recompute every active member's `MemberShareCache`, all in one DB transaction, satisfies **AC-3**, **AC-4** (read path), **AC-5**, **AC-6**, **AC-7**.
 4. `FlowRulesModule`: create a flow rule (percentage sum validation), and the atomic replace endpoint (deactivate old, create new with `replacesRuleId`), satisfies **AC-4**, **AC-8**.
-5. Withdrawal and reversal: `POST /groups/:groupId/me/withdraw` (balance check, `WITHDRAWAL` transaction), `POST /groups/:groupId/transactions/:id/reverse` (ownership check, offsetting transaction, balance and share recompute), satisfies **AC-9**, **AC-10**, **AC-11**.
+5. Withdrawal and reversal: `POST /groups/:groupId/me/withdraw` (balance check, `WITHDRAWAL` transaction), `POST /groups/:groupId/transactions/:id/reverse` (ownership check, rejects a `CONTRIBUTION`-sourced transaction, offsetting transaction, balance recompute), satisfies **AC-9**, **AC-10**, **AC-11**.
+5a. Contribution reversal: `POST /groups/:groupId/contributions/:id/reverse` (ownership check, 409 if already reversed, offsets every one of the contribution's transactions in one DB transaction whether there are zero, one, or several, sets `reversedAt`, recomputes every active member's share), satisfies **AC-14**.
 6. Read surfaces: `GET /groups/:groupId/shares`, `GET /groups/:groupId/transactions` (paginated, `vaultId` filter, reusing `ListQueryDto`), satisfies **AC-12**.
 7. Wire `AuditService.log(...)` into every mutating endpoint above (vault creation, contribution, flow rule create/replace, withdrawal, reversal), satisfies **AC-13**.
 
