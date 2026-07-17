@@ -1,0 +1,58 @@
+# 0004. Projects: rationale
+
+## Context
+
+MIKS already lets a group hold shared money in vaults, split incoming contributions automatically across those vaults through flow rules, and track each member's proportional share. What it cannot do yet is the thing the cahier des charges (`docs/cahier-des-charges.md`, section 5.7 and 5.8) names as a core reason groups adopt MIKS in the first place: fund and track a specific initiative (a purchase, a resale, a piece of equipment) as its own accounting unit, approved by a formal vote rather than a treasurer's private decision.
+
+The database already anticipates this. The Prisma schema, migrated in `20260713114141_init`, already has a `Project` model, a `PROJECT` vault type, a `PROJECT` vote subject type with its own `projectId` column on `Vote`, and a `PROJECT_REVENUE` flow rule source type. None of the service layer exists yet: spec 0003 (vaults, contributions, flow rules, and shares) explicitly deferred `PROJECT` vaults and `PROJECT_REVENUE` flows to "the later projects feature", and `groups/AGENTS.md` explicitly flags that the `Vote` model was built generalized (`subjectType: PROJECT | MEMBER_REMOVAL`) specifically so a future project voting feature could reuse it "rather than duplicate it."
+
+The one real structural force at play: today `VotesService` lives inside the groups module and only knows how to resolve a `MEMBER_REMOVAL` vote. Resolving a `PROJECT` vote needs to call into project specific logic (withdraw the budget, flip the project active). If that logic is added in place, the groups module would need to depend on the projects module to call it, while the projects module already needs to depend on the groups module to reach votes at all, a circular dependency. This is the one decision in this spec with a real structural tradeoff; the rest of the design (submission fields, entry semantics, closure behavior) follows fairly directly from what the cahier des charges already specifies, filled in only where the document is silent (documented per section below).
+
+## Options considered
+
+### Option 1: Extract a shared VotesModule; each domain registers a resolver
+
+`VotesModule` becomes the sole owner of `Vote`/`VoteResponse` reads, writes, and the lazy resolution timing (evaluate on next read or response, no cron, matching the existing convention). It does not know what a project or a group membership removal is: each domain module (`GroupsModule`, `ProjectsModule`) registers an injectable resolver for its `subjectType` (`MEMBER_REMOVAL`, `PROJECT`) at startup, and `VotesModule` calls whichever resolver matches when a vote closes.
+
+**Pros**:
+- No module needs to import the other; `ProjectsModule` never depends on `GroupsModule` and vice versa.
+- Matches the intent already written into `groups/AGENTS.md`: the `Vote` model is "generalized, not group specific", and a future project voting feature "should extend this service's dispatch, not duplicate it."
+- Adding a third vote subject type later (if one is ever needed) is another resolver registration, not another module dependency.
+
+**Cons**:
+- One extra module and a small resolver registry pattern to introduce (a bit more moving parts than just adding a branch to an existing service).
+- The existing `MEMBER_REMOVAL` resolution code in `groups/votes.service.ts` needs to move, which touches working, tested code (it already has passing tests from spec 0002) and needs its existing test coverage carried over, not just new tests for the project path.
+
+### Option 2: ProjectsModule imports GroupsModule and extends VotesService in place
+
+Add a `PROJECT` branch directly inside the existing `VotesService` (still living in the groups module), and have `ProjectsModule` import `GroupsModule` to reach it.
+
+**Pros**:
+- Fewer new files; the vote resolution logic stays in one place that already exists and already works.
+- No resolver registry indirection to reason about.
+
+**Cons**:
+- `VotesService`, a groups owned service, would need `ProjectsService` injected back into it to activate a project on approval, which is exactly the circular dependency this spec needs to avoid (`ProjectsModule` to reach votes, `GroupsModule`'s `VotesService` to reach projects).
+- Every future vote subject type change means editing a module that conceptually belongs to group membership, growing its blast radius over time.
+
+## Rationale
+
+Option 1 is the direct execution of what `groups/AGENTS.md` already committed to when the `Vote` model was built generalized rather than group specific: a future project voting feature "should extend this service's dispatch, not duplicate it." Option 2 would technically satisfy that sentence (it does extend `VotesService`), but only by creating the exact circular dependency the generalized design was meant to avoid, since `VotesService` would need `ProjectsService` injected back into a module (`groups`) that `ProjectsModule` itself depends on to reach voting. Option 1 costs one extra module and a resolver registry, a small, well understood pattern (NestJS's own multi provider injection), against a real structural risk. The refactor touches shipped, tested code (spec 0002's `VotesService`), which is a genuine cost, called out in Consequences rather than hidden.
+
+A third possibility, NestJS's `forwardRef()` escape hatch (letting `GroupsModule` and `ProjectsModule` import each other directly, circular reference and all), was also weighed informally and rejected: it removes the immediate import error but keeps the actual coupling it papers over, still leaves `VotesService` needing a service from a module that depends on it, and NestJS's own guidance treats `forwardRef` as a narrow escape hatch, not a structural pattern to design around.
+
+Several smaller decisions, settled directly against the cahier des charges or by explicit choice during design, are recorded here rather than re-argued as full options since each had one clearly correct or clearly chosen answer, not a genuine multi way tradeoff:
+
+- **Resubmission after REJECTED vs INVALID**: settled directly from the cahier des charges (section 6, invariant 4): "a project can only have one open vote session at a time; the `status` attribute still allows a history of successive vote sessions, e.g. after an `INVALID` vote." This is project scoped, not vote scoped: an `INVALID` outcome (quorum not met) lets the same `Project` open a new vote session; the state diagram in section 5.7 shows no arrow from `REJECTED` back to `PENDING`, so `REJECTED` is terminal for that project.
+- **Payout destination**: the cahier des charges names a `sourceVault` the budget is withdrawn from but never says which of a project's own vaults receives it. First drafted as a per vault flag plus a hand written partial unique index; a cross check pass pointed out a single nullable `Project.payoutVaultId` foreign key expresses the same "at most one payout vault per project" rule natively, with no raw SQL index needed, for the same acceptance criteria. Corrected to that simpler shape.
+- **Revenue vs expense distribution semantics**: first drafted as expense distribution being project vaults only, treating a debit to a member's withdrawable vault as having no real world analog. A cross check pass caught that this contradicted the cahier des charges directly: section 5.7 explicitly describes project flow rules as covering "the distribution of revenue/expenses between its vaults and members' withdrawable vaults" for both directions, e.g. a profit payout or reimbursement leaving the project through the exact same destination shape as revenue. Corrected: `PROJECT_EXPENSE` rules use the identical `FlowDestination` model as `PROJECT_REVENUE` (a project vault or `MEMBER_WITHDRAWABLE_VAULTS`, by percentage), just tagged with a distinct source type for accounting clarity.
+- **Insufficient funds at approval time**: the vote still resolves (the threshold was met) and the project reaches a real `APPROVED` status; activation into `ACTIVE` is what gets blocked, retried lazily on the project's next read rather than looping forever without a limit or failing silently. This follows MIKS's cardinal rule (cahier des charges section 2): every financial fact is a declaration, never an execution that silently fails or silently retries. `APPROVED` as a genuine, distinct status (not collapsed into `ACTIVE`) was also a cross check correction: the schema and the cahier des charges state diagram both carry it as its own step, and folding it into `ACTIVE` left this exact scenario with no defined state to sit in.
+- **Vote configuration source**: `Vote.approvalThreshold`/`minQuorum`/`durationHours` are non-null, but the cahier des charges (section 5.8) describes them as "freely configurable, modifiable at any time, for upcoming votes", a standing group level default, not a per submission choice. Letting the proposer set their own project's threshold would let them pick a favorable low bar for their own proposal. Chosen: a default lives in `Group.metadata` (the same free form JSON column already used for other per group flexible settings, e.g. on `Vault`, `GroupMember`, `Project`), editable by any active member, applied to a project's vote at the moment it opens.
+- **Concurrent resolution safety**: lazy vote/project resolution (evaluated on next read or response, no cron) already exists for `MEMBER_REMOVAL`, where a double resolution has no financial stake. A project vote's resolution can trigger a real money movement (`PROJECT_PAYOUT`), so two concurrent reads racing to resolve the same vote must never both execute it. Chosen: the resolution and the resulting activation happen inside one transaction guarded by a status conditional update (only proceed if the row's status still matches what was just read), the standard way to make a lazy, read triggered state transition safe under concurrency without introducing a lock service or a queue.
+- **Source vault type restriction**: `sourceVault` is restricted to `GROUP` type vaults. Allowing a member's personal `WITHDRAWABLE` vault or another project's own `PROJECT` vault to fund a new project would blur an ownership boundary the schema otherwise keeps clean (a withdrawable vault belongs to one member; a project vault belongs to one project's own accounting).
+- **No edits after activation**: a project's vaults and flow rules are fixed at approval time. The cahier des charges only describes these as submission time fields, with no endpoint or process for changing them later; inventing an edit path (or a second approval vote for edits) would be adding a feature not asked for and not documented.
+- **Audit categories split by event nature**: an early draft filed every project event under the `PROJECT` category. Corrected to match the existing convention (vaults/contributions already file money movements under `FINANCIAL`) and the cahier des charges' own category list (section 5.9, which reserves `FINANCIAL`, `VOTE`, and `PROJECT` as distinct categories): project lifecycle transitions stay `PROJECT`, money movements go to `FINANCIAL`, vote events go to `VOTE`.
+
+## References
+
+Not included at this spec's References level (`none`, the engineer's choice during design). The reasoning above stays complete; only named source citations and links are omitted.
