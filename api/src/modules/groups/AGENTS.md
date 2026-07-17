@@ -1,0 +1,25 @@
+# Group membership
+
+Spec: [docs/specs/api/0002-group-membership/index.md](../../../../docs/specs/api/0002-group-membership/index.md).
+
+## File pointers
+
+- `src/modules/groups/` — `GroupsController`/`GroupsService` (create/list/get/patch a group, member listing, leave, close), `InvitesController`/`InvitesService` (invite by email: create, list, revoke, public preview, accept), `VotesController`/`VotesService` (removal vote propose/respond/get, the lazy close evaluation), DTOs (`dto/`).
+- `src/common/guards/group-membership.guard.ts` — `GroupMembershipGuard`: resolves the caller's active `GroupMember` for the `:groupId`/`:id` route param, attaches it to `request.groupMember`, 403s if missing or not `ACTIVE`. No group level role exists: this guard's pass/fail is the entire authorization model, with zero exception for a platform `ADMIN` (it never reads `user.role`). Runs in addition to, never instead of, `JwtAuthGuard`.
+- `src/common/decorators/current-member.decorator.ts` — `@CurrentMember()`: pulls `request.groupMember` set by the guard above.
+- `src/lib/audit/` — `AuditService`/`AuditModule` (`@Global()`, imported once in `AppModule`): the project's first immutable audit log writer, `auditService.log({ eventType, groupId?, actorId?, payload? })` inserts one `AuditLog` row. `eventType` is a free string matched against the `EventType` reference table (seeded in `prisma/seed.ts`, one row per event, category `MEMBER` for every membership event); there is no enum, follow the `VerificationTokenPurpose`-style reference table pattern, not a TS union. Any future domain (contributions, projects, votes) reuses this same service, it is not group-specific.
+
+## Conventions
+
+- **Reuses `NotificationDeliveryService`/`MailService`** (documented in [../auth/AGENTS.md](../auth/AGENTS.md)) for invite emails; does not add a second mail path.
+- **Compensating delete on a failed invite email.** `InvitesService.create()` writes the `GroupInvite` row before sending the email (the token must exist to hash and persist before it can be mailed). If `notifications.sendCode(...)` throws, the invite is deleted in a `catch` before rethrowing, so a mail provider failure never leaves an orphaned `PENDING` row that would block a future invite to the same email with a false 409. Found and fixed by `/debug` 2026-07-17; apply the same pattern (create → try the external call → compensate on failure) anywhere else a DB write is immediately followed by a fallible external call with no shared transaction.
+- **`Vote` is generalized, not group-specific.** `subjectType` (`PROJECT` | `MEMBER_REMOVAL`) plus a nullable `projectId`/`targetMemberId` (a migration level `CHECK` constraint enforces exactly one set, matching `subjectType`) let the same `Vote`/`VoteResponse` tables back both a project approval vote (not yet built) and a member removal vote. `VotesService` only implements the `MEMBER_REMOVAL` side today; a future project-voting feature should extend this service's dispatch, not duplicate it.
+- **Lazy state evaluation, no background job.** A `Vote` past its `scheduledCloseAt` is only evaluated (tallied, flipped to `APPROVED`/`REJECTED`/`INVALID`) the first time anyone reads or responds to it (`VotesService`'s private `resolveVote`/`closeVote`). `GroupInvite` expiry follows the same lazy pattern (`InvitesService`'s private `loadInvite`). Neither uses a cron/queue; if a real background scheduler is ever introduced, both call sites are candidates to simplify.
+- **Active-only uniqueness is a DB constraint, not application code.** `(groupId, userId)` is unique only among `ACTIVE` `GroupMember` rows (a partial unique index added by hand in `prisma/migrations/20260717150000_group_membership_constraints/migration.sql`, since Prisma schema syntax cannot express a `WHERE`-scoped unique constraint). A `LEFT` row can coexist with a later new `ACTIVE` row for the same pair (rejoining via a fresh invite creates a new `GroupMember`, never reuses the old one).
+- **Pagination**: `ListQueryDto` (`page`/`limit`, defaults 1/20) is the first pagination convention in the API; reuse it rather than inventing a second shape.
+
+## Configuration
+
+- `GROUP_INVITE_EXPIRY_DAYS` (default `7`): how long a `GroupInvite` stays valid before it lazily expires. Read via `ConfigService.groups.inviteExpiryDays`.
+
+_Drafted by /sync from the introducing change, worth a quick human pass._

@@ -37,3 +37,4 @@ REQUIRED - do not skip, do not wait to be asked:
 ## Context files
 
 - [src/modules/auth/AGENTS.md](src/modules/auth/AGENTS.md): authentication (JWT access/refresh, email + Google/Facebook OAuth, guards/decorators, verification/reset delivery), spec [0001](../docs/specs/api/0001-authentication/index.md).
+- [src/modules/groups/AGENTS.md](src/modules/groups/AGENTS.md): group membership (create/invite/join/leave, vote based removal, closure, the zero-exception membership guard, the generalized `Vote` model, the audit log), spec [0002](../docs/specs/api/0002-group-membership/index.md).
