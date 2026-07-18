@@ -3,6 +3,7 @@ export interface AppConfig {
 		env: string;
 		port: number;
 		url: string;
+		corsOrigins: string[];
 	};
 	db: {
 		url: string;
@@ -47,6 +48,10 @@ export default (): AppConfig => ({
 		env: process.env.NODE_ENV ?? 'development',
 		port: parseInt(process.env.PORT ?? '3000', 10),
 		url: process.env.APP_URL ?? 'http://localhost:3000',
+		corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
+			.split(',')
+			.map((origin) => origin.trim())
+			.filter(Boolean),
 	},
 	db: {
 		url: process.env.DATABASE_URL ?? '',

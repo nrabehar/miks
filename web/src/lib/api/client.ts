@@ -1,8 +1,8 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios"
 import { env } from "#/lib/config/env"
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios"
 
 export const apiClient = axios.create({
-	baseURL: env.VITE_API_URL,
+	baseURL: env.VITE_API_PATH ?? env.VITE_API_URL,
 	withCredentials: true,
 	headers: {
 		"X-Requested-With": "XMLHttpRequest",
