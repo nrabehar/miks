@@ -8,6 +8,11 @@ import { z } from "zod"
 import { MiksLogo } from "#/components/brand/logo"
 import { Button } from "#/components/ui/button"
 import { Input } from "#/components/ui/input"
+import {
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+} from "#/components/ui/input-otp"
 import { Separator } from "#/components/ui/separator"
 import {
 	Form,
@@ -306,6 +311,9 @@ function DeviceConfirmationForm({
 				<p className="text-muted-foreground text-sm">
 					{t("auth.deviceConfirmation.subtitle")}
 				</p>
+				<p className="text-muted-foreground text-xs">
+					{t("auth.deviceConfirmation.expiresHint")}
+				</p>
 			</div>
 
 			<Form {...form}>
@@ -318,15 +326,26 @@ function DeviceConfirmationForm({
 						control={form.control}
 						name="code"
 						render={({ field }) => (
-							<FormItem>
-								<FormLabel>{t("auth.deviceConfirmation.code")}</FormLabel>
+							<FormItem className="items-center">
+								<FormLabel className="sr-only">
+									{t("auth.deviceConfirmation.code")}
+								</FormLabel>
 								<FormControl>
-									<Input
-										type="text"
+									<InputOTP
+										maxLength={6}
+										autoFocus
 										inputMode="numeric"
-										autoComplete="one-time-code"
-										{...field}
-									/>
+										value={field.value}
+										onChange={field.onChange}
+										onComplete={() => form.handleSubmit(onSubmit)()}
+										disabled={confirmDevice.isPending}
+									>
+										<InputOTPGroup>
+											{Array.from({ length: 6 }, (_, i) => (
+												<InputOTPSlot key={i} index={i} />
+											))}
+										</InputOTPGroup>
+									</InputOTP>
 								</FormControl>
 								<FormMessage />
 							</FormItem>

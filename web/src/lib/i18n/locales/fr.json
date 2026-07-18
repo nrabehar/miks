@@ -25,6 +25,7 @@
 		"deviceConfirmation": {
 			"title": "Confirmez cet appareil",
 			"subtitle": "Nous ne reconnaissons pas cet appareil. Entrez le code envoyé par e-mail pour continuer.",
+			"expiresHint": "Ce code expire dans 15 minutes.",
 			"code": "Code de confirmation",
 			"submit": "Confirmer",
 			"submitting": "Confirmation en cours...",

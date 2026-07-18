@@ -28,14 +28,20 @@ function providerUrl(provider: OAuthButtonProps["provider"]): string {
 // navigates back to our origin); if the browser blocks the popup, this falls
 // back to a full page redirect to the same OAuth URL instead of failing
 // silently.
+//
+// There is deliberately no "is the popup still open" poll here. Reading
+// `.closed` on a COOP-severed popup doesn't just throw a catchable error, it
+// makes Chrome print its own "Cross-Origin-Opener-Policy policy would block
+// the window.closed call" line straight to the console, a browser level
+// report, not a JS exception, so no try/catch on our side can silence it.
+// The BroadcastChannel above is COOP proof and already covers completion;
+// the timeout below covers the user abandoning the popup instead.
 function OAuthButton({ provider }: OAuthButtonProps) {
 	const { t } = useTranslation()
 	const navigate = useNavigate()
 	const queryClient = useQueryClient()
 	const [pending, setPending] = useState(false)
 	const [timedOut, setTimedOut] = useState(false)
-	const popupRef = useRef<Window | null>(null)
-	const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	useEffect(() => {
@@ -58,7 +64,6 @@ function OAuthButton({ provider }: OAuthButtonProps) {
 	}, [])
 
 	function cleanup() {
-		if (pollRef.current) clearInterval(pollRef.current)
 		if (timeoutRef.current) clearTimeout(timeoutRef.current)
 		setPending(false)
 	}
@@ -77,24 +82,8 @@ function OAuthButton({ provider }: OAuthButtonProps) {
 			return
 		}
 
-		popupRef.current = popup
 		setPending(true)
 		setTimedOut(false)
-
-		pollRef.current = setInterval(() => {
-			// Once the popup navigates to the provider's login page, its
-			// Cross-Origin-Opener-Policy header can block reading `.closed`
-			// from here; the BroadcastChannel handshake above (COOP proof)
-			// and the timeout fallback below still cover completion and
-			// abandonment either way.
-			try {
-				if (popupRef.current?.closed) {
-					cleanup()
-				}
-			} catch {
-				// ignore: COOP-restricted, not something we can detect this way
-			}
-		}, 500)
 
 		timeoutRef.current = setTimeout(() => {
 			setTimedOut(true)

@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { LaptopIcon, SmartphoneIcon, TabletIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { formatRelativeTime } from "#/lib/format/relative-time"
 import { Badge } from "#/components/ui/badge"
 import { Button } from "#/components/ui/button"
 import {
@@ -62,28 +64,50 @@ function SessionsPage() {
 	)
 }
 
+function DeviceIcon({ deviceType }: { deviceType: string | null }) {
+	const Icon =
+		deviceType === "MOBILE"
+			? SmartphoneIcon
+			: deviceType === "TABLET"
+				? TabletIcon
+				: LaptopIcon
+
+	return (
+		<Icon
+			aria-hidden="true"
+			className="text-muted-foreground size-5 shrink-0"
+		/>
+	)
+}
+
 function SessionRow({ session }: { session: Session }) {
-	const { t } = useTranslation()
+	const { t, i18n } = useTranslation()
 	const revoke = useRevokeSession()
 
 	return (
 		<div className="border-border flex items-center justify-between gap-4 rounded-lg border p-4">
-			<div className="flex flex-col gap-1">
-				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium">
-						{session.deviceName ??
-							session.userAgent ??
-							t("auth.sessions.unknownDevice")}
-						{session.platform ? ` · ${session.platform}` : ""}
+			<div className="flex items-center gap-3">
+				<DeviceIcon deviceType={session.deviceType} />
+				<div className="flex flex-col gap-1">
+					<div className="flex items-center gap-2">
+						<span className="text-sm font-medium">
+							{session.deviceName ??
+								session.userAgent ??
+								t("auth.sessions.unknownDevice")}
+							{session.platform ? ` · ${session.platform}` : ""}
+						</span>
+						{session.current && (
+							<Badge variant="secondary">{t("auth.sessions.current")}</Badge>
+						)}
+					</div>
+					<span
+						className="text-muted-foreground text-xs"
+						title={new Date(session.lastActiveAt).toLocaleString(i18n.language)}
+					>
+						{session.ip ?? t("auth.sessions.unknownIp")} ·{" "}
+						{formatRelativeTime(session.lastActiveAt, i18n.language)}
 					</span>
-					{session.current && (
-						<Badge variant="secondary">{t("auth.sessions.current")}</Badge>
-					)}
 				</div>
-				<span className="text-muted-foreground text-xs">
-					{session.ip ?? t("auth.sessions.unknownIp")} ·{" "}
-					{new Date(session.lastActiveAt).toLocaleString()}
-				</span>
 			</div>
 
 			{!session.current && (

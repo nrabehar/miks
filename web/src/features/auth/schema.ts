@@ -30,8 +30,13 @@ export type DeviceConfirmationRequired = z.infer<
 	typeof deviceConfirmationRequiredSchema
 >
 
+// The API always emails a 6 digit numeric code (device.service.ts's
+// generateCode); validating the exact shape client side catches a typo
+// before a round trip, instead of surfacing the backend's generic 400.
 export const confirmDeviceSchema = z.object({
-	code: z.string().min(1, "Le code est requis"),
+	code: z
+		.string()
+		.regex(/^\d{6}$/, "Le code doit contenir 6 chiffres"),
 })
 
 export type ConfirmDeviceInput = z.infer<typeof confirmDeviceSchema>

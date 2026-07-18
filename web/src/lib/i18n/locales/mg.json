@@ -25,6 +25,7 @@
 		"deviceConfirmation": {
 			"title": "Marino ity fitaovana ity",
 			"subtitle": "Tsy fantatray ity fitaovana ity. Ampidiro ny kaody nalefa amin'ny mailaka mba hanohizana.",
+			"expiresHint": "Lany daty ao anatin'ny 15 minitra ity kaody ity.",
 			"code": "Kaody fanamarinana",
 			"submit": "Hamarina",
 			"submitting": "Eo am-panamarinana...",
