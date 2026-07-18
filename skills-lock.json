@@ -49,6 +49,12 @@
       "skillPath": "skills/react-email/SKILL.md",
       "computedHash": "1d2afbc631670c6bc23e90d0d4776d25f08eabed4bac72485bf06aea1f91ae89"
     },
+    "redis-core": {
+      "source": "redis/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/redis-core/SKILL.md",
+      "computedHash": "2c0aedf490d57dc8e5ac4d38b5b92b57ceae5ac92ccb4e1ce30c9a0c6f643e30"
+    },
     "resend": {
       "source": "resend/resend-skills",
       "sourceType": "github",

@@ -8,6 +8,7 @@
 | Group membership | done | [0002](../../specs/api/0002-group-membership/index.md) |
 | Vaults, contributions, flow rules, and shares | done | [0003](../../specs/api/0003-vaults-contributions-flows/index.md) |
 | Projects | done | [0004](../../specs/api/0004-projects/index.md) |
+| Member notifications | in-progress | [0005](../../specs/api/0005-member-notifications/index.md) |
 
 ## Authentication (done)
 
@@ -78,4 +79,19 @@ Lets any active member propose a project (its own budget, its own vaults, its ow
 
 - Mandatory identity verification gate — currently deferred by product decision (account usable immediately); revisit if a future feature needs a "verified only" rule.
 - Whether a closed group can ever be reopened — this spec treats closure as terminal, see spec [0002](../../specs/api/0002-group-membership/index.md) Follow-up.
-- Platform ADMIN's scope for support/moderation purposes outside group data — group data itself is now fully isolated per spec [0002](../../specs/api/0002-group-membership/index.md), but ADMIN's broader scope is still otherwise undefined.
+- Platform ADMIN's scope for support/moderation purposes outside group data — group data itself is now fully isolated per spec [0002](../../specs/api/0002-group-membership/index.md), but ADMIN's broader scope is still otherwise undefined. (Spec [0005](../../specs/api/0005-member-notifications/index.md) grants ADMIN one narrow read only exception, notification access, without settling this broader question.)
+
+## Member notifications (in-progress)
+
+Closes the notification gap left open by group membership, vaults, and projects: a member is now told, by email and an in app entry, when they are removed from a group, a group closes, a vote opens or resolves, a contribution lands (debounced into one 15 minute summary), or a project is submitted, activated, or closed. Delivery runs through a background job queue (BullMQ on Redis) so a slow or failing send never blocks the request that triggered it, and members can turn any event type off.
+
+**Done when:** a member sees a paginated list of their own notifications with an unread count, can mark one or all as read, can enable or disable each notification type, and every event in scope reliably triggers the right notification unless disabled, all matching the acceptance criteria in spec [0005](../../specs/api/0005-member-notifications/index.md).
+
+- [x] Design it (spec): [0005](../../specs/api/0005-member-notifications/index.md)
+- [ ] Build it: /develop member notifications
+  - [ ] Data model migration + Redis/BullMQ infrastructure (NotificationsModule, queue registration) — AC-5, AC-6, AC-7
+  - [ ] End to end delivery slice (notify service, delivery processor with retry/backoff and audit logging) wired to one event first, then read + preference surfaces — AC-1, AC-5, AC-6, AC-7, AC-8, AC-9, AC-10, AC-12
+  - [ ] Extend triggers across group, vote, and project events — AC-1, AC-2, AC-4
+  - [ ] Contribution debounce (delayed, deduplicated summary job) and the ADMIN read override — AC-3, AC-10, AC-11
+- [ ] Verify it: /check verify member notifications
+- [ ] Test it: /test member notifications
