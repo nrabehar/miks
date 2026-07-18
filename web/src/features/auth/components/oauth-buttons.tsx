@@ -74,8 +74,16 @@ function OAuthButton({ provider }: OAuthButtonProps) {
 		setTimedOut(false)
 
 		pollRef.current = setInterval(() => {
-			if (popupRef.current?.closed) {
-				cleanup()
+			// Once the popup navigates to the provider's login page, its
+			// Cross-Origin-Opener-Policy header can block reading `.closed`
+			// from here; the postMessage handshake and the timeout fallback
+			// below still cover completion and abandonment either way.
+			try {
+				if (popupRef.current?.closed) {
+					cleanup()
+				}
+			} catch {
+				// ignore: COOP-restricted, not something we can detect this way
 			}
 		}, 500)
 
