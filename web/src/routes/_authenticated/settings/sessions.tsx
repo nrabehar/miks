@@ -71,7 +71,10 @@ function SessionRow({ session }: { session: Session }) {
 			<div className="flex flex-col gap-1">
 				<div className="flex items-center gap-2">
 					<span className="text-sm font-medium">
-						{session.userAgent ?? t("auth.sessions.unknownDevice")}
+						{session.deviceName ??
+							session.userAgent ??
+							t("auth.sessions.unknownDevice")}
+						{session.platform ? ` · ${session.platform}` : ""}
 					</span>
 					{session.current && (
 						<Badge variant="secondary">{t("auth.sessions.current")}</Badge>
@@ -79,7 +82,7 @@ function SessionRow({ session }: { session: Session }) {
 				</div>
 				<span className="text-muted-foreground text-xs">
 					{session.ip ?? t("auth.sessions.unknownIp")} ·{" "}
-					{new Date(session.createdAt).toLocaleString()}
+					{new Date(session.lastActiveAt).toLocaleString()}
 				</span>
 			</div>
 

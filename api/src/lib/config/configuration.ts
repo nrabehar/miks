@@ -24,6 +24,9 @@ export interface AppConfig {
 		verificationTokenExpiryMinutes: number;
 		cookieDomain: string | undefined;
 		cookieSecure: boolean;
+		deviceConfirmationCodeExpiryMinutes: number;
+		deviceIdCookieName: string;
+		deviceIdCookieMaxAgeDays: number;
 	};
 	groups: {
 		inviteExpiryDays: number;
@@ -81,6 +84,15 @@ export default (): AppConfig => ({
 		),
 		cookieDomain: process.env.COOKIE_DOMAIN,
 		cookieSecure: process.env.COOKIE_SECURE === 'true',
+		deviceConfirmationCodeExpiryMinutes: parseInt(
+			process.env.DEVICE_CONFIRMATION_CODE_EXPIRY_MINUTES ?? '15',
+			10,
+		),
+		deviceIdCookieName: process.env.DEVICE_ID_COOKIE_NAME ?? 'device_id',
+		deviceIdCookieMaxAgeDays: parseInt(
+			process.env.DEVICE_ID_COOKIE_MAX_AGE_DAYS ?? '3650',
+			10,
+		),
 	},
 	groups: {
 		inviteExpiryDays: parseInt(

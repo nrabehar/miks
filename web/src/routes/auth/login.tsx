@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslation } from "react-i18next"
@@ -17,11 +18,26 @@ import {
 	FormMessage,
 } from "#/components/ui/form"
 import { OAuthButtons } from "#/features/auth/components/oauth-buttons"
-import { useLogin } from "#/features/auth/hooks"
-import { loginSchema } from "#/features/auth/schema"
+import {
+	useConfirmDevice,
+	useLogin,
+	useResendDeviceConfirmation,
+} from "#/features/auth/hooks"
+import {
+	OAUTH_CHANNEL_NAME,
+	OAUTH_POPUP_WINDOW_NAME,
+	OAUTH_SUCCESS_MESSAGE,
+} from "#/features/auth/oauth-callback-message"
+import { confirmDeviceSchema, loginSchema } from "#/features/auth/schema"
+import { useCooldown } from "#/features/auth/use-cooldown"
 
 const searchSchema = z.object({
 	redirect: z.string().optional(),
+	// Set when we land here from the OAuth callback (google/facebook) because
+	// the device wasn't recognized yet (spec 0001-authentication's
+	// 2026-07-18 addendum, AC-15); reuses the same confirmation step as a
+	// direct login.
+	confirmationId: z.string().optional(),
 })
 
 export const Route = createFileRoute("/auth/login")({
@@ -32,8 +48,11 @@ export const Route = createFileRoute("/auth/login")({
 function LoginPage() {
 	const { t } = useTranslation()
 	const navigate = useNavigate()
-	const { redirect } = Route.useSearch()
+	const { redirect, confirmationId: searchConfirmationId } = Route.useSearch()
 	const login = useLogin()
+	const [confirmationId, setConfirmationId] = useState<string | null>(
+		searchConfirmationId ?? null,
+	)
 
 	const form = useForm({
 		resolver: zodResolver(loginSchema),
@@ -42,7 +61,13 @@ function LoginPage() {
 
 	async function onSubmit(values: z.infer<typeof loginSchema>) {
 		try {
-			await login.mutateAsync(values)
+			const result = await login.mutateAsync(values)
+
+			if (result.status === "confirmation-required") {
+				setConfirmationId(result.confirmationId)
+				return
+			}
+
 			await navigate({ to: redirect ?? "/" })
 		} catch (error) {
 			const status = isAxiosError(error) ? error.response?.status : undefined
@@ -55,6 +80,37 @@ function LoginPage() {
 
 			form.setError("root", { message })
 		}
+	}
+
+	if (confirmationId) {
+		return (
+			<div className="flex min-h-svh flex-col items-center justify-center gap-8 p-6 sm:p-10">
+				<div className="flex w-full max-w-sm flex-col gap-8">
+					<div className="flex items-center gap-2">
+						<MiksLogo className="h-8 w-8" />
+						<span className="text-lg font-semibold">Miks</span>
+					</div>
+					<DeviceConfirmationForm
+						confirmationId={confirmationId}
+						onConfirmed={() => {
+							// window.name (set when oauth-buttons.tsx opened this popup),
+							// not window.opener: the OAuth provider's own page's
+							// Cross-Origin-Opener-Policy header permanently severs
+							// window.opener once the popup navigates there.
+							if (window.name === OAUTH_POPUP_WINDOW_NAME) {
+								const channel = new BroadcastChannel(OAUTH_CHANNEL_NAME)
+								channel.postMessage(OAUTH_SUCCESS_MESSAGE)
+								channel.close()
+								window.close()
+								return
+							}
+
+							void navigate({ to: redirect ?? "/" })
+						}}
+					/>
+				</div>
+			</div>
+		)
 	}
 
 	return (
@@ -183,6 +239,143 @@ function LoginPage() {
 					</p>
 				</div>
 			</div>
+		</div>
+	)
+}
+
+function DeviceConfirmationForm({
+	confirmationId,
+	onConfirmed,
+}: {
+	confirmationId: string
+	onConfirmed: () => void
+}) {
+	const { t } = useTranslation()
+	const confirmDevice = useConfirmDevice()
+	const resend = useResendDeviceConfirmation()
+	const cooldown = useCooldown()
+	const [resent, setResent] = useState(false)
+
+	const form = useForm({
+		resolver: zodResolver(confirmDeviceSchema),
+		defaultValues: { code: "" },
+	})
+
+	async function onSubmit(values: z.infer<typeof confirmDeviceSchema>) {
+		try {
+			await confirmDevice.mutateAsync({ confirmationId, code: values.code })
+			onConfirmed()
+		} catch (error) {
+			const status = isAxiosError(error) ? error.response?.status : undefined
+			const message =
+				status === 400
+					? t("auth.deviceConfirmation.expiredCode")
+					: status === 409
+						? t("auth.deviceConfirmation.alreadyUsed")
+						: t("auth.deviceConfirmation.genericError")
+
+			form.setError("root", { message })
+		}
+	}
+
+	async function onResend() {
+		try {
+			await resend.mutateAsync(confirmationId)
+			setResent(true)
+		} catch (error) {
+			if (isAxiosError(error) && error.response?.status === 429) {
+				cooldown.start(60)
+				form.setError("root", {
+					message: t("auth.deviceConfirmation.rateLimited"),
+				})
+				return
+			}
+
+			form.setError("root", {
+				message: t("auth.deviceConfirmation.genericError"),
+			})
+		}
+	}
+
+	return (
+		<div className="flex flex-col gap-5">
+			<div className="flex flex-col gap-2">
+				<h1 className="text-2xl font-semibold tracking-tight">
+					{t("auth.deviceConfirmation.title")}
+				</h1>
+				<p className="text-muted-foreground text-sm">
+					{t("auth.deviceConfirmation.subtitle")}
+				</p>
+			</div>
+
+			<Form {...form}>
+				<form
+					onSubmit={form.handleSubmit(onSubmit)}
+					noValidate
+					className="flex flex-col gap-5"
+				>
+					<FormField
+						control={form.control}
+						name="code"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>{t("auth.deviceConfirmation.code")}</FormLabel>
+								<FormControl>
+									<Input
+										type="text"
+										inputMode="numeric"
+										autoComplete="one-time-code"
+										{...field}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					{form.formState.errors.root && (
+						<p role="alert" className="text-destructive text-sm">
+							{form.formState.errors.root.message}
+						</p>
+					)}
+
+					{resent && (
+						<p role="status" className="text-sm">
+							{t("auth.deviceConfirmation.resendSent")}
+						</p>
+					)}
+
+					<Button
+						type="submit"
+						disabled={confirmDevice.isPending}
+						className="w-full"
+					>
+						{confirmDevice.isPending
+							? t("auth.deviceConfirmation.submitting")
+							: t("auth.deviceConfirmation.submit")}
+					</Button>
+
+					<Button
+						type="button"
+						variant="ghost"
+						disabled={resend.isPending || cooldown.active}
+						onClick={onResend}
+					>
+						{cooldown.active
+							? t("auth.deviceConfirmation.cooldown", {
+									seconds: cooldown.remaining,
+								})
+							: t("auth.deviceConfirmation.resend")}
+					</Button>
+				</form>
+			</Form>
+
+			<Link
+				to="/auth/login"
+				className="text-muted-foreground text-center text-sm underline underline-offset-2"
+			>
+				{t("auth.deviceConfirmation.backToLogin")}
+			</Link>
 		</div>
 	)
 }

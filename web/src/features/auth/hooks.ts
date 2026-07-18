@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
+	confirmDevice,
 	forgotPassword,
 	login,
 	logout,
 	register,
+	resendDeviceConfirmation,
 	resendVerification,
 	resetPassword,
 	revokeSession,
@@ -65,10 +67,33 @@ export function useLogin() {
 
 	return useMutation({
 		mutationFn: login,
+		onSuccess: (result) => {
+			if (result.status === "ok") {
+				queryClient.setQueryData(authKeys.me(), result.user)
+			}
+		},
+	})
+}
+
+export function useConfirmDevice() {
+	const queryClient = useQueryClient()
+
+	return useMutation({
+		mutationFn: ({
+			confirmationId,
+			code,
+		}: {
+			confirmationId: string
+			code: string
+		}) => confirmDevice(confirmationId, code),
 		onSuccess: (user) => {
 			queryClient.setQueryData(authKeys.me(), user)
 		},
 	})
+}
+
+export function useResendDeviceConfirmation() {
+	return useMutation({ mutationFn: resendDeviceConfirmation })
 }
 
 export function useLogout() {

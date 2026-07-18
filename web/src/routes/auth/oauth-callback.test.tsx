@@ -5,11 +5,17 @@ import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/rea
 import type { AxiosResponse } from "axios"
 import { apiClient } from "#/lib/api/client"
 import { routeTree } from "#/routeTree.gen"
-import { OAUTH_SUCCESS_MESSAGE } from "#/features/auth/oauth-callback-message"
+import {
+	OAUTH_CHANNEL_NAME,
+	OAUTH_POPUP_WINDOW_NAME,
+	OAUTH_SUCCESS_MESSAGE,
+} from "#/features/auth/oauth-callback-message"
 
-// Covers spec 0002-auth-flows AC-8: the popup posts to its opener and closes
-// itself; if this instead lands as a normal full page navigation (popup was
-// blocked, no opener), it just takes the user into the app.
+// Covers spec 0002-auth-flows AC-8: the popup (identified via window.name,
+// not window.opener, which the OAuth provider's own Cross-Origin-Opener-Policy
+// header permanently severs) broadcasts success and closes itself; if this
+// instead lands as a normal full page navigation (popup was blocked, no
+// special window.name), it just takes the user into the app.
 function envelopeError(status: number, message: string): AxiosResponse {
 	return {
 		data: { success: false, statusCode: status, message, error: "Error", path: "", timestamp: "" },
@@ -38,17 +44,14 @@ function renderCallback() {
 }
 
 describe("oauth-callback", () => {
-	const originalOpener = window.opener
+	const originalName = window.name
 
 	afterEach(() => {
-		Object.defineProperty(window, "opener", {
-			configurable: true,
-			value: originalOpener,
-		})
+		window.name = originalName
 		vi.restoreAllMocks()
 	})
 
-	it("posts the success message to the opener and closes itself when running in a popup", async () => {
+	it("broadcasts the success message and closes itself when running in the OAuth popup", async () => {
 		apiClient.defaults.adapter = (config) => {
 			if (config.url === "/auth/me") {
 				return Promise.reject({ response: envelopeError(401, "No auth token") })
@@ -56,28 +59,27 @@ describe("oauth-callback", () => {
 			return Promise.reject(new Error(`unexpected request: ${config.url}`))
 		}
 
-		const postMessage = vi.fn()
-		const fakeOpener = { postMessage }
-		Object.defineProperty(window, "opener", {
-			configurable: true,
-			value: fakeOpener,
-		})
+		window.name = OAUTH_POPUP_WINDOW_NAME
+		const received: unknown[] = []
+		const listenerChannel = new BroadcastChannel(OAUTH_CHANNEL_NAME)
+		listenerChannel.onmessage = (event) => received.push(event.data)
 		const closeSpy = vi.spyOn(window, "close").mockImplementation(() => {})
 
 		renderCallback()
 
-		await waitFor(() => expect(postMessage).toHaveBeenCalledWith(OAUTH_SUCCESS_MESSAGE, window.location.origin))
+		await waitFor(() => expect(received).toContain(OAUTH_SUCCESS_MESSAGE))
 		expect(closeSpy).toHaveBeenCalled()
+		listenerChannel.close()
 	})
 
-	it("navigates into the app instead when there is no opener (popup was blocked, this is a full page landing)", async () => {
+	it("navigates into the app instead when this is a normal full page landing (popup was blocked)", async () => {
 		apiClient.defaults.adapter = (config) => {
 			if (config.url === "/auth/me") {
 				return Promise.reject({ response: envelopeError(401, "No auth token") })
 			}
 			return Promise.reject(new Error(`unexpected request: ${config.url}`))
 		}
-		Object.defineProperty(window, "opener", { configurable: true, value: null })
+		window.name = ""
 
 		const { router } = renderCallback()
 

@@ -4,17 +4,17 @@
 
 | Feature | Status | Spec |
 |---|---|---|
-| Authentication | done | [0001](../../specs/api/0001-authentication/index.md) |
+| Authentication | in-progress | [0001](../../specs/api/0001-authentication/index.md) |
 | Group membership | done | [0002](../../specs/api/0002-group-membership/index.md) |
 | Vaults, contributions, flow rules, and shares | done | [0003](../../specs/api/0003-vaults-contributions-flows/index.md) |
 | Projects | done | [0004](../../specs/api/0004-projects/index.md) |
 | Member notifications | in-progress | [0005](../../specs/api/0005-member-notifications/index.md) |
 
-## Authentication (done)
+## Authentication (in-progress)
 
-Sign up and log in with email + password or OAuth (Google, Facebook), backed by JWT access/refresh tokens usable from both the web app (cookies) and a future mobile app (Bearer header). Includes password reset, account lockout after repeated failed logins, session/device listing and revocation, and the reusable auth guards other modules will depend on. Phone + password and Apple OAuth are deferred (see spec [0001](../../specs/api/0001-authentication/index.md)'s 2026-07-17 addendum).
+Sign up and log in with email + password or OAuth (Google, Facebook), backed by JWT access/refresh tokens usable from both the web app (cookies) and a future mobile app (Bearer header). Includes password reset, account lockout after repeated failed logins, session/device listing and revocation, and the reusable auth guards other modules will depend on. Phone + password and Apple OAuth are deferred (see spec [0001](../../specs/api/0001-authentication/index.md)'s 2026-07-17 addendum). A 2026-07-18 addendum adds device aware sessions: a client generated device ID identifies a physical device across logins, reconnecting from a known device reuses its session, and a device the user has never used before must be confirmed with an emailed code before it can obtain tokens.
 
-**Done when:** a user can register, log in, refresh their session, reset a forgotten password, see and revoke their own active sessions, and every endpoint correctly rejects unauthenticated or wrong role callers, all matching the acceptance criteria in spec [0001](../../specs/api/0001-authentication/index.md).
+**Done when:** a user can register, log in, refresh their session, reset a forgotten password, see and revoke their own active sessions, and every endpoint correctly rejects unauthenticated or wrong role callers, all matching the acceptance criteria in spec [0001](../../specs/api/0001-authentication/index.md); plus, for the 2026-07-18 addendum, a known device's session is reused on reconnect, a new or revoked device is blocked until confirmed by an emailed code, and session listing shows a real device name/type instead of a raw User-Agent string.
 
 - [x] Design it (spec): [0001](../../specs/api/0001-authentication/index.md)
 - [x] Build it: /develop authentication — code in `api/src/modules/auth`, `api/src/lib/auth-token`, `api/src/lib/password`, `api/src/lib/mail`, `api/src/lib/notification-delivery`, `api/src/common/guards`
@@ -26,6 +26,13 @@ Sign up and log in with email + password or OAuth (Google, Facebook), backed by 
   - [x] OAuth providers: Google, Facebook, with account auto linking, plus /auth/* rate limiting — AC-1 (OAuth), AC-5 (built 2026-07-17, now with real Google/Facebook client keys configured; Apple removed 2026-07-17, deferred, see spec addendum)
 - [x] Verify it: /check verify authentication (full pass 2026-07-17: local auth core, lockout incl. reset-after-window, email verification/reset delivery incl. expired-token case, session ownership, rate limiting, and the ADMIN role guard all directly re-exercised live; OAuth redirect leg confirmed live against real Google/Facebook client IDs, full consent completion user-attested)
 - [x] Test it: /test authentication (local auth core slice tested 2026-07-15: 67 tests across PasswordService, TokenService, AuthService, guards, decorators, RegisterDto, AuthController; OAuth slice tested 2026-07-17: 32 more tests across the 3 strategies (incl. the /debug boot-crash regression test), the 3 OAuth guards, AuthService.validateOAuthLogin auto-link/create paths, and the new oauth config block; VerificationService tested 2026-07-17: 15 more tests covering the expired/consumed/valid token paths (AC-10), request-verification/request-password-reset invalidate-and-resend behavior (AC-4, AC-8), and the reset-password happy path, closing the last untested file in the module. 114 total, all passing)
+- [x] Build it: /develop authentication — device aware sessions (2026-07-18 addendum, spec [0001](../../specs/api/0001-authentication/index.md)) — code in `api/src/modules/auth/device.service.ts`, `device-id.middleware.ts`, `device-info.util.ts`, `auth.controller.ts`/`auth.service.ts` (updated), `api/prisma/migrations/20260718120000_device_aware_sessions`, `web/src/routes/auth/login.tsx`, `web/src/routes/auth/oauth-callback.tsx`, `web/src/routes/_authenticated/settings/sessions.tsx`, `web/src/features/auth/*`
+  - [x] Migration + device ID plumbing (`DeviceStatus.PENDING`, `VerificationToken.deviceId`, `NEW_DEVICE_CONFIRMATION` seed, `X-Device-Id` header/`device_id` cookie, `DeviceService` upsert) — AC-13
+  - [x] Session reuse for a known active device + logout-vs-revoke distinction on `Device.status` — AC-14, AC-18
+  - [x] New/revoked device confirmation flow (`POST /auth/device/confirm`, `POST /auth/device/resend-confirmation`) + register device auto trust — AC-15, AC-16, AC-17, AC-19
+  - [x] Device name/type/platform detection (User-Agent parsing via `ua-parser-js`) surfaced on `GET /auth/sessions`, plus the web app's device confirmation code UI (login page + OAuth callback handoff) and sessions page device display — AC-20
+- [ ] Verify it: /check verify authentication (device aware sessions)
+- [ ] Test it: /test authentication (device aware sessions)
 
 ## Group membership (done)
 

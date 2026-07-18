@@ -20,6 +20,7 @@ async function main() {
 		data: [
 			{ code: 'EMAIL_VERIFICATION', name: 'Email verification' },
 			{ code: 'PASSWORD_RESET', name: 'Password reset' },
+			{ code: 'NEW_DEVICE_CONFIRMATION', name: 'New device confirmation' },
 		],
 		skipDuplicates: true,
 	});

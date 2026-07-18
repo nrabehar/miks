@@ -4,6 +4,7 @@ import { PasswordService } from '$lib/password/password.service';
 import { JwtPayload, TokenService } from '$lib/auth-token/token.service';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { DeviceService } from './device.service';
 
 function makePrisma() {
 	return {
@@ -19,6 +20,7 @@ function makePrisma() {
 		},
 		session: {
 			create: jest.fn(),
+			findFirst: jest.fn(),
 			findUnique: jest.fn(),
 			update: jest.fn(),
 			updateMany: jest.fn(),
@@ -33,6 +35,7 @@ function makePrisma() {
 		user: { create: jest.Mock; findUnique: jest.Mock };
 		session: {
 			create: jest.Mock;
+			findFirst: jest.Mock;
 			findUnique: jest.Mock;
 			update: jest.Mock;
 			updateMany: jest.Mock;
@@ -81,6 +84,10 @@ describe('AuthService', () => {
 			password as unknown as PasswordService,
 			tokenService as unknown as TokenService,
 			makeConfig(),
+			{
+				revokeByDeviceId: jest.fn(),
+				touch: jest.fn(),
+			} as unknown as DeviceService,
 		);
 	});
 

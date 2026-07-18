@@ -22,6 +22,22 @@
 			"noAccount": "Mbola tsy manana kaonty ?",
 			"signUp": "Mamorona kaonty"
 		},
+		"deviceConfirmation": {
+			"title": "Marino ity fitaovana ity",
+			"subtitle": "Tsy fantatray ity fitaovana ity. Ampidiro ny kaody nalefa amin'ny mailaka mba hanohizana.",
+			"code": "Kaody fanamarinana",
+			"submit": "Hamarina",
+			"submitting": "Eo am-panamarinana...",
+			"invalidCode": "Kaody diso",
+			"expiredCode": "Lany daty ity kaody ity, mangataha kaody vaovao",
+			"alreadyUsed": "Efa nampiasaina ity kaody ity",
+			"genericError": "Nisy olana nitranga, andramo indray",
+			"resend": "Alefaso indray ny kaody",
+			"resendSent": "Nisy kaody vaovao nalefa",
+			"rateLimited": "Fitsapana be loatra, andramo indray afaka kelikely",
+			"cooldown": "Andramo indray afaka {{seconds}}s",
+			"backToLogin": "Hiverina any amin'ny fidirana"
+		},
 		"register": {
 			"title": "Mamorona kaonty",
 			"subtitle": "Midira ao amin'ny Miks ary manombohana mitahiry vola miaraka",

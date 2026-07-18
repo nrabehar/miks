@@ -17,7 +17,12 @@ async function bootstrap() {
 	app.enableCors({
 		origin: config.app.corsOrigins,
 		credentials: true,
-		allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+		allowedHeaders: [
+			'Content-Type',
+			'Authorization',
+			'X-Requested-With',
+			'X-Device-Id',
+		],
 	});
 
 	app.use(cookieParser());

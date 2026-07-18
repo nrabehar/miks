@@ -28,6 +28,39 @@ The account model deliberately trades some safety for less friction: an account 
 - Re-adding Apple and WhatsApp later is a small implementation pass (new strategy/guard/module files, config, seed rows), not a config flip, since the code was deleted rather than disabled behind a flag.
 - The spec's original AC-1 (OAuth via Apple), AC-4/AC-8 (WhatsApp delivery) are currently not met; `index.md`'s Requirements section marks each as deferred rather than removing the criteria outright, so re-adding the feature re-activates the same ACs instead of drafting new ones.
 
+## 2026-07-18 addendum: device aware sessions and new device confirmation
+
+**What changed**: a `DeviceService` now creates and looks up `Device` rows (previously dead schema), `AuthService.createSession` checks a device's status before issuing tokens, and two new endpoints (`/auth/device/confirm`, `/auth/device/resend-confirmation`) let a user confirm a device they have never used before. Reconnecting from an already active device reuses its existing `Session` instead of creating a new one every login.
+
+**Alternatives considered, device identification**:
+- **Client generated device ID (chosen)**: a random ID the client creates once and resends on every auth call (a header for a direct API call, a cookie for the web app to survive the OAuth redirect). Reliable across IP changes and browser updates, and the only option that also works cleanly for the planned mobile app.
+- **Server side fingerprint (User-Agent + IP hash)**: no client change needed, but breaks whenever the IP changes (common on mobile networks) or the browser updates its User-Agent string, so "same device" would misfire often. Rejected as unreliable for the stated goal.
+- **User-Agent string match only**: simplest, but even less reliable, since different physical devices can share an identical User-Agent string. Rejected.
+
+**Alternatives considered, unrecognized device handling**:
+- **Block until confirmed (chosen)**: a correct password from an unrecognized device does not issue tokens until the device is confirmed by an emailed code. Matches the Google style behavior the engineer explicitly asked for, and closes the gap where a stolen password alone is enough to fully authenticate.
+- **Allow login immediately, notify after the fact**: tokens issue right away, an email is sent as an FYI the user can react to. Rejected: a stolen password would fully succeed before anyone could react, which is exactly the gap this addendum exists to close.
+- **Emailed confirmation link instead of a code**: rejected, since a link opens a browser instead of the app on mobile and needs a public confirm page; a code entered back in the app works the same on web and the future mobile app and reuses the existing `VerificationToken` code pattern.
+
+**Alternatives considered, reconnect behavior**:
+- **Reuse the existing Session for a known device (chosen)**: updates its `refreshToken`/`lastActiveAt` in place. One row per device in the session list, and it is literally what this addendum was asked to build ("une reconnexion depuis le même appareil doit réutiliser la session existante").
+- **Always create a new Session, linked to the same Device**: allows multiple concurrent sessions per device (separate browser profiles, incognito), rejected as unnecessary complexity the request did not ask for.
+- **Revoke the old Session and issue a fresh one on every reconnect**: guarantees one live session per device without ever updating a row in place, but changes the session id on every login, rejected for no material benefit over an in place update.
+
+**Main reason**: the schema already modeled `Device` and `Session.deviceId` when this spec was first written, but nothing in the codebase ever used them; this addendum is finishing that already started design, not introducing a new one, the same reasoning that favored Option 1 below for authentication as a whole. A client generated device ID is the only mechanism in the alternatives that is both reliable and mobile ready, matching this spec's existing "no browser only assumptions" constraint (`## Context`).
+
+**Tradeoffs accepted**:
+- A confirmation code is one extra step on the first login from any new browser, a deliberate security for friction tradeoff, not an oversight.
+- A `Device` previously revoked returns to `pending` on reconnect rather than getting a fresh row, to respect the existing `@@unique([userId, deviceId])` constraint; this was a refinement made while writing the spec, not a separate question asked of the engineer, since the alternative (a new row per revoke cycle) would have broken that constraint.
+- The engineer flagged wanting stronger recognition later (a real device fingerprint, or Apple ID/biometric signals); this addendum ships the client generated ID only and records the rest as a Follow-up, not a rejection of the idea.
+- Login now hard depends on email deliverability for a new device, extending a risk the product already accepted for password reset (a user with no email access is already locked out of resetting a forgotten password) to a second flow, rather than introducing a materially new one.
+
+**Same model cross check (2026-07-18) and fixes applied**: a same session model, read only critique pass was run against this addendum before it was accepted. It found one real design flaw and two hardening points, all fixed in `index.md` before acceptance:
+- **Fixed**: the first draft revoked a `Device` on *any* session end, including an ordinary logout, since it reused the pre-existing `Session` revocation wording verbatim. Because this addendum reuses one `Session` per `Device`, that meant a normal logout would force the email confirmation dance again on the very next login from the same, already trusted laptop. Narrowed so only an explicit session revocation (`DELETE /auth/sessions/:id`) or refresh token reuse detection demotes a `Device`; logout ends the session but leaves the device trusted.
+- **Fixed**: the `device_id` cookie was originally client generated (written by page JavaScript), readable and forgeable by any script running on the page (an XSS payload). Changed to a server set, `httpOnly` cookie (set on the first unauthenticated request that lacks one) so a page script can no longer read or forge it; the residual risk (theft via malware or a fully synced, compromised browser profile) is now stated explicitly in Security model and Consequences instead of being implied away as fully closed.
+- **Fixed**: the first draft had no explicit answer for two concurrent first time logins from the same new device racing to create the same `Device` row. `DeviceService`'s find-or-create is now specified as an upsert on `(userId, deviceId)` with a unique-violation fallback re-fetch.
+- **Noted, not changed**: the critique also flagged that blocking token issuance on email confirmation makes login newly dependent on email deliverability. This is an accepted, explicit tradeoff (see above), consistent with the risk the product already carries for password reset, not a new failure mode introduced without acknowledgement.
+
 ## Options considered
 
 ### Option 1: Self hosted authentication with NestJS, Passport.js, and JWT

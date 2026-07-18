@@ -7,16 +7,50 @@ import type {
 	Session,
 	User,
 } from "./schema"
-import { sessionsSchema, userSchema } from "./schema"
+import {
+	deviceConfirmationRequiredSchema,
+	sessionsSchema,
+	userSchema,
+} from "./schema"
+
+export type LoginResult =
+	| { status: "ok"; user: User }
+	| { status: "confirmation-required"; confirmationId: string }
 
 export async function fetchMe(): Promise<User> {
 	const { data } = await apiClient.get("/auth/me")
 	return userSchema.parse(data)
 }
 
-export async function login(input: LoginInput): Promise<User> {
+export async function login(input: LoginInput): Promise<LoginResult> {
 	const { data } = await apiClient.post("/auth/login", input)
+
+	if (data.requiresDeviceConfirmation) {
+		const confirmation = deviceConfirmationRequiredSchema.parse(data)
+		return {
+			status: "confirmation-required",
+			confirmationId: confirmation.confirmationId,
+		}
+	}
+
+	return { status: "ok", user: userSchema.parse(data.user) }
+}
+
+export async function confirmDevice(
+	confirmationId: string,
+	code: string,
+): Promise<User> {
+	const { data } = await apiClient.post("/auth/device/confirm", {
+		confirmationId,
+		code,
+	})
 	return userSchema.parse(data.user)
+}
+
+export async function resendDeviceConfirmation(
+	confirmationId: string,
+): Promise<void> {
+	await apiClient.post("/auth/device/resend-confirmation", { confirmationId })
 }
 
 export async function logout(): Promise<void> {

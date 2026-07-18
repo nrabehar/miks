@@ -1,4 +1,4 @@
-# Verify: authentication · spec 0001 · updated 2026-07-17
+# Verify: authentication · spec 0001 · updated 2026-07-18
 
 _Steps derived from spec 0001 acceptance criteria. `/check verify` runs these; `/test` locks the durable ones. Covers the local auth core (register, login, lockout, refresh, logout, sessions, guards) and the verification/password reset delivery slice. OAuth (Google/Facebook/Apple) and `/auth/*` rate limiting are now built (2026-07-17); their steps below are written but not yet run, since no real `GOOGLE_CLIENT_ID`/`FACEBOOK_APP_ID`/`APPLE_*` credentials are configured. The verification/reset steps below are written but not yet run by `/check verify`._
 
@@ -81,6 +81,52 @@ Google and Facebook keys are now configured; Apple OAuth, WhatsApp delivery, and
 - [ ] `GET /auth/apple`, `GET /auth/apple/callback`, `POST /auth/apple/callback` → 404, the routes no longer exist
 - [ ] `POST /auth/forgot-password` / `POST /auth/resend-verification` for a non-email identifier → no WhatsApp send is attempted (the delivery path is email-only now); confirm no `ECONNRESET`/`fetch failed` 500 reappears
 - [ ] `GET /auth/google` and `GET /auth/facebook` with the now-configured `GOOGLE_CLIENT_ID`/`FACEBOOK_APP_ID` keys → redirect to the real consent screen (first real run against live provider credentials) → AC-1 (OAuth), AC-5
+
+## Update 2026-07-18: device aware sessions (addendum)
+
+Built, not yet run live via `/check verify`. Migration applied and confirmed live against the real dev database (`prisma migrate deploy`, `20260718120000_device_aware_sessions`); `tsc --noEmit`, `eslint`, and `jest` (70/70 in `src/modules/auth`) all pass on the API, and `tsc -b`, `eslint .`, and `vitest run` (60/60) all pass on the web app.
+
+## Commands
+
+- [x] `npx prisma migrate deploy` (in `api/`) → applies `DeviceStatus.PENDING` and `VerificationToken.device_id` → confirmed live, AC-13
+- [x] `npm run db:seed` (in `api/`) → inserts the `NEW_DEVICE_CONFIRMATION` purpose row → confirmed live, AC-15
+- [x] `npx tsc --noEmit` (in `api/`) and `npx tsc -b` (in `web/`) → both clean
+- [x] `npx jest src/modules/auth` (in `api/`) → 70/70 passing
+- [x] `npx vitest run` (in `web/`) → 60/60 passing
+- [x] `npx eslint` on both apps → clean
+
+## UI / manual: device aware sessions
+
+- [ ] `POST /auth/register` with a fresh `device_id` cookie (or `X-Device-Id` header) not sent before → the created `Device` is `ACTIVE` immediately, no confirmation required, tokens returned → AC-13, AC-19
+- [ ] `POST /auth/login` from a device ID never seen for that user (new browser profile, or an explicit unseen `X-Device-Id`) → 200 with `{ requiresDeviceConfirmation: true, confirmationId }`, no tokens, no auth cookies set; a `Device` row is created `PENDING`, an email is sent with a 6 digit code → AC-15
+- [ ] `POST /auth/device/confirm` with that `confirmationId` and the correct code → 200 with `user`/`accessToken`/`refreshToken`, cookies set; the `Device` becomes `ACTIVE` → AC-16
+- [ ] `POST /auth/login` again from the same, now active device → 200 with tokens directly (no confirmation prompt); `GET /auth/sessions` still shows the same session `id` as before (not a new row), only `refreshToken`/`lastActiveAt` changed → AC-14
+- [ ] `POST /auth/device/confirm` with an expired code (wait out `DEVICE_CONFIRMATION_CODE_EXPIRY_MINUTES`, default 15) → 400, distinct from the wrong-code case → AC-17
+- [ ] `POST /auth/device/confirm` with an already-consumed code (reuse one from a prior successful confirm) → 409 → AC-17
+- [ ] `POST /auth/device/resend-confirmation` with a still-pending `confirmationId` → 202, the previous unconsumed code is invalidated, a new one is emailed → AC-17
+- [ ] `DELETE /auth/sessions/:id` on a device's own session → 204, and that `Device`'s status becomes `REVOKED`; the next `POST /auth/login` from that same device requires confirmation again (does not log straight in) → AC-18
+- [ ] Replay an already-rotated refresh token (as in the base AC-6 case) → the session is revoked AND its `Device` becomes `REVOKED` (not just the session) → AC-18
+- [ ] `POST /auth/logout` on an active device's session → session ends, but the `Device` stays `ACTIVE` (not revoked); logging back in on the same device the next day does not require confirmation → AC-18 (the ordinary-logout carve out)
+- [ ] `GET /auth/sessions` → each row includes `deviceName`, `deviceType`, `platform`, and `lastActiveAt` (device derived, not a raw `userAgent` string) alongside the existing `ip`/`createdAt`/`current` fields → AC-20
+- [ ] Web: log in from a browser with no `device_id` cookie yet → the server sets one, `httpOnly`, on the response; log in again later and confirm the same cookie/device is reused (no repeat confirmation prompt) → AC-13
+- [ ] Web: trigger the "unrecognized device" response on `/auth/login` → the login page shows the code entry step (not a raw error), submitting the correct code logs in and lands on the redirect target → AC-15, AC-16
+- [ ] Web: trigger the same unrecognized-device response via an OAuth login (Google/Facebook) → the OAuth popup (or full page fallback) redirects to `/auth/login` with the confirmation step, completing it closes the popup / navigates home the same way a normal OAuth success does → AC-15, AC-16
+- [ ] Web: `web/src/routes/_authenticated/settings/sessions.tsx` shows a device name/type instead of the raw User-Agent string for each session → AC-20
+
+## Acceptance-criteria coverage (2026-07-18 addendum)
+
+- AC-13 (device ID on register/login/refresh, header or cookie, find-or-create `Device`) — built, cookie/header plumbing and `DeviceService.findOrCreatePending`/`identifyForRegister` confirmed by unit tests; not yet re-exercised live.
+- AC-14 (known active device reuses its `Session`) — built (`AuthService.createSession`'s reuse branch); not yet re-exercised live.
+- AC-15 (unrecognized/revoked device blocks tokens, emails a code) — built (`DeviceService.identifyForLogin`); not yet re-exercised live.
+- AC-16 (correct code confirms device, creates session, returns tokens) — built (`DeviceService.confirm` + `AuthController.confirmDevice`); not yet re-exercised live.
+- AC-17 (expired/consumed code errors, resend invalidates old) — built (`DeviceService.confirm`/`resendConfirmation`); not yet re-exercised live.
+- AC-18 (explicit revocation demotes device; ordinary logout does not) — built (`revokeByDeviceId` called from `DELETE /auth/sessions/:id` and refresh-reuse detection, never from `/auth/logout`); not yet re-exercised live.
+- AC-19 (register's device trusted immediately) — built (`DeviceService.identifyForRegister` creates directly `ACTIVE`); not yet re-exercised live.
+- AC-20 (device name/type/platform on `GET /auth/sessions`) — built (`ua-parser-js` via `parseDeviceInfo`, controller include); not yet re-exercised live.
+
+## Note: build plan item 19's wording
+
+Spec build plan item 19 originally said the web app should "generate and persist the `device_id` cookie/value on first load" client side; what actually shipped (and what the spec's own `## Feature design`/`## Security model` sections already specify) is a **server set**, `httpOnly` cookie, set on the first request that arrives without one. The web app needed no client side cookie code at all: the browser sends it automatically via `withCredentials: true`. This is noted directly on that build plan line rather than left as a silent discrepancy.
 
 ## Note: delivery failure handling
 

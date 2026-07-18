@@ -3,9 +3,11 @@ import { ConfigService } from '$lib/config/config.service';
 import { PrismaService } from '$lib/database/prisma.service';
 import { TokenService } from '$lib/auth-token/token.service';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import type { RequestWithDeviceId } from './device-id.middleware';
+import { DeviceService } from './device.service';
 import { VerificationService } from './verification.service';
 
 function makeConfig(): ConfigService {
@@ -18,12 +20,15 @@ function makeResponse(): Response {
 	return { redirect: jest.fn() } as unknown as Response;
 }
 
-function makeRequest(overrides: Partial<Request> = {}): Request {
+function makeRequest(
+	overrides: Partial<RequestWithDeviceId> = {},
+): RequestWithDeviceId {
 	return {
 		headers: {},
 		cookies: {},
+		deviceId: 'device-1',
 		...overrides,
-	} as unknown as Request;
+	} as unknown as RequestWithDeviceId;
 }
 
 describe('AuthController', () => {
@@ -50,6 +55,11 @@ describe('AuthController', () => {
 			update: jest.Mock;
 		};
 	};
+	let deviceService: {
+		identifyForRegister: jest.Mock;
+		identifyForLogin: jest.Mock;
+		revokeByDeviceId: jest.Mock;
+	};
 	let controller: AuthController;
 
 	beforeEach(() => {
@@ -67,12 +77,21 @@ describe('AuthController', () => {
 				update: jest.fn(),
 			},
 		};
+		deviceService = {
+			identifyForRegister: jest.fn().mockResolvedValue({ id: 'device-1' }),
+			identifyForLogin: jest.fn().mockResolvedValue({
+				device: { id: 'device-1' },
+				requiresConfirmation: false,
+			}),
+			revokeByDeviceId: jest.fn(),
+		};
 
 		controller = new AuthController(
 			authService as unknown as AuthService,
 			tokenService as unknown as TokenService,
 			prisma as unknown as PrismaService,
 			{} as unknown as VerificationService,
+			deviceService as unknown as DeviceService,
 			makeConfig(),
 		);
 	});
@@ -246,6 +265,7 @@ describe('AuthController', () => {
 			expect(prisma.session.findMany).toHaveBeenCalledWith({
 				where: { userId: user.id },
 				orderBy: { createdAt: 'desc' },
+				include: { device: true },
 			});
 			expect(result).toEqual([
 				expect.objectContaining({ id: 'session-1', current: true, revoked: false }),

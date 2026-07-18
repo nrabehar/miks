@@ -5,7 +5,11 @@ import { useTranslation } from "react-i18next"
 import { apiClient } from "#/lib/api/client"
 import { Button } from "#/components/ui/button"
 import { authKeys } from "#/features/auth/queries"
-import { OAUTH_SUCCESS_MESSAGE } from "#/features/auth/oauth-callback-message"
+import {
+	OAUTH_CHANNEL_NAME,
+	OAUTH_POPUP_WINDOW_NAME,
+	OAUTH_SUCCESS_MESSAGE,
+} from "#/features/auth/oauth-callback-message"
 
 interface OAuthButtonProps {
 	provider: "google" | "facebook"
@@ -17,9 +21,13 @@ function providerUrl(provider: OAuthButtonProps["provider"]): string {
 }
 
 // Login and register both offer these buttons (spec 0002-auth-flows AC-8,
-// AC-9). The popup posts a message back to this window and closes itself on
-// success; if the browser blocks the popup, this falls back to a full page
-// redirect to the same OAuth URL instead of failing silently.
+// AC-9). The popup broadcasts completion on a BroadcastChannel and closes
+// itself on success (not window.opener.postMessage: the OAuth provider's own
+// page sets a restrictive Cross-Origin-Opener-Policy header that permanently
+// severs window.opener once the popup navigates there, even after it
+// navigates back to our origin); if the browser blocks the popup, this falls
+// back to a full page redirect to the same OAuth URL instead of failing
+// silently.
 function OAuthButton({ provider }: OAuthButtonProps) {
 	const { t } = useTranslation()
 	const navigate = useNavigate()
@@ -31,8 +39,9 @@ function OAuthButton({ provider }: OAuthButtonProps) {
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	useEffect(() => {
-		function handleMessage(event: MessageEvent) {
-			if (event.origin !== window.location.origin) return
+		const channel = new BroadcastChannel(OAUTH_CHANNEL_NAME)
+
+		channel.onmessage = (event: MessageEvent) => {
 			if (event.data !== OAUTH_SUCCESS_MESSAGE) return
 
 			cleanup()
@@ -40,8 +49,7 @@ function OAuthButton({ provider }: OAuthButtonProps) {
 			void navigate({ to: "/" })
 		}
 
-		window.addEventListener("message", handleMessage)
-		return () => window.removeEventListener("message", handleMessage)
+		return () => channel.close()
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
@@ -59,7 +67,7 @@ function OAuthButton({ provider }: OAuthButtonProps) {
 		const url = providerUrl(provider)
 		const popup = window.open(
 			url,
-			"oauth-popup",
+			OAUTH_POPUP_WINDOW_NAME,
 			"width=520,height=640,menubar=no,toolbar=no",
 		)
 
@@ -76,8 +84,9 @@ function OAuthButton({ provider }: OAuthButtonProps) {
 		pollRef.current = setInterval(() => {
 			// Once the popup navigates to the provider's login page, its
 			// Cross-Origin-Opener-Policy header can block reading `.closed`
-			// from here; the postMessage handshake and the timeout fallback
-			// below still cover completion and abandonment either way.
+			// from here; the BroadcastChannel handshake above (COOP proof)
+			// and the timeout fallback below still cover completion and
+			// abandonment either way.
 			try {
 				if (popupRef.current?.closed) {
 					cleanup()

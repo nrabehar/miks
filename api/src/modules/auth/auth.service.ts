@@ -14,6 +14,7 @@ import {
 	UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { DeviceService } from './device.service';
 import { RegisterDto } from './dto/register.dto';
 
 export interface AuthenticatedIdentity {
@@ -28,6 +29,7 @@ export interface AuthenticatedIdentity {
 export interface SessionMeta {
 	userAgent?: string;
 	ip?: string;
+	deviceId?: string;
 }
 
 @Injectable()
@@ -37,6 +39,7 @@ export class AuthService {
 		private readonly password: PasswordService,
 		private readonly tokenService: TokenService,
 		private readonly config: ConfigService,
+		private readonly deviceService: DeviceService,
 	) {}
 
 	async register(dto: RegisterDto): Promise<AuthenticatedIdentity> {
@@ -119,7 +122,10 @@ export class AuthService {
 			},
 		});
 
-		return this.toAuthenticatedIdentity(identity.user, identity.emailVerified);
+		return this.toAuthenticatedIdentity(
+			identity.user,
+			identity.emailVerified,
+		);
 	}
 
 	async validateOAuthLogin(
@@ -228,7 +234,20 @@ export class AuthService {
 		user: AuthenticatedIdentity,
 		meta: SessionMeta,
 	): Promise<TokenPair> {
-		const sessionId = randomUUID();
+		// A device already active for this user reuses its existing Session
+		// row (AC-14) instead of piling up a new one on every login.
+		const existingSession = meta.deviceId
+			? await this.prisma.session.findFirst({
+					where: {
+						userId: user.id,
+						deviceId: meta.deviceId,
+						revokedAt: null,
+					},
+					orderBy: { createdAt: 'desc' },
+				})
+			: null;
+
+		const sessionId = existingSession?.id ?? randomUUID();
 		const payload: JwtPayload = {
 			sub: user.id,
 			role: user.role,
@@ -238,16 +257,29 @@ export class AuthService {
 		const accessToken = this.tokenService.signAccessToken(payload);
 		const refreshToken = this.tokenService.signRefreshToken(payload);
 
-		await this.prisma.session.create({
-			data: {
-				id: sessionId,
-				userId: user.id,
-				refreshToken,
-				userAgent: meta.userAgent,
-				ip: meta.ip,
-				expiresAt: this.refreshTokenExpiry(),
-			},
-		});
+		if (existingSession) {
+			await this.prisma.session.update({
+				where: { id: sessionId },
+				data: {
+					refreshToken,
+					userAgent: meta.userAgent,
+					ip: meta.ip,
+					expiresAt: this.refreshTokenExpiry(),
+				},
+			});
+		} else {
+			await this.prisma.session.create({
+				data: {
+					id: sessionId,
+					userId: user.id,
+					deviceId: meta.deviceId,
+					refreshToken,
+					userAgent: meta.userAgent,
+					ip: meta.ip,
+					expiresAt: this.refreshTokenExpiry(),
+				},
+			});
+		}
 
 		return { accessToken, refreshToken };
 	}
@@ -274,6 +306,7 @@ export class AuthService {
 				where: { id: session.id },
 				data: { revokedAt: new Date() },
 			});
+			await this.deviceService.revokeByDeviceId(session.deviceId);
 			throw new UnauthorizedException(
 				'Refresh token already used, session revoked',
 			);
@@ -296,6 +329,7 @@ export class AuthService {
 			where: { id: session.id },
 			data: { refreshToken, expiresAt: this.refreshTokenExpiry() },
 		});
+		await this.deviceService.touch(session.deviceId);
 
 		return { accessToken, refreshToken };
 	}
@@ -313,6 +347,16 @@ export class AuthService {
 			where: { id: payload.sid, revokedAt: null },
 			data: { revokedAt: new Date() },
 		});
+	}
+
+	async getAuthenticatedIdentity(
+		userId: string,
+	): Promise<AuthenticatedIdentity> {
+		const user = await this.prisma.user.findUniqueOrThrow({
+			where: { id: userId },
+		});
+
+		return this.toAuthenticatedIdentity(user);
 	}
 
 	private refreshTokenExpiry(): Date {

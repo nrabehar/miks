@@ -18,6 +18,24 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>
 
+// A login/register/OAuth callback response is either tokens for an already
+// trusted device, or a request to confirm a device never seen before (spec
+// 0001-authentication's 2026-07-18 addendum, AC-15).
+export const deviceConfirmationRequiredSchema = z.object({
+	requiresDeviceConfirmation: z.literal(true),
+	confirmationId: z.string(),
+})
+
+export type DeviceConfirmationRequired = z.infer<
+	typeof deviceConfirmationRequiredSchema
+>
+
+export const confirmDeviceSchema = z.object({
+	code: z.string().min(1, "Le code est requis"),
+})
+
+export type ConfirmDeviceInput = z.infer<typeof confirmDeviceSchema>
+
 // Backend's RegisterDto requires an 8+ char password (api/src/modules/auth/dto/register.dto.ts).
 export const registerSchema = z
 	.object({
@@ -52,10 +70,16 @@ export const resetPasswordSchema = z
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 
 // Mirrors the shape returned by GET /auth/sessions (api/src/modules/auth/auth.controller.ts).
+// deviceName/deviceType/platform are derived from the User-Agent server side
+// (spec 0001-authentication's 2026-07-18 addendum, AC-20), never raw here.
 export const sessionSchema = z.object({
 	id: z.string(),
 	ip: z.string().nullable(),
 	userAgent: z.string().nullable(),
+	deviceName: z.string().nullable(),
+	deviceType: z.string().nullable(),
+	platform: z.string().nullable(),
+	lastActiveAt: z.string(),
 	createdAt: z.string(),
 	expiresAt: z.string(),
 	revoked: z.boolean(),

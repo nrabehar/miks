@@ -22,6 +22,22 @@
 			"noAccount": "Pas encore de compte ?",
 			"signUp": "Créer un compte"
 		},
+		"deviceConfirmation": {
+			"title": "Confirmez cet appareil",
+			"subtitle": "Nous ne reconnaissons pas cet appareil. Entrez le code envoyé par e-mail pour continuer.",
+			"code": "Code de confirmation",
+			"submit": "Confirmer",
+			"submitting": "Confirmation en cours...",
+			"invalidCode": "Code incorrect",
+			"expiredCode": "Ce code a expiré, demandez-en un nouveau",
+			"alreadyUsed": "Ce code a déjà été utilisé",
+			"genericError": "Une erreur est survenue, réessayez",
+			"resend": "Renvoyer le code",
+			"resendSent": "Un nouveau code a été envoyé",
+			"rateLimited": "Trop de tentatives, réessayez dans quelques instants",
+			"cooldown": "Réessayez dans {{seconds}}s",
+			"backToLogin": "Retour à la connexion"
+		},
 		"register": {
 			"title": "Créer un compte",
 			"subtitle": "Rejoignez Miks et commencez à épargner en groupe",

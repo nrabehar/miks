@@ -97,6 +97,8 @@ model VerificationToken {
   purpose     VerificationTokenPurpose @relation(fields: [purposeCode], references: [code])
   identityId  String?                  @map("identity_id")
   identity    UserIdentity?            @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  deviceId    String?                  @map("device_id")
+  device      Device?                  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   sentTo String? @map("sent_to")
 
@@ -124,6 +126,7 @@ enum DeviceType {
 }
 
 enum DeviceStatus {
+  PENDING
   ACTIVE
   REVOKED
 
@@ -144,7 +147,8 @@ model Device {
   lastActiveAt DateTime     @default(now()) @map("last_active_at")
   metadata     Json         @default("{}")
 
-  sessions Session[]
+  sessions           Session[]
+  verificationTokens VerificationToken[]
 
   @@unique([userId, deviceId])
   @@index([userId])
