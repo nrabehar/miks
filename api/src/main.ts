@@ -14,6 +14,12 @@ async function bootstrap() {
 
 	const config = app.get(ConfigService);
 
+	app.enableCors({
+		origin: config.app.corsOrigins,
+		credentials: true,
+		allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+	});
+
 	app.use(cookieParser());
 
 	app.useGlobalPipes(
