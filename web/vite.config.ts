@@ -18,6 +18,9 @@ export default defineConfig({
       autoCodeSplitting: true,
       routesDirectory: './src/routes',
       generatedRouteTree: './src/routeTree.gen.ts',
+      // Colocated *.test.tsx files (e.g. src/routes/_authenticated/index.test.tsx)
+      // aren't routes; without this the router plugin warns on every one.
+      routeFileIgnorePattern: '\\.test\\.',
     }),
     react(),
     babel({ presets: [reactCompilerPreset()] }),
@@ -65,6 +68,18 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+    },
+  },
+  server: {
+    // Mirrors the production Nginx proxy (nginx.conf.template's /api/
+    // location): the dev server also serves the API under /api/ so
+    // VITE_API_PATH can stay a relative path in every environment.
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_URL ?? 'http://localhost:3000',
+        changeOrigin: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/api/, ''),
+      },
     },
   },
 })

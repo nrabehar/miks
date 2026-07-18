@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 import { MiksLogo } from "#/components/brand/logo"
 import { Avatar, AvatarFallback } from "#/components/ui/avatar"
@@ -18,8 +18,14 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function DashboardPage() {
 	const { t } = useTranslation()
+	const navigate = useNavigate()
 	const { data: user, isPending } = useMe()
 	const logout = useLogout()
+
+	async function handleLogout() {
+		await logout.mutateAsync()
+		await navigate({ to: "/auth/login" })
+	}
 
 	const initials = user?.displayName
 		.split(" ")
@@ -49,7 +55,7 @@ function DashboardPage() {
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
 						<DropdownMenuItem
-							onSelect={() => logout.mutate()}
+							onSelect={() => void handleLogout()}
 							disabled={logout.isPending}
 						>
 							{t("dashboard.logout")}

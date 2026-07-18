@@ -4,9 +4,9 @@
 
 | Feature | Status | Spec |
 |---|---|---|
-| Frontend foundation | in-progress | [0001](../../specs/web/0001-frontend-architecture/index.md) |
+| Frontend foundation | done | [0001](../../specs/web/0001-frontend-architecture/index.md) |
 
-## Frontend foundation (in-progress)
+## Frontend foundation (done)
 
 Stand up the whole frontend base the rest of the app builds on: routing, talking to the API, remembering data, forms, French and Malagasy text, working while offline, and catching crashes. Today `web/` is a bare Vite and React scaffold with nothing wired up; this is the first thing built on it.
 
@@ -14,5 +14,5 @@ Stand up the whole frontend base the rest of the app builds on: routing, talking
 
 - [x] Decide the stack (spec): [0001](../../specs/web/0001-frontend-architecture/index.md)
 - [x] Scaffold from the decision: /develop frontend foundation — code in `web/src/` (routing, auth wiring, i18n, offline, error reporting), `web/vite.config.ts`, `web/vitest.config.ts`
-- [ ] Verify it: /check verify frontend foundation
-- [ ] Test it: /test frontend foundation
+- [x] Verify it: /check verify frontend foundation — real browser (Playwright/Chromium) against the live API, all acceptance criteria confirmed 2026-07-18
+- [x] Test it: /test frontend foundation — 15 tests in `web/src/routes/_authenticated/index.test.tsx` and 4 other files, all passing 2026-07-18
