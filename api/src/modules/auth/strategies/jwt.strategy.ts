@@ -35,12 +35,18 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 			throw new UnauthorizedException('User no longer exists');
 		}
 
+		const localIdentity = await this.prisma.userIdentity.findFirst({
+			where: { userId: user.id, providerCode: 'local' },
+			select: { emailVerified: true },
+		});
+
 		return {
 			id: user.id,
 			email: user.email,
 			phone: user.phone,
 			displayName: user.displayName,
 			role: user.role,
+			emailVerified: localIdentity?.emailVerified ?? true,
 		};
 	}
 }

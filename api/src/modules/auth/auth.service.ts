@@ -22,6 +22,7 @@ export interface AuthenticatedIdentity {
 	phone: string | null;
 	displayName: string;
 	role: string;
+	emailVerified: boolean;
 }
 
 export interface SessionMeta {
@@ -68,7 +69,7 @@ export class AuthService {
 			},
 		});
 
-		return this.toAuthenticatedIdentity(user);
+		return this.toAuthenticatedIdentity(user, false);
 	}
 
 	async validateLocalLogin(
@@ -118,7 +119,7 @@ export class AuthService {
 			},
 		});
 
-		return this.toAuthenticatedIdentity(identity.user);
+		return this.toAuthenticatedIdentity(identity.user, identity.emailVerified);
 	}
 
 	async validateOAuthLogin(
@@ -194,7 +195,9 @@ export class AuthService {
 			},
 		});
 
-		return this.toAuthenticatedIdentity(user);
+		// A brand new OAuth only user has no local (password) identity, so
+		// there is nothing pending verification.
+		return this.toAuthenticatedIdentity(user, true);
 	}
 
 	private async registerFailedAttempt(
@@ -326,19 +329,33 @@ export class AuthService {
 		return new Date(Date.now() + amount * unitMs[unit]);
 	}
 
-	private toAuthenticatedIdentity(user: {
-		id: string;
-		email: string | null;
-		phone: string | null;
-		displayName: string;
-		role: string;
-	}): AuthenticatedIdentity {
+	private async toAuthenticatedIdentity(
+		user: {
+			id: string;
+			email: string | null;
+			phone: string | null;
+			displayName: string;
+			role: string;
+		},
+		knownEmailVerified?: boolean,
+	): Promise<AuthenticatedIdentity> {
+		let emailVerified = knownEmailVerified;
+
+		if (emailVerified === undefined) {
+			const localIdentity = await this.prisma.userIdentity.findFirst({
+				where: { userId: user.id, providerCode: 'local' },
+				select: { emailVerified: true },
+			});
+			emailVerified = localIdentity?.emailVerified ?? true;
+		}
+
 		return {
 			id: user.id,
 			email: user.email,
 			phone: user.phone,
 			displayName: user.displayName,
 			role: user.role,
+			emailVerified,
 		};
 	}
 }

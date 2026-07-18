@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
+import { VerifyBanner } from "#/features/auth/components/verify-banner"
 import { authKeys } from "#/features/auth/queries"
 import type { User } from "#/features/auth/schema"
 
@@ -15,5 +16,14 @@ export const Route = createFileRoute("/_authenticated")({
 
 		return { user }
 	},
-	component: Outlet,
+	component: AuthenticatedLayout,
 })
+
+function AuthenticatedLayout() {
+	return (
+		<>
+			<VerifyBanner />
+			<Outlet />
+		</>
+	)
+}

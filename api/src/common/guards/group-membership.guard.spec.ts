@@ -27,6 +27,7 @@ function makePrisma(member: unknown) {
 describe('GroupMembershipGuard', () => {
 	const user = {
 		id: 'user-1',
+		emailVerified: true,
 		email: 'ada@example.test',
 		phone: null,
 		displayName: 'Ada',

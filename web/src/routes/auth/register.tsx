@@ -17,41 +17,38 @@ import {
 	FormMessage,
 } from "#/components/ui/form"
 import { OAuthButtons } from "#/features/auth/components/oauth-buttons"
-import { useLogin } from "#/features/auth/hooks"
-import { loginSchema } from "#/features/auth/schema"
+import { useRegister } from "#/features/auth/hooks"
+import { registerSchema } from "#/features/auth/schema"
 
-const searchSchema = z.object({
-	redirect: z.string().optional(),
+export const Route = createFileRoute("/auth/register")({
+	component: RegisterPage,
 })
 
-export const Route = createFileRoute("/auth/login")({
-	validateSearch: searchSchema,
-	component: LoginPage,
-})
-
-function LoginPage() {
+function RegisterPage() {
 	const { t } = useTranslation()
 	const navigate = useNavigate()
-	const { redirect } = Route.useSearch()
-	const login = useLogin()
+	const register = useRegister()
 
 	const form = useForm({
-		resolver: zodResolver(loginSchema),
-		defaultValues: { identifier: "", password: "" },
+		resolver: zodResolver(registerSchema),
+		defaultValues: {
+			email: "",
+			password: "",
+			confirmPassword: "",
+			displayName: "",
+		},
 	})
 
-	async function onSubmit(values: z.infer<typeof loginSchema>) {
+	async function onSubmit(values: z.infer<typeof registerSchema>) {
 		try {
-			await login.mutateAsync(values)
-			await navigate({ to: redirect ?? "/" })
+			await register.mutateAsync(values)
+			await navigate({ to: "/" })
 		} catch (error) {
 			const status = isAxiosError(error) ? error.response?.status : undefined
 			const message =
-				status === 423
-					? t("auth.login.locked")
-					: status === 401
-						? t("auth.login.invalidCredentials")
-						: t("auth.login.genericError")
+				status === 409
+					? t("auth.register.emailTaken")
+					: t("auth.register.genericError")
 
 			form.setError("root", { message })
 		}
@@ -89,10 +86,10 @@ function LoginPage() {
 
 					<div className="flex flex-col gap-2">
 						<h1 className="text-2xl font-semibold tracking-tight">
-							{t("auth.login.title")}
+							{t("auth.register.title")}
 						</h1>
 						<p className="text-muted-foreground text-sm">
-							{t("auth.login.subtitle")}
+							{t("auth.register.subtitle")}
 						</p>
 					</div>
 
@@ -104,15 +101,29 @@ function LoginPage() {
 						>
 							<FormField
 								control={form.control}
-								name="identifier"
+								name="displayName"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>{t("auth.login.identifier")}</FormLabel>
+										<FormLabel>{t("auth.register.displayName")}</FormLabel>
+										<FormControl>
+											<Input autoComplete="name" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="email"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>{t("auth.register.email")}</FormLabel>
 										<FormControl>
 											<Input
 												type="email"
-												autoComplete="username"
-												placeholder={t("auth.login.identifierPlaceholder")}
+												autoComplete="email"
+												placeholder={t("auth.register.emailPlaceholder")}
 												{...field}
 											/>
 										</FormControl>
@@ -126,11 +137,31 @@ function LoginPage() {
 								name="password"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>{t("auth.login.password")}</FormLabel>
+										<FormLabel>{t("auth.register.password")}</FormLabel>
 										<FormControl>
 											<Input
 												type="password"
-												autoComplete="current-password"
+												autoComplete="new-password"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="confirmPassword"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>
+											{t("auth.register.confirmPassword")}
+										</FormLabel>
+										<FormControl>
+											<Input
+												type="password"
+												autoComplete="new-password"
 												{...field}
 											/>
 										</FormControl>
@@ -145,19 +176,14 @@ function LoginPage() {
 								</p>
 							)}
 
-							<div className="flex justify-end">
-								<Link
-									to="/auth/forgot-password"
-									className="text-muted-foreground text-sm underline underline-offset-2"
-								>
-									{t("auth.login.forgotPassword")}
-								</Link>
-							</div>
-
-							<Button type="submit" disabled={login.isPending} className="w-full">
-								{login.isPending
-									? t("auth.login.submitting")
-									: t("auth.login.submit")}
+							<Button
+								type="submit"
+								disabled={register.isPending}
+								className="w-full"
+							>
+								{register.isPending
+									? t("auth.register.submitting")
+									: t("auth.register.submit")}
 							</Button>
 						</form>
 					</Form>
@@ -173,12 +199,9 @@ function LoginPage() {
 					<OAuthButtons />
 
 					<p className="text-muted-foreground text-center text-sm">
-						{t("auth.login.noAccount")}{" "}
-						<Link
-							to="/auth/register"
-							className="text-primary underline underline-offset-2"
-						>
-							{t("auth.login.signUp")}
+						{t("auth.register.hasAccount")}{" "}
+						<Link to="/auth/login" className="text-primary underline underline-offset-2">
+							{t("auth.register.signIn")}
 						</Link>
 					</p>
 				</div>

@@ -17,7 +17,87 @@
 			"submitting": "Miditra...",
 			"invalidCredentials": "Mailaka na tenimiafina diso",
 			"locked": "Voahidy vonjimaika ity kaonty ity, andramo indray afaka kelikely",
-			"genericError": "Tsy nahomby ny fidirana, andramo indray"
+			"genericError": "Tsy nahomby ny fidirana, andramo indray",
+			"forgotPassword": "Very ny tenimiafina ?",
+			"noAccount": "Mbola tsy manana kaonty ?",
+			"signUp": "Mamorona kaonty"
+		},
+		"register": {
+			"title": "Mamorona kaonty",
+			"subtitle": "Midira ao amin'ny Miks ary manombohana mitahiry vola miaraka",
+			"displayName": "Anarana",
+			"email": "Mailaka",
+			"emailPlaceholder": "ianao@ohatra.com",
+			"password": "Tenimiafina",
+			"confirmPassword": "Hamafiso ny tenimiafina",
+			"submit": "Mamorona ny kaontiko",
+			"submitting": "Mamorona...",
+			"emailTaken": "Efa nampiasaina io mailaka io",
+			"genericError": "Tsy nahomby ny fisoratana anarana, andramo indray",
+			"orContinueWith": "na tohizo amin'ny",
+			"hasAccount": "Efa manana kaonty ?",
+			"signIn": "Hiditra"
+		},
+		"verifyBanner": {
+			"message": "Hamarino ny mailakao mba hiarovana ny kaontinao.",
+			"dismiss": "Afeno"
+		},
+		"verifyEmail": {
+			"pending": "Eo am-panamarinana ny mailakao...",
+			"success": "Voamarina ny mailakao.",
+			"continue": "Hanohy",
+			"tokenDead": "Tsy mety intsony na efa nampiasaina io rohy fanamarinana io.",
+			"identifier": "Mailaka",
+			"resend": "Alefaso indray ny rohy fanamarinana",
+			"resendSent": "Nisy rohy fanamarinana vaovao nalefa raha misy io kaonty io.",
+			"rateLimited": "Andrana be loatra, andramo indray afaka kelikely",
+			"genericError": "Nisy olana nitranga, andramo indray",
+			"cooldown": "Andramo indray afaka {{seconds}}s"
+		},
+		"forgotPassword": {
+			"title": "Very tenimiafina",
+			"subtitle": "Handray rohy iray hanovana ny tenimiafinao",
+			"identifier": "Mailaka",
+			"submit": "Alefaso ny rohy",
+			"submitting": "Fandefasana...",
+			"confirmation": "Raha misy kaonty amin'io mailaka io, dia vao maika nalefa ny mailaka iray.",
+			"rateLimited": "Andrana be loatra, andramo indray afaka kelikely",
+			"genericError": "Nisy olana nitranga, andramo indray",
+			"cooldown": "Andramo indray afaka {{seconds}}s",
+			"backToLogin": "Miverina any amin'ny fidirana"
+		},
+		"resetPassword": {
+			"title": "Manova ny tenimiafina",
+			"subtitle": "Misafidiana tenimiafina vaovao",
+			"password": "Tenimiafina vaovao",
+			"confirmPassword": "Hamafiso ny tenimiafina",
+			"submit": "Manova",
+			"submitting": "Fanovana...",
+			"success": "Voaova ny tenimiafinao.",
+			"tokenDead": "Tsy mety intsony na efa nampiasaina io rohy fanovana io.",
+			"requestNewLink": "Mangataha rohy vaovao",
+			"genericError": "Nisy olana nitranga, andramo indray"
+		},
+		"oauth": {
+			"google": "Tohizo amin'ny Google",
+			"googlePending": "Mifandray amin'ny Google...",
+			"facebook": "Tohizo amin'ny Facebook",
+			"facebookPending": "Mifandray amin'ny Facebook...",
+			"manualContinue": "Maharitra be ? Tohizo tsy amin'ny fikandrana",
+			"completing": "Famaranana ny fidirana..."
+		},
+		"sessions": {
+			"navLabel": "Sessions mavitrika",
+			"title": "Sessions mavitrika",
+			"subtitle": "Ireo fitaovana mifandray amin'ny kaontinao amin'izao fotoana izao",
+			"empty": "Tsy misy session mavitrika",
+			"unknownDevice": "Fitaovana tsy fantatra",
+			"unknownIp": "IP tsy fantatra",
+			"current": "Ity fitaovana ity",
+			"revoke": "Esory",
+			"revokeConfirmTitle": "Hesorina io session io ?",
+			"revokeConfirmDescription": "Havoaka avy hatrany amin'ny kaontinao ilay fitaovana.",
+			"cancel": "Aoka ihany"
 		},
 		"sessionExpired": "Tapitra ny fotoam-piasan'ny fidiranao, midira indray azafady"
 	},

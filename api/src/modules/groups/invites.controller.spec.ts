@@ -9,6 +9,7 @@ describe('InvitesController', () => {
 		phone: null,
 		displayName: 'Ada',
 		role: 'USER',
+		emailVerified: true,
 	};
 
 	let invites: Record<string, jest.Mock>;

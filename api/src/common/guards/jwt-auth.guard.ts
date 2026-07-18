@@ -14,6 +14,7 @@ export interface AuthenticatedUser {
 	phone: string | null;
 	displayName: string;
 	role: AppRoleType;
+	emailVerified: boolean;
 }
 
 @Injectable()

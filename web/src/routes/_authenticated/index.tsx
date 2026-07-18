@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 import { MiksLogo } from "#/components/brand/logo"
 import { Avatar, AvatarFallback } from "#/components/ui/avatar"
@@ -54,6 +54,11 @@ function DashboardPage() {
 						</button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
+						<DropdownMenuItem asChild>
+							<Link to="/settings/sessions">
+								{t("auth.sessions.navLabel")}
+							</Link>
+						</DropdownMenuItem>
 						<DropdownMenuItem
 							onSelect={() => void handleLogout()}
 							disabled={logout.isPending}

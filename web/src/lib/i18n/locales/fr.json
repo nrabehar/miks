@@ -17,7 +17,87 @@
 			"submitting": "Connexion en cours...",
 			"invalidCredentials": "Identifiant ou mot de passe incorrect",
 			"locked": "Ce compte est temporairement verrouillé, réessayez plus tard",
-			"genericError": "La connexion a échoué, réessayez"
+			"genericError": "La connexion a échoué, réessayez",
+			"forgotPassword": "Mot de passe oublié ?",
+			"noAccount": "Pas encore de compte ?",
+			"signUp": "Créer un compte"
+		},
+		"register": {
+			"title": "Créer un compte",
+			"subtitle": "Rejoignez Miks et commencez à épargner en groupe",
+			"displayName": "Nom",
+			"email": "E-mail",
+			"emailPlaceholder": "vous@exemple.com",
+			"password": "Mot de passe",
+			"confirmPassword": "Confirmer le mot de passe",
+			"submit": "Créer mon compte",
+			"submitting": "Création en cours...",
+			"emailTaken": "Cette adresse e-mail est déjà utilisée",
+			"genericError": "L'inscription a échoué, réessayez",
+			"orContinueWith": "ou continuer avec",
+			"hasAccount": "Déjà un compte ?",
+			"signIn": "Se connecter"
+		},
+		"verifyBanner": {
+			"message": "Vérifiez votre adresse e-mail pour sécuriser votre compte.",
+			"dismiss": "Masquer"
+		},
+		"verifyEmail": {
+			"pending": "Vérification de votre adresse e-mail en cours...",
+			"success": "Votre adresse e-mail est vérifiée.",
+			"continue": "Continuer",
+			"tokenDead": "Ce lien de vérification est invalide ou a déjà été utilisé.",
+			"identifier": "E-mail",
+			"resend": "Renvoyer un lien de vérification",
+			"resendSent": "Un nouveau lien de vérification a été envoyé si ce compte existe.",
+			"rateLimited": "Trop de tentatives, réessayez dans quelques instants",
+			"genericError": "Une erreur est survenue, réessayez",
+			"cooldown": "Réessayez dans {{seconds}}s"
+		},
+		"forgotPassword": {
+			"title": "Mot de passe oublié",
+			"subtitle": "Recevez un lien pour réinitialiser votre mot de passe",
+			"identifier": "E-mail",
+			"submit": "Envoyer le lien",
+			"submitting": "Envoi en cours...",
+			"confirmation": "Si un compte existe avec cette adresse, un e-mail vient d'être envoyé.",
+			"rateLimited": "Trop de tentatives, réessayez dans quelques instants",
+			"genericError": "Une erreur est survenue, réessayez",
+			"cooldown": "Réessayez dans {{seconds}}s",
+			"backToLogin": "Retour à la connexion"
+		},
+		"resetPassword": {
+			"title": "Réinitialiser le mot de passe",
+			"subtitle": "Choisissez un nouveau mot de passe",
+			"password": "Nouveau mot de passe",
+			"confirmPassword": "Confirmer le mot de passe",
+			"submit": "Réinitialiser",
+			"submitting": "Réinitialisation en cours...",
+			"success": "Votre mot de passe a été réinitialisé.",
+			"tokenDead": "Ce lien de réinitialisation est invalide ou a déjà été utilisé.",
+			"requestNewLink": "Demander un nouveau lien",
+			"genericError": "Une erreur est survenue, réessayez"
+		},
+		"oauth": {
+			"google": "Continuer avec Google",
+			"googlePending": "Connexion à Google...",
+			"facebook": "Continuer avec Facebook",
+			"facebookPending": "Connexion à Facebook...",
+			"manualContinue": "Ça prend du temps ? Continuer sans la fenêtre",
+			"completing": "Finalisation de la connexion..."
+		},
+		"sessions": {
+			"navLabel": "Sessions actives",
+			"title": "Sessions actives",
+			"subtitle": "Les appareils actuellement connectés à votre compte",
+			"empty": "Aucune session active",
+			"unknownDevice": "Appareil inconnu",
+			"unknownIp": "IP inconnue",
+			"current": "Cet appareil",
+			"revoke": "Révoquer",
+			"revokeConfirmTitle": "Révoquer cette session ?",
+			"revokeConfirmDescription": "L'appareil sera immédiatement déconnecté de votre compte.",
+			"cancel": "Annuler"
 		},
 		"sessionExpired": "Votre session a expiré, veuillez vous reconnecter"
 	},

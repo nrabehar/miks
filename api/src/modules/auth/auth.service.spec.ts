@@ -9,6 +9,7 @@ function makePrisma() {
 	return {
 		userIdentity: {
 			findUnique: jest.fn(),
+			findFirst: jest.fn(),
 			update: jest.fn(),
 			create: jest.fn(),
 		},
@@ -25,6 +26,7 @@ function makePrisma() {
 	} as unknown as PrismaService & {
 		userIdentity: {
 			findUnique: jest.Mock;
+			findFirst: jest.Mock;
 			update: jest.Mock;
 			create: jest.Mock;
 		};
@@ -132,6 +134,7 @@ describe('AuthService', () => {
 				phone: null,
 				displayName: 'Ada',
 				role: 'USER',
+				emailVerified: false,
 			});
 			expect(result).not.toHaveProperty('secretHash');
 		});
@@ -185,6 +188,7 @@ describe('AuthService', () => {
 				phone: null,
 				displayName: 'Ada',
 				role: 'USER',
+				emailVerified: true,
 			});
 		});
 
@@ -218,6 +222,7 @@ describe('AuthService', () => {
 				phone: null,
 				displayName: 'Ada (local)',
 				role: 'USER',
+				emailVerified: true,
 			});
 		});
 
@@ -273,6 +278,7 @@ describe('AuthService', () => {
 				phone: null,
 				displayName: 'Ada',
 				role: 'USER',
+				emailVerified: true,
 			});
 		});
 	});
@@ -360,6 +366,7 @@ describe('AuthService', () => {
 				secretHash: 'hashed',
 				failedAttempts: 3,
 				lockedUntil: null,
+				emailVerified: true,
 				user: {
 					id: 'user-1',
 					email: 'ada@example.test',
@@ -389,6 +396,7 @@ describe('AuthService', () => {
 				phone: null,
 				displayName: 'Ada',
 				role: 'USER',
+				emailVerified: true,
 			});
 		});
 	});
@@ -406,6 +414,7 @@ describe('AuthService', () => {
 					phone: null,
 					displayName: 'Ada',
 					role: 'USER',
+					emailVerified: true,
 				},
 				{ userAgent: 'jest', ip: '127.0.0.1' },
 			);

@@ -33,6 +33,7 @@ describe('AuthController', () => {
 		phone: null,
 		displayName: 'Ada',
 		role: 'USER',
+		emailVerified: true,
 	};
 
 	let authService: {
@@ -318,7 +319,9 @@ describe('AuthController', () => {
 					accessToken: 'access-token',
 					refreshToken: 'refresh-token',
 				});
-				expect(res.redirect).toHaveBeenCalledWith('http://localhost:5173');
+				expect(res.redirect).toHaveBeenCalledWith(
+					'http://localhost:5173/auth/oauth-callback',
+				);
 			},
 		);
 	});

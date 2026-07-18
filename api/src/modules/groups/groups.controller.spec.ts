@@ -12,6 +12,7 @@ describe('GroupsController', () => {
 		phone: null,
 		displayName: 'Ada',
 		role: 'USER',
+		emailVerified: true,
 	};
 	const member = {
 		id: 'member-1',

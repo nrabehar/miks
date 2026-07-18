@@ -63,6 +63,7 @@ describe('JwtAuthGuard', () => {
 				phone: null,
 				displayName: 'Ada',
 				role: 'USER',
+				emailVerified: true,
 			};
 
 			expect(guard.handleRequest(null, user, undefined)).toBe(user);

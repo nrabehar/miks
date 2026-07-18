@@ -53,7 +53,7 @@ function renderApp() {
 
 describe("root auth guard (covers: root layout checks who is logged in via /auth/me)", () => {
 	it("renders the dashboard when /auth/me resolves a real session", async () => {
-		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER" }
+		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER", emailVerified: true }
 		apiClient.defaults.adapter = (config) => {
 			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(user))
 			return Promise.reject(new Error(`unexpected request: ${config.url}`))
@@ -79,7 +79,7 @@ describe("root auth guard (covers: root layout checks who is logged in via /auth
 
 describe("dashboard", () => {
 	it("logout menu item is reachable by keyboard and has an accessible name", async () => {
-		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER" }
+		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER", emailVerified: true }
 		apiClient.defaults.adapter = (config) => {
 			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(user))
 			if (config.url === "/auth/logout") return Promise.resolve(envelopeResponse(null, 204))
@@ -101,7 +101,7 @@ describe("dashboard", () => {
 	})
 
 	it("navigates to /auth/login once logout succeeds", async () => {
-		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER" }
+		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER", emailVerified: true }
 
 		apiClient.defaults.adapter = (config) => {
 			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(user))
@@ -120,7 +120,7 @@ describe("dashboard", () => {
 	})
 
 	it("stays on the dashboard without crashing when logout fails", async () => {
-		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER" }
+		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER", emailVerified: true }
 
 		apiClient.defaults.adapter = (config) => {
 			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(user))

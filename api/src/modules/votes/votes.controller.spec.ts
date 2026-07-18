@@ -9,6 +9,7 @@ describe('VotesController', () => {
 		phone: null,
 		displayName: 'Ada',
 		role: 'USER',
+		emailVerified: true,
 	};
 
 	let votes: Record<string, jest.Mock>;

@@ -259,6 +259,6 @@ export class AuthController {
 		});
 
 		this.tokenService.setAuthCookies(res, tokens);
-		res.redirect(this.config.oauth.webUrl);
+		res.redirect(`${this.config.oauth.webUrl}/auth/oauth-callback`);
 	}
 }
