@@ -1,3 +1,4 @@
+import { useId } from "react"
 import { cn } from "#/lib/utils"
 
 export function MiksLogo({
@@ -5,6 +6,13 @@ export function MiksLogo({
 }: {
 	className?: string
 }) {
+	// Gradient ids must be unique per instance: this component often renders
+	// more than once on the same page (e.g. login's desktop panel + mobile
+	// header), and a shared hardcoded id would make every instance but one
+	// resolve its url(#...) fill to nothing.
+	const uid = useId()
+	const gradientId = (n: number) => `miks-logo-g${n}-${uid}`
+
 	return (
 		<svg
 			viewBox="0 0 1024 719"
@@ -17,19 +25,19 @@ export function MiksLogo({
 		>
 			<path
 				d="M461.457 648.542L291.306 380.079L514.513 370.833H726.808L564.71 646.797C541.788 685.821 485.685 686.769 461.457 648.542Z"
-				fill="url(#m_g0)"
+				fill={`url(#${gradientId(0)})`}
 			/>
 			<path
 				d="M167.279 64.3638L4.24689 601.036C-22.9616 690.601 86.8745 757.672 154.158 692.578L371.177 482.622L512 372.094L333.64 47.092C294.995 -23.3255 190.626 -12.4897 167.279 64.3638Z"
-				fill="url(#m_g1)"
+				fill={`url(#${gradientId(1)})`}
 			/>
 			<path
 				d="M856.721 64.7841L1019.75 601.456C1046.96 691.021 937.126 758.092 869.842 692.998L652.823 483.042L512 372.514L690.36 47.5122C729.005 -22.9052 833.374 -12.0694 856.721 64.7841Z"
-				fill="url(#m_g2)"
+				fill={`url(#${gradientId(2)})`}
 			/>
 			<defs>
 				<radialGradient
-					id="m_g0"
+					id={gradientId(0)}
 					cx="0"
 					cy="0"
 					r="1"
@@ -40,7 +48,7 @@ export function MiksLogo({
 					<stop offset="1" stopColor="#F5751C" />
 				</radialGradient>
 				<linearGradient
-					id="m_g1"
+					id={gradientId(1)}
 					x1="601.959"
 					y1="-181.804"
 					x2="74.1733"
@@ -51,7 +59,7 @@ export function MiksLogo({
 					<stop offset="1" stopColor="#234ABA" />
 				</linearGradient>
 				<linearGradient
-					id="m_g2"
+					id={gradientId(2)}
 					x1="564.126"
 					y1="-62.0311"
 					x2="961.633"
