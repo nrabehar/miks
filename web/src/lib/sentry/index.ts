@@ -1,5 +1,5 @@
-import * as Sentry from "@sentry/react"
 import { env } from "#/lib/config/env"
+import * as Sentry from "@sentry/react"
 
 // Points at a self hosted Rustrak instance (Sentry SDK compatible), not
 // Sentry's own paid service (spec 0001-frontend-architecture). No DSN in
@@ -13,5 +13,6 @@ export function initErrorReporting() {
 		environment: env.VITE_APP_ENV,
 		integrations: [Sentry.browserTracingIntegration()],
 		tracesSampleRate: env.VITE_APP_ENV === "production" ? 0.1 : 1,
+		sendClientReports: false,
 	})
 }

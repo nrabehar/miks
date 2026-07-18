@@ -1,10 +1,10 @@
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
-import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -29,8 +29,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         // Cached reads only; a mutating request (money state) is never
-        // served from the service worker cache (spec 0001-frontend-architecture).
-        navigateFallbackDenylist: [/^\/auth\//],
+        // served from the service worker cache (spec 0001-frontend-architecture)..
+        navigateFallbackDenylist: [/^\/auth\//, /^\/api\//],
         runtimeCaching: [
           {
             urlPattern: ({ url, request }) =>
