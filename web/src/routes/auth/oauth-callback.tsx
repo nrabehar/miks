@@ -12,7 +12,10 @@ import {
 } from "#/features/auth/oauth-callback-message"
 
 const searchSchema = z.object({
-	requiresDeviceConfirmation: z.enum(["true"]).optional(),
+	// The router's default search parser JSON-parses each raw value, so the
+	// `?requiresDeviceConfirmation=true` query string arrives here as the
+	// boolean `true`, not the string `"true"` — not a string enum.
+	requiresDeviceConfirmation: z.boolean().optional(),
 	confirmationId: z.string().optional(),
 })
 

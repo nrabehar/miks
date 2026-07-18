@@ -26,12 +26,12 @@ function envelopeError(status: number, message: string): AxiosResponse {
 	}
 }
 
-function renderCallback() {
+function renderCallback(initialEntry = "/auth/oauth-callback") {
 	const queryClient = new QueryClient()
 	const router = createRouter({
 		routeTree,
 		context: { queryClient },
-		history: createMemoryHistory({ initialEntries: ["/auth/oauth-callback"] }),
+		history: createMemoryHistory({ initialEntries: [initialEntry] }),
 	})
 
 	render(
@@ -70,6 +70,30 @@ describe("oauth-callback", () => {
 		await waitFor(() => expect(received).toContain(OAUTH_SUCCESS_MESSAGE))
 		expect(closeSpy).toHaveBeenCalled()
 		listenerChannel.close()
+	})
+
+	it("hands off to /auth/login's device confirmation step, not crashing on the boolean search param (spec 0001-authentication AC-15)", async () => {
+		apiClient.defaults.adapter = (config) => {
+			if (config.url === "/auth/me") {
+				return Promise.reject({ response: envelopeError(401, "No auth token") })
+			}
+			return Promise.reject(new Error(`unexpected request: ${config.url}`))
+		}
+
+		// The router's default search parser JSON-parses raw query values, so
+		// `?requiresDeviceConfirmation=true` arrives as the boolean `true`, not
+		// the string `"true"` — this regression tests that parsing doesn't
+		// throw a validation error (it used to, against a `z.enum(["true"])`).
+		const { router } = renderCallback(
+			"/auth/oauth-callback?requiresDeviceConfirmation=true&confirmationId=confirmation-1",
+		)
+
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe("/auth/login"),
+		)
+		expect(router.state.location.search).toMatchObject({
+			confirmationId: "confirmation-1",
+		})
 	})
 
 	it("navigates into the app instead when this is a normal full page landing (popup was blocked)", async () => {
