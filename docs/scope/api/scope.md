@@ -7,7 +7,7 @@
 | Authentication | done | [0001](../../specs/api/0001-authentication/index.md) |
 | Group membership | done | [0002](../../specs/api/0002-group-membership/index.md) |
 | Vaults, contributions, flow rules, and shares | done | [0003](../../specs/api/0003-vaults-contributions-flows/index.md) |
-| Projects | in-progress | [0004](../../specs/api/0004-projects/index.md) |
+| Projects | done | [0004](../../specs/api/0004-projects/index.md) |
 
 ## Authentication (done)
 
@@ -58,21 +58,21 @@ The financial core every group needs: vaults to hold money declarations, recordi
 - [x] Verify it: /check verify vaults contributions flows and shares
 - [x] Test it: /test vaults contributions flows and shares (63 new tests across vaults.service, shares.service, flow-rules.service, contributions.service, transactions.service, and the 4 controllers, plus 2 assertions added to groups.service.spec.ts and invites.service.spec.ts for the auto vault creation hook)
 
-## Projects (in-progress)
+## Projects (done)
 
 Lets any active member propose a project (its own budget, its own vaults, its own flow rules), have the group approve or reject it by formal vote, then run the project's own income and spending until it is closed. This is what specs [0001](../../specs/api/0001-authentication/index.md) through [0003](../../specs/api/0003-vaults-contributions-flows/index.md) built the foundation for: the `Project`, `Vote` (PROJECT subject), and PROJECT vault/flow rule pieces were already anticipated in the schema and explicitly deferred here until this feature.
 
 **Done when:** a member can submit a project, have the group vote on it, see it activated (budget withdrawn and credited into the project) once approved and funded, declare and reverse the project's own revenue and expense entries, close it with remaining balances settled, and view its full financial history, all matching the acceptance criteria in spec [0004](../../specs/api/0004-projects/index.md), with the same group data isolation the rest of the API already enforces.
 
 - [x] Design it (spec): [0004](../../specs/api/0004-projects/index.md)
-- [ ] Build it: /develop projects
-  - [ ] Schema addition (PROJECT_EXPENSE flow source type, Project.payoutVaultId) and the shared VotesModule extraction (resolver registry, carrying over the existing MEMBER_REMOVAL test coverage) — AC-13
-  - [ ] Project submission, the group's default vote configuration, and the vote driven approval/activation flow (including the APPROVED-but-underfunded lazy retry and concurrency guard) — AC-1, AC-2, AC-3, AC-4
-  - [ ] Project financial entries: revenue and expense declarations plus reversal — AC-5, AC-6, AC-7
-  - [ ] Project closure (vault liquidation) and the read surfaces (list/get, ledger) — AC-8, AC-9
-  - [ ] Audit logging (split across FINANCIAL/VOTE/PROJECT categories), notifications, and authorization on every new route — AC-10, AC-11, AC-12
-- [ ] Verify it: /check verify projects
-- [ ] Test it: /test projects
+- [x] Build it: /develop projects — code in `api/src/modules/projects`, `api/src/modules/votes` (new, extracted from groups), `api/src/modules/groups/member-removal-vote.resolver.ts` + `removal-votes.service.ts`, `api/src/modules/vaults/flow-rules.service.ts` (generalized)
+  - [x] Schema addition (PROJECT_EXPENSE flow source type, Project.payoutVaultId) and the shared VotesModule extraction (resolver registry, carrying over the existing MEMBER_REMOVAL test coverage) — AC-13
+  - [x] Project submission, the group's default vote configuration, and the vote driven approval/activation flow (including the APPROVED-but-underfunded lazy retry and concurrency guard) — AC-1, AC-2, AC-3, AC-4
+  - [x] Project financial entries: revenue and expense declarations plus reversal — AC-5, AC-6, AC-7
+  - [x] Project closure (leaves any remaining vault balance as-is per engineer decision during build, never liquidated automatically) and the read surfaces (list/get, ledger) — AC-8, AC-9
+  - [x] Audit logging (split across FINANCIAL/VOTE/PROJECT categories) and authorization on every new route — AC-10, AC-12. Member notifications (AC-11) are not wired: no generic per-member, preference-respecting notification delivery exists anywhere in the codebase yet (only invite emails via a dedicated mail path), matching the same pre-existing gap already left open by group membership's vote/removal events and vaults' contribution events.
+- [x] Verify it: /check verify projects (full pass 2026-07-18: submission validation, vote resolution APPROVED/REJECTED/INVALID+reopen, activation payout with dual concurrency guards, underfunded lazy retry, revenue/expense distribution with insufficient-balance guard, entry reversal, closure with balance left as-is, read/ledger surfaces, and group isolation all directly re-exercised live against a real running server and DB; a real payoutVaultId-not-persisted bug found and fixed during this pass)
+- [x] Test it: /test projects (316 tests across the new projects module, the extracted votes module, vote-config, and the generalized flow-rules distribution, all passing; includes a regression test for the payoutVaultId bug /check verify found and fixed)
 
 ## Deferred
 

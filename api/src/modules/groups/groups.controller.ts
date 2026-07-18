@@ -23,14 +23,14 @@ import { ProposeRemovalVoteDto } from './dto/propose-removal-vote.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { GroupsService } from './groups.service';
 import { InvitesService } from './invites.service';
-import { VotesService } from './votes.service';
+import { RemovalVotesService } from './removal-votes.service';
 
 @Controller('groups')
 export class GroupsController {
 	constructor(
 		private readonly groups: GroupsService,
 		private readonly invites: InvitesService,
-		private readonly votes: VotesService,
+		private readonly votes: RemovalVotesService,
 	) {}
 
 	@Post()

@@ -1,7 +1,7 @@
 # 0004. Projects: submission, approval voting, and financial lifecycle
 
 **Date**: 2026-07-17
-**Status**: Proposed
+**Status**: Accepted
 
 ## Summary
 

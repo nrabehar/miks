@@ -170,6 +170,56 @@ export class FlowRulesService {
 					'CONTRIBUTION',
 					contribution.id,
 					createdById,
+					'CREDIT',
+				)),
+			);
+		}
+
+		return created;
+	}
+
+	/**
+	 * Applies every currently active PROJECT_REVENUE or PROJECT_EXPENSE flow
+	 * rule for a project to a declared revenue/expense entry, inside the
+	 * caller's DB transaction. Revenue credits its destinations (money
+	 * entering); expense debits them (money leaving), guarded so a
+	 * destination without enough balance fails the whole entry with a 422
+	 * rather than going negative (spec 0004, AC-5/AC-6).
+	 */
+	async applyProjectEntryRules(
+		tx: Prisma.TransactionClient,
+		groupId: string,
+		sourceType: 'PROJECT_REVENUE' | 'PROJECT_EXPENSE',
+		projectId: string,
+		amount: Prisma.Decimal,
+		createdById: string,
+	): Promise<Transaction[]> {
+		const direction = sourceType === 'PROJECT_REVENUE' ? 'CREDIT' : 'DEBIT';
+
+		const rules = await tx.flowRule.findMany({
+			where: { groupId, sourceType, sourceRefId: projectId, active: true },
+			include: { destinations: { orderBy: { sortOrder: 'asc' } } },
+		});
+
+		if (rules.length === 0) {
+			throw new UnprocessableEntityException(
+				`No active ${sourceType} flow rule is configured for this project`,
+			);
+		}
+
+		const created: Transaction[] = [];
+
+		for (const rule of rules) {
+			created.push(
+				...(await this.applyRule(
+					tx,
+					groupId,
+					rule.destinations,
+					amount,
+					sourceType,
+					projectId,
+					createdById,
+					direction,
 				)),
 			);
 		}
@@ -189,6 +239,7 @@ export class FlowRulesService {
 		sourceType: string,
 		sourceRefId: string,
 		createdById: string,
+		direction: 'CREDIT' | 'DEBIT',
 	): Promise<Transaction[]> {
 		let allocated = new Prisma.Decimal(0);
 		const created: Transaction[] = [];
@@ -210,7 +261,7 @@ export class FlowRulesService {
 
 			if (destination.destinationType === 'VAULT') {
 				created.push(
-					await this.creditVault(
+					await this.writeVaultEntry(
 						tx,
 						groupId,
 						destination.vaultId!,
@@ -218,6 +269,7 @@ export class FlowRulesService {
 						sourceType,
 						sourceRefId,
 						createdById,
+						direction,
 					),
 				);
 			} else {
@@ -229,6 +281,7 @@ export class FlowRulesService {
 						sourceType,
 						sourceRefId,
 						createdById,
+						direction,
 					)),
 				);
 			}
@@ -244,6 +297,7 @@ export class FlowRulesService {
 		sourceType: string,
 		sourceRefId: string,
 		createdById: string,
+		direction: 'CREDIT' | 'DEBIT',
 	): Promise<Transaction[]> {
 		const shares = await tx.memberShareCache.findMany({
 			where: { groupId, member: { status: 'ACTIVE' } },
@@ -278,7 +332,7 @@ export class FlowRulesService {
 			}
 
 			created.push(
-				await this.creditVault(
+				await this.writeVaultEntry(
 					tx,
 					groupId,
 					share.member.withdrawableVault!.id,
@@ -286,6 +340,7 @@ export class FlowRulesService {
 					sourceType,
 					sourceRefId,
 					createdById,
+					direction,
 				),
 			);
 		}
@@ -293,7 +348,7 @@ export class FlowRulesService {
 		return created;
 	}
 
-	private async creditVault(
+	private async writeVaultEntry(
 		tx: Prisma.TransactionClient,
 		groupId: string,
 		vaultId: string,
@@ -301,17 +356,31 @@ export class FlowRulesService {
 		sourceType: string,
 		sourceRefId: string,
 		createdById: string,
+		direction: 'CREDIT' | 'DEBIT',
 	): Promise<Transaction> {
-		await tx.vault.update({
-			where: { id: vaultId },
-			data: { cachedBalance: { increment: amount } },
-		});
+		if (direction === 'DEBIT') {
+			const debited = await tx.vault.updateMany({
+				where: { id: vaultId, cachedBalance: { gte: amount } },
+				data: { cachedBalance: { decrement: amount } },
+			});
+
+			if (debited.count === 0) {
+				throw new UnprocessableEntityException(
+					'Insufficient balance to debit this destination',
+				);
+			}
+		} else {
+			await tx.vault.update({
+				where: { id: vaultId },
+				data: { cachedBalance: { increment: amount } },
+			});
+		}
 
 		return tx.transaction.create({
 			data: {
 				groupId,
 				vaultId,
-				direction: 'CREDIT',
+				direction,
 				amount,
 				type: 'INTERNAL_FLOW',
 				sourceType,

@@ -8,7 +8,9 @@ import { NotificationDeliveryModule } from '$lib/notification-delivery/notificat
 import { PasswordModule } from '$lib/password/password.module';
 import { AuthModule } from '$/auth/auth.module';
 import { GroupsModule } from '$/groups/groups.module';
+import { ProjectsModule } from '$/projects/projects.module';
 import { VaultsModule } from '$/vaults/vaults.module';
+import { VotesModule } from '$/votes/votes.module';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { Module } from '@nestjs/common';
@@ -26,8 +28,10 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 		MailModule,
 		NotificationDeliveryModule,
 		AuthModule,
+		VotesModule,
 		GroupsModule,
 		VaultsModule,
+		ProjectsModule,
 	],
 	controllers: [AppController],
 	providers: [

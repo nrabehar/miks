@@ -43,7 +43,7 @@ function makeAudit() {
 function makeTx() {
 	return {
 		flowRule: { findMany: jest.fn() },
-		vault: { update: jest.fn() },
+		vault: { update: jest.fn(), updateMany: jest.fn() },
 		transaction: {
 			create: jest.fn((args: { data: unknown }) => args.data),
 		},
@@ -460,6 +460,157 @@ describe('FlowRulesService', () => {
 			);
 
 			expect(result).toEqual([]);
+		});
+	});
+
+	describe('applyProjectEntryRules', () => {
+		it('throws UnprocessableEntityException when no active rule matches the project and sourceType (AC-5, AC-6)', async () => {
+			const tx = makeTx();
+			tx.flowRule.findMany.mockResolvedValue([]);
+
+			await expect(
+				service.applyProjectEntryRules(
+					tx as never,
+					'group-1',
+					'PROJECT_REVENUE',
+					'project-1',
+					new Prisma.Decimal(100),
+					'user-1',
+				),
+			).rejects.toThrow(UnprocessableEntityException);
+		});
+
+		it('scopes the rule lookup to this project (sourceRefId) and the given sourceType', async () => {
+			const tx = makeTx();
+			tx.flowRule.findMany.mockResolvedValue([
+				{
+					id: 'rule-1',
+					destinations: [
+						{
+							destinationType: 'VAULT',
+							vaultId: 'vault-a',
+							percentage: new Prisma.Decimal(100),
+						},
+					],
+				},
+			]);
+
+			await service.applyProjectEntryRules(
+				tx as never,
+				'group-1',
+				'PROJECT_REVENUE',
+				'project-1',
+				new Prisma.Decimal(100),
+				'user-1',
+			);
+
+			expect(tx.flowRule.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: {
+						groupId: 'group-1',
+						sourceType: 'PROJECT_REVENUE',
+						sourceRefId: 'project-1',
+						active: true,
+					},
+				}),
+			);
+		});
+
+		it('credits (increments) destinations for a PROJECT_REVENUE entry, no balance guard (AC-5)', async () => {
+			const tx = makeTx();
+			tx.flowRule.findMany.mockResolvedValue([
+				{
+					id: 'rule-1',
+					destinations: [
+						{
+							destinationType: 'VAULT',
+							vaultId: 'vault-a',
+							percentage: new Prisma.Decimal(100),
+						},
+					],
+				},
+			]);
+
+			const result = await service.applyProjectEntryRules(
+				tx as never,
+				'group-1',
+				'PROJECT_REVENUE',
+				'project-1',
+				new Prisma.Decimal(150),
+				'user-1',
+			);
+
+			expect(tx.vault.update).toHaveBeenCalledWith({
+				where: { id: 'vault-a' },
+				data: { cachedBalance: { increment: new Prisma.Decimal(150) } },
+			});
+			expect(tx.vault.updateMany).not.toHaveBeenCalled();
+			expect(
+				(result[0] as unknown as { direction: string }).direction,
+			).toBe('CREDIT');
+		});
+
+		it('debits (decrements) destinations for a PROJECT_EXPENSE entry, guarded against insufficient balance (AC-6)', async () => {
+			const tx = makeTx();
+			tx.flowRule.findMany.mockResolvedValue([
+				{
+					id: 'rule-1',
+					destinations: [
+						{
+							destinationType: 'VAULT',
+							vaultId: 'vault-a',
+							percentage: new Prisma.Decimal(100),
+						},
+					],
+				},
+			]);
+			tx.vault.updateMany.mockResolvedValue({ count: 1 });
+
+			const result = await service.applyProjectEntryRules(
+				tx as never,
+				'group-1',
+				'PROJECT_EXPENSE',
+				'project-1',
+				new Prisma.Decimal(40),
+				'user-1',
+			);
+
+			expect(tx.vault.updateMany).toHaveBeenCalledWith({
+				where: { id: 'vault-a', cachedBalance: { gte: new Prisma.Decimal(40) } },
+				data: { cachedBalance: { decrement: new Prisma.Decimal(40) } },
+			});
+			expect(
+				(result[0] as unknown as { direction: string }).direction,
+			).toBe('DEBIT');
+		});
+
+		it('throws UnprocessableEntityException when a destination lacks enough balance to debit, without writing a partial transaction (AC-6)', async () => {
+			const tx = makeTx();
+			tx.flowRule.findMany.mockResolvedValue([
+				{
+					id: 'rule-1',
+					destinations: [
+						{
+							destinationType: 'VAULT',
+							vaultId: 'vault-a',
+							percentage: new Prisma.Decimal(100),
+						},
+					],
+				},
+			]);
+			tx.vault.updateMany.mockResolvedValue({ count: 0 });
+
+			await expect(
+				service.applyProjectEntryRules(
+					tx as never,
+					'group-1',
+					'PROJECT_EXPENSE',
+					'project-1',
+					new Prisma.Decimal(9999),
+					'user-1',
+				),
+			).rejects.toThrow(UnprocessableEntityException);
+			expect(tx.transaction.create).not.toHaveBeenCalled();
 		});
 	});
 });

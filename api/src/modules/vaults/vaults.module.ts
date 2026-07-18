@@ -23,6 +23,6 @@ import { VaultsService } from './vaults.service';
 		TransactionsService,
 		SharesService,
 	],
-	exports: [VaultsService],
+	exports: [VaultsService, FlowRulesService],
 })
 export class VaultsModule {}

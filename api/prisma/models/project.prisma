@@ -19,6 +19,8 @@ model Project {
   requestedBudget Decimal       @map("requested_budget") @db.Decimal(18, 2)
   sourceVaultId   String?       @map("source_vault_id")
   sourceVault     Vault?        @relation("ProjectSourceVault", fields: [sourceVaultId], references: [id])
+  payoutVaultId   String?       @map("payout_vault_id")
+  payoutVault     Vault?        @relation("ProjectPayoutVault", fields: [payoutVaultId], references: [id])
   status          ProjectStatus @default(PENDING)
   metadata        Json          @default("{}")
   createdAt       DateTime      @default(now()) @map("created_at")
@@ -55,6 +57,7 @@ model Vault {
   createdAt     DateTime @default(now()) @map("created_at")
 
   projectsAsSourceVault Project[]         @relation("ProjectSourceVault")
+  projectsAsPayoutVault Project[]         @relation("ProjectPayoutVault")
   transactions          Transaction[]
   flowDestinations      FlowDestination[]
 

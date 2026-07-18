@@ -3,7 +3,7 @@ import type { GroupMember } from '$prisma/client';
 import { GroupsController } from './groups.controller';
 import { GroupsService } from './groups.service';
 import { InvitesService } from './invites.service';
-import { VotesService } from './votes.service';
+import { RemovalVotesService } from './removal-votes.service';
 
 describe('GroupsController', () => {
 	const user: AuthenticatedUser = {
@@ -44,7 +44,7 @@ describe('GroupsController', () => {
 		controller = new GroupsController(
 			groups as unknown as GroupsService,
 			invites as unknown as InvitesService,
-			votes as unknown as VotesService,
+			votes as unknown as RemovalVotesService,
 		);
 	});
 
