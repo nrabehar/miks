@@ -1,0 +1,30 @@
+{
+	"common": {
+		"appName": "Miks",
+		"loading": "Chargement...",
+		"error": "Une erreur est survenue",
+		"retry": "Réessayer",
+		"offline": "Vous êtes hors ligne. Les données affichées peuvent être obsolètes."
+	},
+	"auth": {
+		"login": {
+			"title": "Connexion",
+			"subtitle": "Connectez-vous pour accéder à votre espace Miks",
+			"identifier": "E-mail",
+			"identifierPlaceholder": "vous@exemple.com",
+			"password": "Mot de passe",
+			"submit": "Se connecter",
+			"submitting": "Connexion en cours...",
+			"invalidCredentials": "Identifiant ou mot de passe incorrect",
+			"locked": "Ce compte est temporairement verrouillé, réessayez plus tard",
+			"genericError": "La connexion a échoué, réessayez"
+		},
+		"sessionExpired": "Votre session a expiré, veuillez vous reconnecter"
+	},
+	"dashboard": {
+		"welcome": "Bonjour, {{name}}",
+		"subtitle": "Voici un aperçu de votre compte",
+		"role": "Rôle",
+		"logout": "Se déconnecter"
+	}
+}

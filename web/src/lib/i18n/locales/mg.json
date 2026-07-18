@@ -1,0 +1,30 @@
+{
+	"common": {
+		"appName": "Miks",
+		"loading": "Eo am-piandrasana...",
+		"error": "Nisy olana nitranga",
+		"retry": "Andramo indray",
+		"offline": "Tsy misy fifandraisana ianao izao. Mety ho tsy vaovao ny angon-drakitra aseho."
+	},
+	"auth": {
+		"login": {
+			"title": "Fidirana",
+			"subtitle": "Midira mba hidirana ao amin'ny kaontinao Miks",
+			"identifier": "Mailaka",
+			"identifierPlaceholder": "ianao@ohatra.com",
+			"password": "Tenimiafina",
+			"submit": "Hiditra",
+			"submitting": "Miditra...",
+			"invalidCredentials": "Mailaka na tenimiafina diso",
+			"locked": "Voahidy vonjimaika ity kaonty ity, andramo indray afaka kelikely",
+			"genericError": "Tsy nahomby ny fidirana, andramo indray"
+		},
+		"sessionExpired": "Tapitra ny fotoam-piasan'ny fidiranao, midira indray azafady"
+	},
+	"dashboard": {
+		"welcome": "Manao ahoana, {{name}}",
+		"subtitle": "Ity ny topi-maso ankapobeny momba ny kaontinao",
+		"role": "Andraikitra",
+		"logout": "Hivoaka"
+	}
+}

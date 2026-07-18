@@ -43,7 +43,10 @@ http {
 		http2 on;
 		server_name localhost;
 
-		add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none';" always;
+		# connect-src/worker-src widened for the frontend foundation build (spec
+		# 0001-frontend-architecture): the Rustrak error reporting host and the
+		# app's own service worker (vite-plugin-pwa).
+		add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${RUSTRAK_INGEST_URL}; worker-src 'self'; frame-src 'none';" always;
 
 		proxy_http_version 1.1;
 		proxy_read_timeout 86400;
