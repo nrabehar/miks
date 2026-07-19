@@ -36,28 +36,61 @@ function providerUrl(provider: OAuthButtonProps["provider"]): string {
 // report, not a JS exception, so no try/catch on our side can silence it.
 // The BroadcastChannel above is COOP proof and already covers completion;
 // the timeout below covers the user abandoning the popup instead.
-function OAuthButton({ provider }: OAuthButtonProps) {
+//
+// The channel is listened to exactly once, in OAuthButtons below, not one
+// subscription per button: Google and Facebook are both mounted at the same
+// time on this page, so if each OAuthButton opened its own listener, a
+// single success broadcast (from whichever provider was actually used) fired
+// in EVERY mounted listener at once, each independently calling navigate(),
+// which raced against the auth guard's own redirect and bounced the user
+// back to /auth/login instead of landing them on "/" (confirmed via Sentry's
+// breadcrumbs: four alternating /auth/login <-> / navigations in the same
+// 38ms window right after a successful OAuth popup closed).
+function OAuthButton({
+	provider,
+	pending,
+	timedOut,
+	onClick,
+	onManualContinue,
+}: OAuthButtonProps & {
+	pending: boolean
+	timedOut: boolean
+	onClick: () => void
+	onManualContinue: () => void
+}) {
 	const { t } = useTranslation()
-	const navigate = useNavigate()
-	const queryClient = useQueryClient()
+
+	return (
+		<div className="flex flex-col gap-1">
+			<Button
+				type="button"
+				variant="outline"
+				className="w-full"
+				disabled={pending}
+				onClick={onClick}
+			>
+				<ProviderIcon provider={provider} />
+				{pending
+					? t(`auth.oauth.${provider}Pending`)
+					: t(`auth.oauth.${provider}`)}
+			</Button>
+			{timedOut && (
+				<button
+					type="button"
+					onClick={onManualContinue}
+					className="text-muted-foreground text-xs underline underline-offset-2"
+				>
+					{t("auth.oauth.manualContinue")}
+				</button>
+			)}
+		</div>
+	)
+}
+
+function useOAuthPopup(provider: OAuthButtonProps["provider"]) {
 	const [pending, setPending] = useState(false)
 	const [timedOut, setTimedOut] = useState(false)
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-	useEffect(() => {
-		const channel = new BroadcastChannel(OAUTH_CHANNEL_NAME)
-
-		channel.onmessage = (event: MessageEvent) => {
-			if (event.data !== OAUTH_SUCCESS_MESSAGE) return
-
-			cleanup()
-			void queryClient.invalidateQueries({ queryKey: authKeys.me() })
-			void navigate({ to: "/" })
-		}
-
-		return () => channel.close()
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [])
 
 	useEffect(() => {
 		return () => cleanup()
@@ -95,31 +128,7 @@ function OAuthButton({ provider }: OAuthButtonProps) {
 		window.location.href = providerUrl(provider)
 	}
 
-	return (
-		<div className="flex flex-col gap-1">
-			<Button
-				type="button"
-				variant="outline"
-				className="w-full"
-				disabled={pending}
-				onClick={handleClick}
-			>
-				<ProviderIcon provider={provider} />
-				{pending
-					? t(`auth.oauth.${provider}Pending`)
-					: t(`auth.oauth.${provider}`)}
-			</Button>
-			{timedOut && (
-				<button
-					type="button"
-					onClick={handleManualContinue}
-					className="text-muted-foreground text-xs underline underline-offset-2"
-				>
-					{t("auth.oauth.manualContinue")}
-				</button>
-			)}
-		</div>
-	)
+	return { pending, timedOut, handleClick, handleManualContinue, cleanup }
 }
 
 function ProviderIcon({ provider }: OAuthButtonProps) {
@@ -157,10 +166,46 @@ function ProviderIcon({ provider }: OAuthButtonProps) {
 }
 
 export function OAuthButtons() {
+	const navigate = useNavigate()
+	const queryClient = useQueryClient()
+	const google = useOAuthPopup("google")
+	const facebook = useOAuthPopup("facebook")
+
+	// The one and only listener for the popup's success broadcast (see the
+	// note on OAuthButton above for why this must not be duplicated per
+	// button).
+	useEffect(() => {
+		const channel = new BroadcastChannel(OAUTH_CHANNEL_NAME)
+
+		channel.onmessage = (event: MessageEvent) => {
+			if (event.data !== OAUTH_SUCCESS_MESSAGE) return
+
+			google.cleanup()
+			facebook.cleanup()
+			void queryClient.invalidateQueries({ queryKey: authKeys.me() })
+			void navigate({ to: "/" })
+		}
+
+		return () => channel.close()
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
+
 	return (
 		<div className="flex flex-col gap-2">
-			<OAuthButton provider="google" />
-			<OAuthButton provider="facebook" />
+			<OAuthButton
+				provider="google"
+				pending={google.pending}
+				timedOut={google.timedOut}
+				onClick={google.handleClick}
+				onManualContinue={google.handleManualContinue}
+			/>
+			<OAuthButton
+				provider="facebook"
+				pending={facebook.pending}
+				timedOut={facebook.timedOut}
+				onClick={facebook.handleClick}
+				onManualContinue={facebook.handleManualContinue}
+			/>
 		</div>
 	)
 }
