@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { apiClient } from "#/lib/api/client"
 import { Button } from "#/components/ui/button"
+import { fetchMe } from "#/features/auth/api"
 import { authKeys } from "#/features/auth/queries"
 import {
 	OAUTH_CHANNEL_NAME,
@@ -182,8 +183,28 @@ export function OAuthButtons() {
 
 			google.cleanup()
 			facebook.cleanup()
-			void queryClient.invalidateQueries({ queryKey: authKeys.me() })
-			void navigate({ to: "/" })
+
+			// _authenticated.tsx's beforeLoad reads the "me" cache
+			// synchronously (queryClient.getQueryData, never a fetch), so
+			// invalidateQueries here is the wrong tool: it only schedules a
+			// background refetch, which the guard's synchronous read runs
+			// ahead of, bouncing straight back to /auth/login even on a
+			// genuinely successful login (found live via Sentry: exactly
+			// one clean navigation to "/", then a bounce back 18ms later).
+			// The popup's broadcast carries no user data by design (only a
+			// fixed literal survives the postMessage/BroadcastChannel
+			// boundary), so fetch it ourselves and set the cache directly
+			// before navigating, the same guarantee useLogin's onSuccess
+			// gets for free from the login response already having `user`.
+			void fetchMe()
+				.then((user) => {
+					queryClient.setQueryData(authKeys.me(), user)
+					return navigate({ to: "/" })
+				})
+				.catch(() => {
+					// A genuine auth failure here just leaves the user on
+					// the login page; nothing further to do.
+				})
 		}
 
 		return () => channel.close()
