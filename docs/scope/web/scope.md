@@ -6,6 +6,23 @@
 |---|---|---|
 | Frontend foundation | done | [0001](../../specs/web/0001-frontend-architecture/index.md) |
 | Frontend auth flows | done | [0002](../../specs/web/0002-auth-flows/index.md) |
+| Group membership UI | in-progress | [0003](../../specs/web/0003-group-membership-ui/index.md) |
+
+## Group membership UI (in-progress)
+
+Builds every screen for the group lifecycle the backend already supports (api spec [0002](../../api/0002-group-membership/index.md)): a dashboard listing the user's groups, create a group, invite and accept by email, member list and edit, leave, a removal vote, and close. Today the dashboard is a bare placeholder with no group data at all; this is the first feature to give the app's core object, the group, any frontend surface.
+
+**Done when:** a user can create a group and land in it, invite someone by email and see pending invites, accept an invite (including logging in or registering first if needed), see the member list and edit group details, leave, propose and respond to a removal vote with a live tally, and close the group as its last member, all matching the acceptance criteria in spec [0003](../../specs/web/0003-group-membership-ui/index.md).
+
+- [x] Design it (spec): [0003](../../specs/web/0003-group-membership-ui/index.md)
+- [ ] Build it: /develop group membership UI
+  - [ ] Route scaffold, group feature folder, dashboard list, create group flow — AC-1, AC-2, AC-12
+  - [ ] Group detail: member list, edit group, invite flow (send, list, revoke) — AC-3, AC-6
+  - [ ] Public invite landing route, auth carry through, auto accept, terminal error states — AC-4, AC-5
+  - [ ] Leave and close flows, including the last active member and closed read only states — AC-7, AC-8
+  - [ ] Removal vote (propose, respond, live tally), offline mutation guard, i18n keys — AC-9, AC-10, AC-11, AC-13, AC-14
+- [ ] Verify it: /check verify group membership UI
+- [ ] Test it: /test group membership UI
 
 ## Frontend auth flows (done)
 
