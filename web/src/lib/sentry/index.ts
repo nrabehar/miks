@@ -11,7 +11,13 @@ export function initErrorReporting() {
 	Sentry.init({
 		dsn: env.VITE_SENTRY_DSN,
 		environment: env.VITE_APP_ENV,
-		integrations: [Sentry.browserTracingIntegration()],
+		// enableInp: false — our self hosted Rustrak ingest instance rejects
+		// the standalone span envelopes the SDK sends for INP (Interaction
+		// to Next Paint) web vitals, 400 "Missing event_id in envelope
+		// headers"; it doesn't support that envelope shape. This only
+		// silences that one non-user-facing telemetry type; error reporting
+		// and normal transaction tracing are unaffected.
+		integrations: [Sentry.browserTracingIntegration({ enableInp: false })],
 		tracesSampleRate: env.VITE_APP_ENV === "production" ? 0.1 : 1,
 		sendClientReports: false,
 	})
