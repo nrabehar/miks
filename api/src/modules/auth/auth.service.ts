@@ -16,6 +16,7 @@ import {
 import { randomUUID } from 'crypto';
 import { DeviceService } from './device.service';
 import { RegisterDto } from './dto/register.dto';
+import { VerificationService } from './verification.service';
 
 export interface AuthenticatedIdentity {
 	id: string;
@@ -40,6 +41,7 @@ export class AuthService {
 		private readonly tokenService: TokenService,
 		private readonly config: ConfigService,
 		private readonly deviceService: DeviceService,
+		private readonly verificationService: VerificationService,
 	) {}
 
 	async register(dto: RegisterDto): Promise<AuthenticatedIdentity> {
@@ -71,6 +73,8 @@ export class AuthService {
 				},
 			},
 		});
+
+		await this.verificationService.requestVerification(dto.email);
 
 		return this.toAuthenticatedIdentity(user, false);
 	}

@@ -58,7 +58,8 @@ export class VoteConfigService {
 		const current = { ...DEFAULT_VOTE_CONFIG, ...metadata.voteConfig };
 
 		const updated: VoteConfig = {
-			approvalThreshold: dto.approvalThreshold ?? current.approvalThreshold,
+			approvalThreshold:
+				dto.approvalThreshold ?? current.approvalThreshold,
 			minQuorum: dto.minQuorum ?? current.minQuorum,
 			durationHours: dto.durationHours ?? current.durationHours,
 		};
@@ -66,8 +67,10 @@ export class VoteConfigService {
 		await this.prisma.group.update({
 			where: { id: groupId },
 			data: {
-				metadata: { ...metadata, voteConfig: updated } as
-					unknown as Prisma.InputJsonValue,
+				metadata: {
+					...metadata,
+					voteConfig: updated,
+				} as unknown as Prisma.InputJsonValue,
 			},
 		});
 

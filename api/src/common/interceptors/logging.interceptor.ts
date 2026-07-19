@@ -5,6 +5,7 @@ import {
 	Logger,
 	NestInterceptor,
 } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -12,10 +13,13 @@ import { tap } from 'rxjs/operators';
 export class LoggingInterceptor implements NestInterceptor {
 	private readonly logger = new Logger('HTTP');
 
-	intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+	intercept(
+		context: ExecutionContext,
+		next: CallHandler,
+	): Observable<unknown> {
 		const ctx = context.switchToHttp();
-		const request = ctx.getRequest();
-		const response = ctx.getResponse();
+		const request = ctx.getRequest<Request>();
+		const response = ctx.getResponse<Response>();
 		const { method, originalUrl } = request;
 		const start = performance.now();
 
@@ -23,10 +27,23 @@ export class LoggingInterceptor implements NestInterceptor {
 			tap({
 				next: () =>
 					this.log(method, originalUrl, response.statusCode, start),
-				error: (error) =>
-					this.log(method, originalUrl, error?.status ?? 500, start),
+				error: (error: unknown) =>
+					this.log(method, originalUrl, this.statusOf(error), start),
 			}),
 		);
+	}
+
+	private statusOf(error: unknown): number {
+		if (
+			typeof error === 'object' &&
+			error !== null &&
+			'status' in error &&
+			typeof error.status === 'number'
+		) {
+			return error.status;
+		}
+
+		return 500;
 	}
 
 	private log(

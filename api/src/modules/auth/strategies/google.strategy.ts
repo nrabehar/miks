@@ -17,7 +17,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 			// strategy is ever invoked, so the placeholder is never actually used.
 			clientID: config.oauth.google.clientId || 'not-configured',
 			clientSecret: config.oauth.google.clientSecret || 'not-configured',
-			callbackURL: config.oauth.google.redirectUri || 'http://localhost/not-configured',
+			callbackURL:
+				config.oauth.google.redirectUri ||
+				'http://localhost/not-configured',
 			scope: ['profile', 'email'],
 		});
 	}
@@ -30,14 +32,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 	): Promise<void> {
 		try {
 			const email = profile.emails?.[0]?.value ?? null;
-			const identity = await this.authService.validateOAuthLogin('google', {
-				providerAccountId: profile.id,
-				email,
-				emailVerified: profile.emails?.[0]?.verified === true,
-				displayName: profile.displayName,
-				accessToken,
-				refreshToken,
-			});
+			const identity = await this.authService.validateOAuthLogin(
+				'google',
+				{
+					providerAccountId: profile.id,
+					email,
+					emailVerified: profile.emails?.[0]?.verified === true,
+					displayName: profile.displayName,
+					accessToken,
+					refreshToken,
+				},
+			);
 
 			done(null, identity);
 		} catch (error) {

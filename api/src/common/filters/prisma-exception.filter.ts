@@ -5,6 +5,7 @@ import {
 	ExceptionFilter,
 	HttpStatus,
 } from '@nestjs/common';
+import type { Request, Response } from 'express';
 
 const STATUS_BY_CODE: Record<string, number> = {
 	P2002: HttpStatus.CONFLICT,
@@ -19,8 +20,8 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 		host: ArgumentsHost,
 	) {
 		const ctx = host.switchToHttp();
-		const response = ctx.getResponse();
-		const request = ctx.getRequest();
+		const response = ctx.getResponse<Response>();
+		const request = ctx.getRequest<Request>();
 
 		const status = STATUS_BY_CODE[exception.code] ?? HttpStatus.BAD_REQUEST;
 		const target = (exception.meta?.target as string[] | undefined)?.join(

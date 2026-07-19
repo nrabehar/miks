@@ -52,7 +52,10 @@ export class MemberRemovalVoteResolver implements VoteResolver, OnModuleInit {
 			await this.audit.log({
 				eventType: 'MEMBER_REMOVED',
 				groupId: vote.groupId,
-				payload: { voteId: vote.id, targetMemberId: vote.targetMemberId },
+				payload: {
+					voteId: vote.id,
+					targetMemberId: vote.targetMemberId,
+				},
 			});
 		}
 	}

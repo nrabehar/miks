@@ -27,7 +27,13 @@ export class ProjectEntriesService {
 		member: GroupMember,
 		dto: RecordProjectEntryDto,
 	) {
-		return this.recordEntry(groupId, projectId, member, dto, 'PROJECT_REVENUE');
+		return this.recordEntry(
+			groupId,
+			projectId,
+			member,
+			dto,
+			'PROJECT_REVENUE',
+		);
 	}
 
 	async recordExpense(
@@ -36,7 +42,13 @@ export class ProjectEntriesService {
 		member: GroupMember,
 		dto: RecordProjectEntryDto,
 	) {
-		return this.recordEntry(groupId, projectId, member, dto, 'PROJECT_EXPENSE');
+		return this.recordEntry(
+			groupId,
+			projectId,
+			member,
+			dto,
+			'PROJECT_EXPENSE',
+		);
 	}
 
 	private async recordEntry(
@@ -193,9 +205,7 @@ export class ProjectEntriesService {
 		});
 
 		if (claimed.count === 0) {
-			throw new ConflictException(
-				'Only an ACTIVE project can be closed',
-			);
+			throw new ConflictException('Only an ACTIVE project can be closed');
 		}
 
 		const closed = await this.prisma.project.findUniqueOrThrow({

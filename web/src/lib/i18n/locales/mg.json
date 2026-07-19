@@ -57,6 +57,9 @@
 		},
 		"verifyBanner": {
 			"message": "Hamarino ny mailakao mba hiarovana ny kaontinao.",
+			"resend": "Alefaso indray ny mailaka",
+			"resendSent": "Nalefa ny mailaka.",
+			"resendError": "Nisy olana, andramo indray.",
 			"dismiss": "Afeno"
 		},
 		"verifyEmail": {

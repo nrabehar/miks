@@ -197,7 +197,12 @@ export class FlowRulesService {
 		const direction = sourceType === 'PROJECT_REVENUE' ? 'CREDIT' : 'DEBIT';
 
 		const rules = await tx.flowRule.findMany({
-			where: { groupId, sourceType, sourceRefId: projectId, active: true },
+			where: {
+				groupId,
+				sourceType,
+				sourceRefId: projectId,
+				active: true,
+			},
 			include: { destinations: { orderBy: { sortOrder: 'asc' } } },
 		});
 

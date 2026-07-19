@@ -16,9 +16,11 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
 			// FacebookAuthGuard checks the real config and blocks the route before this
 			// strategy is ever invoked, so the placeholder is never actually used.
 			clientID: config.oauth.facebook.clientId || 'not-configured',
-			clientSecret: config.oauth.facebook.clientSecret || 'not-configured',
+			clientSecret:
+				config.oauth.facebook.clientSecret || 'not-configured',
 			callbackURL:
-				config.oauth.facebook.redirectUri || 'http://localhost/not-configured',
+				config.oauth.facebook.redirectUri ||
+				'http://localhost/not-configured',
 			profileFields: ['id', 'displayName', 'emails'],
 			scope: ['email'],
 		});

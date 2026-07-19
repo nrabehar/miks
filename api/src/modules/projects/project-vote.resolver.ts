@@ -74,7 +74,11 @@ export class ProjectVoteResolver implements VoteResolver, OnModuleInit {
 		await this.audit.log({
 			eventType: 'PROJECT_VOTE_DECIDED',
 			groupId: vote.groupId,
-			payload: { voteId: vote.id, projectId: vote.projectId, status: decision },
+			payload: {
+				voteId: vote.id,
+				projectId: vote.projectId,
+				status: decision,
+			},
 		});
 
 		if (decision === 'REJECTED') {

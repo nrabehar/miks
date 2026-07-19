@@ -1,10 +1,10 @@
 import { ConfigService } from '$lib/config/config.service';
 import { PrismaService } from '$lib/database/prisma.service';
-import { PasswordService } from '$lib/password/password.service';
 import { JwtPayload, TokenService } from '$lib/auth-token/token.service';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { DeviceService } from './device.service';
+import { VerificationService } from './verification.service';
 
 function makePrisma() {
 	return {
@@ -69,6 +69,7 @@ describe('AuthService', () => {
 		verifyRefreshToken: jest.Mock;
 	};
 	let service: AuthService;
+	let verificationService: { requestVerification: jest.Mock };
 
 	beforeEach(() => {
 		prisma = makePrisma();
@@ -78,22 +79,26 @@ describe('AuthService', () => {
 			signRefreshToken: jest.fn(),
 			verifyRefreshToken: jest.fn(),
 		};
+		verificationService = { requestVerification: jest.fn() };
 
 		service = new AuthService(
 			prisma,
-			password as unknown as PasswordService,
+			password,
 			tokenService as unknown as TokenService,
 			makeConfig(),
 			{
 				revokeByDeviceId: jest.fn(),
 				touch: jest.fn(),
 			} as unknown as DeviceService,
+			verificationService as unknown as VerificationService,
 		);
 	});
 
 	describe('register', () => {
 		it('throws ConflictException when the identifier is already registered', async () => {
-			prisma.userIdentity.findUnique.mockResolvedValue({ id: 'existing' });
+			prisma.userIdentity.findUnique.mockResolvedValue({
+				id: 'existing',
+			});
 
 			await expect(
 				service.register({
@@ -144,6 +149,9 @@ describe('AuthService', () => {
 				emailVerified: false,
 			});
 			expect(result).not.toHaveProperty('secretHash');
+			expect(
+				verificationService.requestVerification,
+			).toHaveBeenCalledWith('ada@example.test');
 		});
 	});
 
@@ -460,9 +468,9 @@ describe('AuthService', () => {
 				throw new Error('invalid signature');
 			});
 
-			await expect(service.rotateSession('garbage')).rejects.toBeInstanceOf(
-				UnauthorizedException,
-			);
+			await expect(
+				service.rotateSession('garbage'),
+			).rejects.toBeInstanceOf(UnauthorizedException);
 		});
 
 		it('throws when the session no longer exists', async () => {

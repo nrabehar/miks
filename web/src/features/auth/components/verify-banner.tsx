@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import { isAxiosError } from "axios"
 import { X } from "lucide-react"
 import { Alert, AlertDescription } from "#/components/ui/alert"
 import { Button } from "#/components/ui/button"
-import { useMe } from "#/features/auth/hooks"
+import { useMe, useResendVerification } from "#/features/auth/hooks"
+import { useCooldown } from "#/features/auth/use-cooldown"
 
 const DISMISSED_KEY = "miks:verify-banner-dismissed"
 
@@ -17,6 +19,10 @@ export function VerifyBanner() {
 	const [dismissed, setDismissed] = useState(
 		() => sessionStorage.getItem(DISMISSED_KEY) === "1",
 	)
+	const resend = useResendVerification()
+	const cooldown = useCooldown()
+	const [sent, setSent] = useState(false)
+	const [error, setError] = useState(false)
 
 	if (!user || user.emailVerified || dismissed) return null
 
@@ -25,10 +31,52 @@ export function VerifyBanner() {
 		setDismissed(true)
 	}
 
+	async function handleResend() {
+		if (!user?.email) return
+
+		setError(false)
+
+		try {
+			await resend.mutateAsync(user.email)
+			setSent(true)
+		} catch (thrown) {
+			if (isAxiosError(thrown) && thrown.response?.status === 429) {
+				cooldown.start(60)
+				return
+			}
+
+			setError(true)
+		}
+	}
+
 	return (
 		<Alert className="rounded-none border-x-0 border-t-0">
 			<AlertDescription className="flex items-center justify-between gap-4">
-				<span>{t("auth.verifyBanner.message")}</span>
+				<span>
+					{t("auth.verifyBanner.message")}{" "}
+					{sent ? (
+						t("auth.verifyBanner.resendSent")
+					) : (
+						<Button
+							type="button"
+							variant="link"
+							className="h-auto p-0"
+							disabled={resend.isPending || cooldown.active}
+							onClick={handleResend}
+						>
+							{cooldown.active
+								? t("auth.verifyEmail.cooldown", {
+										seconds: cooldown.remaining,
+									})
+								: t("auth.verifyBanner.resend")}
+						</Button>
+					)}
+					{error && (
+						<span className="text-destructive block">
+							{t("auth.verifyBanner.resendError")}
+						</span>
+					)}
+				</span>
 				<Button
 					type="button"
 					variant="ghost"

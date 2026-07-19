@@ -3,7 +3,12 @@ import { PrismaService } from '$lib/database/prisma.service';
 import { ListQueryDto } from '$/groups/dto/list-query.dto';
 import { VoteConfigService } from '$/votes/vote-config.service';
 import { VotesService } from '$/votes/votes.service';
-import { Prisma, type GroupMember, type Project, type Vote } from '$prisma/client';
+import {
+	Prisma,
+	type GroupMember,
+	type Project,
+	type Vote,
+} from '$prisma/client';
 import {
 	ConflictException,
 	Injectable,
@@ -81,7 +86,9 @@ export class ProjectsService {
 					? await tx.project.update({
 							where: { id: created.id },
 							data: {
-								payoutVaultId: vaultNameToId.get(dto.payoutVaultName),
+								payoutVaultId: vaultNameToId.get(
+									dto.payoutVaultName,
+								),
 							},
 						})
 					: created;
@@ -200,7 +207,12 @@ export class ProjectsService {
 		}
 
 		const openExisting = await this.prisma.vote.findFirst({
-			where: { groupId, projectId, subjectType: 'PROJECT', status: 'OPEN' },
+			where: {
+				groupId,
+				projectId,
+				subjectType: 'PROJECT',
+				status: 'OPEN',
+			},
 		});
 
 		if (openExisting) {

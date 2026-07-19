@@ -17,7 +17,9 @@ export class GoogleAuthGuard extends AuthGuard('google') {
 			!this.config.oauth.google.clientId ||
 			!this.config.oauth.google.clientSecret
 		) {
-			throw new InternalServerErrorException('Google OAuth is not configured');
+			throw new InternalServerErrorException(
+				'Google OAuth is not configured',
+			);
 		}
 
 		return super.canActivate(context);

@@ -57,6 +57,9 @@
 		},
 		"verifyBanner": {
 			"message": "Vérifiez votre adresse e-mail pour sécuriser votre compte.",
+			"resend": "Renvoyer l'e-mail",
+			"resendSent": "E-mail envoyé.",
+			"resendError": "Une erreur est survenue, réessayez.",
 			"dismiss": "Masquer"
 		},
 		"verifyEmail": {
