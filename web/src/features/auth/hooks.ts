@@ -105,5 +105,9 @@ export function useLogout() {
 			queryClient.setQueryData(authKeys.me(), null)
 			queryClient.clear()
 		},
+		onError: () => {
+			queryClient.setQueryData(authKeys.me(), null)
+			queryClient.clear()
+		}
 	})
 }

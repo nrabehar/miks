@@ -6,6 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+	/* Light mode */
 	--background: oklch(0.985 0.003 250);
 	--foreground: oklch(0.18 0.02 250);
 
@@ -15,15 +16,18 @@
 	--popover: oklch(1 0 0);
 	--popover-foreground: oklch(0.18 0.02 250);
 
+	/* Bleu du logo */
 	--primary: oklch(0.56 0.18 250);
 	--primary-foreground: oklch(0.98 0 0);
 
+	/* Surface secondaire */
 	--secondary: oklch(0.95 0.01 250);
 	--secondary-foreground: oklch(0.30 0.04 250);
 
 	--muted: oklch(0.96 0.005 250);
 	--muted-foreground: oklch(0.50 0.02 250);
 
+	/* Orange du logo */
 	--accent: oklch(0.72 0.19 50);
 	--accent-foreground: oklch(0.98 0 0);
 
@@ -89,24 +93,29 @@
 }
 
 .dark {
+	/* Noir premium */
 	--background: oklch(0.12 0.01 250);
 	--foreground: oklch(0.96 0.005 250);
 
+	/* Cartes légèrement relevées */
 	--card: oklch(0.17 0.015 250);
 	--card-foreground: oklch(0.96 0.005 250);
 
 	--popover: oklch(0.17 0.015 250);
 	--popover-foreground: oklch(0.96 0.005 250);
 
+	/* Bleu principal */
 	--primary: oklch(0.67 0.18 245);
 	--primary-foreground: oklch(0.12 0.01 250);
 
+	/* Surface */
 	--secondary: oklch(0.22 0.01 250);
 	--secondary-foreground: oklch(0.96 0.005 250);
 
 	--muted: oklch(0.22 0.01 250);
 	--muted-foreground: oklch(0.72 0.015 250);
 
+	/* Orange signature */
 	--accent: oklch(0.76 0.20 50);
 	--accent-foreground: oklch(0.12 0.01 250);
 
@@ -118,12 +127,14 @@
 
 	--ring: oklch(0.67 0.18 245);
 
+	/* Charts */
 	--chart-1: oklch(0.67 0.18 245);
 	--chart-2: oklch(0.65 0.15 190);
 	--chart-3: oklch(0.76 0.20 50);
 	--chart-4: oklch(0.60 0.13 160);
 	--chart-5: oklch(0.52 0.12 275);
 
+	/* Sidebar */
 	--sidebar: oklch(0.10 0.01 250);
 	--sidebar-foreground: oklch(0.96 0.005 250);
 
@@ -203,10 +214,12 @@
 	}
 	html {
 		@apply font-sans w-full h-full;
+		/* Skill: ux-guidelines — smooth scroll HIGH severity */
 		scroll-behavior: smooth;
 	}
 }
 
+/* ─── Landing decorative blob animations ─── */
 @keyframes blob-up {
 	0%, 100% { transform: translateY(0) scale(1); }
 	50% { transform: translateY(-28px) scale(1.07); }

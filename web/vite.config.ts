@@ -76,7 +76,7 @@ export default defineConfig({
     // VITE_API_PATH can stay a relative path in every environment.
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL ?? 'http://localhost:3000',
+        target: process.env.VITE_API_URL ?? 'http://localhost:3001',
         changeOrigin: true,
         rewrite: (requestPath) => requestPath.replace(/^\/api/, ''),
       },
