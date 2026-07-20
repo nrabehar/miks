@@ -20,13 +20,19 @@ import { OAuthButtons } from "#/features/auth/components/oauth-buttons"
 import { useRegister } from "#/features/auth/hooks"
 import { registerSchema } from "#/features/auth/schema"
 
+const searchSchema = z.object({
+	redirect: z.string().optional(),
+})
+
 export const Route = createFileRoute("/auth/register")({
+	validateSearch: searchSchema,
 	component: RegisterPage,
 })
 
 function RegisterPage() {
 	const { t } = useTranslation()
 	const navigate = useNavigate()
+	const { redirect } = Route.useSearch()
 	const register = useRegister()
 
 	const form = useForm({
@@ -42,7 +48,7 @@ function RegisterPage() {
 	async function onSubmit(values: z.infer<typeof registerSchema>) {
 		try {
 			await register.mutateAsync(values)
-			await navigate({ to: "/" })
+			await navigate({ to: redirect ?? "/" })
 		} catch (error) {
 			const status = isAxiosError(error) ? error.response?.status : undefined
 			const message =

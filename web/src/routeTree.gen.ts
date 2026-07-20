@@ -17,7 +17,11 @@ import { Route as AuthOauthCallbackRouteImport } from './routes/auth/oauth-callb
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
+import { Route as InvitesTokenRouteImport } from './routes/invites/$token'
+import { Route as AuthenticatedGroupsGroupIdRouteImport } from './routes/_authenticated/groups/$groupId'
+import { Route as AuthenticatedGroupsNewRouteImport } from './routes/_authenticated/groups/new'
 import { Route as AuthenticatedSettingsSessionsRouteImport } from './routes/_authenticated/settings/sessions'
+import { Route as AuthenticatedGroupsGroupIdIndexRouteImport } from './routes/_authenticated/groups/$groupId/index'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -58,11 +62,33 @@ const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
   path: '/auth/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InvitesTokenRoute = InvitesTokenRouteImport.update({
+  id: '/invites/$token',
+  path: '/invites/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedGroupsGroupIdRoute =
+  AuthenticatedGroupsGroupIdRouteImport.update({
+    id: '/groups/$groupId',
+    path: '/groups/$groupId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedGroupsNewRoute = AuthenticatedGroupsNewRouteImport.update({
+  id: '/groups/new',
+  path: '/groups/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsSessionsRoute =
   AuthenticatedSettingsSessionsRouteImport.update({
     id: '/settings/sessions',
     path: '/settings/sessions',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedGroupsGroupIdIndexRoute =
+  AuthenticatedGroupsGroupIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedGroupsGroupIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -73,7 +99,11 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/invites/$token': typeof InvitesTokenRoute
+  '/groups/$groupId': typeof AuthenticatedGroupsGroupIdRouteWithChildren
+  '/groups/new': typeof AuthenticatedGroupsNewRoute
   '/settings/sessions': typeof AuthenticatedSettingsSessionsRoute
+  '/groups/$groupId/': typeof AuthenticatedGroupsGroupIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -82,8 +112,11 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/invites/$token': typeof InvitesTokenRoute
   '/': typeof AuthenticatedIndexRoute
+  '/groups/new': typeof AuthenticatedGroupsNewRoute
   '/settings/sessions': typeof AuthenticatedSettingsSessionsRoute
+  '/groups/$groupId': typeof AuthenticatedGroupsGroupIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -94,8 +127,12 @@ export interface FileRoutesById {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/invites/$token': typeof InvitesTokenRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/groups/$groupId': typeof AuthenticatedGroupsGroupIdRouteWithChildren
+  '/_authenticated/groups/new': typeof AuthenticatedGroupsNewRoute
   '/_authenticated/settings/sessions': typeof AuthenticatedSettingsSessionsRoute
+  '/_authenticated/groups/$groupId/': typeof AuthenticatedGroupsGroupIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,7 +144,11 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/reset-password'
     | '/auth/verify-email'
+    | '/invites/$token'
+    | '/groups/$groupId'
+    | '/groups/new'
     | '/settings/sessions'
+    | '/groups/$groupId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth/forgot-password'
@@ -116,8 +157,11 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/reset-password'
     | '/auth/verify-email'
+    | '/invites/$token'
     | '/'
+    | '/groups/new'
     | '/settings/sessions'
+    | '/groups/$groupId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -127,8 +171,12 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/reset-password'
     | '/auth/verify-email'
+    | '/invites/$token'
     | '/_authenticated/'
+    | '/_authenticated/groups/$groupId'
+    | '/_authenticated/groups/new'
     | '/_authenticated/settings/sessions'
+    | '/_authenticated/groups/$groupId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -139,6 +187,7 @@ export interface RootRouteChildren {
   AuthRegisterRoute: typeof AuthRegisterRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
+  InvitesTokenRoute: typeof InvitesTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -199,6 +248,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthVerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invites/$token': {
+      id: '/invites/$token'
+      path: '/invites/$token'
+      fullPath: '/invites/$token'
+      preLoaderRoute: typeof InvitesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/groups/$groupId': {
+      id: '/_authenticated/groups/$groupId'
+      path: '/groups/$groupId'
+      fullPath: '/groups/$groupId'
+      preLoaderRoute: typeof AuthenticatedGroupsGroupIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/groups/new': {
+      id: '/_authenticated/groups/new'
+      path: '/groups/new'
+      fullPath: '/groups/new'
+      preLoaderRoute: typeof AuthenticatedGroupsNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings/sessions': {
       id: '/_authenticated/settings/sessions'
       path: '/settings/sessions'
@@ -206,16 +276,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsSessionsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/groups/$groupId/': {
+      id: '/_authenticated/groups/$groupId/'
+      path: '/'
+      fullPath: '/groups/$groupId/'
+      preLoaderRoute: typeof AuthenticatedGroupsGroupIdIndexRouteImport
+      parentRoute: typeof AuthenticatedGroupsGroupIdRoute
+    }
   }
 }
 
+interface AuthenticatedGroupsGroupIdRouteChildren {
+  AuthenticatedGroupsGroupIdIndexRoute: typeof AuthenticatedGroupsGroupIdIndexRoute
+}
+
+const AuthenticatedGroupsGroupIdRouteChildren: AuthenticatedGroupsGroupIdRouteChildren =
+  {
+    AuthenticatedGroupsGroupIdIndexRoute: AuthenticatedGroupsGroupIdIndexRoute,
+  }
+
+const AuthenticatedGroupsGroupIdRouteWithChildren =
+  AuthenticatedGroupsGroupIdRoute._addFileChildren(
+    AuthenticatedGroupsGroupIdRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedGroupsGroupIdRoute: typeof AuthenticatedGroupsGroupIdRouteWithChildren
+  AuthenticatedGroupsNewRoute: typeof AuthenticatedGroupsNewRoute
   AuthenticatedSettingsSessionsRoute: typeof AuthenticatedSettingsSessionsRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedGroupsGroupIdRoute: AuthenticatedGroupsGroupIdRouteWithChildren,
+  AuthenticatedGroupsNewRoute: AuthenticatedGroupsNewRoute,
   AuthenticatedSettingsSessionsRoute: AuthenticatedSettingsSessionsRoute,
 }
 
@@ -231,6 +326,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRegisterRoute: AuthRegisterRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthVerifyEmailRoute: AuthVerifyEmailRoute,
+  InvitesTokenRoute: InvitesTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
