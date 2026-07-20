@@ -10,6 +10,7 @@ import {
 	UnprocessableEntityException,
 } from '@nestjs/common';
 import { ProposeRemovalVoteDto } from './dto/propose-removal-vote.dto';
+import { ListQueryDto } from './dto/list-query.dto';
 
 const APPROVAL_THRESHOLD_FLOOR = 50;
 
@@ -103,5 +104,51 @@ export class RemovalVotesService {
 		});
 
 		return vote;
+	}
+
+	/**
+	 * Lists a group's currently open MEMBER_REMOVAL votes, each with its full
+	 * responses tally (same shape as VotesService.get), so a member other than
+	 * the proposer can find and respond to a vote without already knowing its
+	 * id (AC-15). Lazily resolves each candidate past its scheduledCloseAt via
+	 * VotesService.resolveVote before filtering to what is still open, then
+	 * batches every listed vote's VoteResponse rows in one query, never one
+	 * query per vote.
+	 */
+	async listOpen(groupId: string, query: ListQueryDto) {
+		const page = query.page ?? 1;
+		const limit = query.limit ?? 20;
+
+		const candidates = await this.prisma.vote.findMany({
+			where: { groupId, subjectType: 'MEMBER_REMOVAL', status: 'OPEN' },
+			orderBy: { scheduledCloseAt: 'asc' },
+		});
+
+		const resolved = await Promise.all(
+			candidates.map((candidate) => this.votes.resolveVote(candidate.id)),
+		);
+		const stillOpen = resolved.filter((vote) => vote.status === 'OPEN');
+
+		const total = stillOpen.length;
+		const pageItems = stillOpen.slice(
+			(page - 1) * limit,
+			(page - 1) * limit + limit,
+		);
+
+		const responses = await this.prisma.voteResponse.findMany({
+			where: { voteId: { in: pageItems.map((vote) => vote.id) } },
+		});
+
+		const data = pageItems.map((vote) => {
+			const tally = { FOR: 0, AGAINST: 0, ABSTAIN: 0 };
+			const voteResponses = responses.filter((r) => r.voteId === vote.id);
+			for (const response of voteResponses) {
+				tally[response.choice]++;
+			}
+
+			return { ...vote, responses: voteResponses, tally };
+		});
+
+		return { data, page, limit, total };
 	}
 }

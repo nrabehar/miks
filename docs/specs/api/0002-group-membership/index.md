@@ -1,11 +1,13 @@
 # 0002. Group membership (creation, invites, leaving, vote based removal, closure)
 
-**Date**: 2026-07-17
+**Date**: 2026-07-17 (removal vote discovery API addendum 2026-07-20)
 **Status**: Accepted
 
 ## Summary
 
 This spec designs MIKS's group module: creating a group, inviting and joining it by email, editing its basic details, leaving it, and the two ways a membership can end against someone's will: a formal vote to remove a member, or the last remaining member closing the group outright. The product's own rule is that MIKS imposes no hierarchical role inside a group (no admin, no owner), so every active member has the same rights, and the platform's only formal decision tool, the Vote, is reused (not reinvented) to remove a member. This is a foundational module: contributions, projects, and votes all depend on a group and its members existing first.
+
+**2026-07-20 addendum**: adds one small, purely additive endpoint, `GET /groups/:id/removal-votes`, so a member can find a group's currently open removal vote(s) without already knowing a vote's id. Building the web UI for this spec (spec [0003](../../web/0003-group-membership-ui/index.md)) found this gap: the original API only let the proposer of a vote know its id; nobody else had a way to look it up, so a live tally could never actually be shown to "everyone else" as AC-10 already promises. No schema change, no migration. Details below and in `## Requirements`, `## Feature design`, and `## Build plan`.
 
 ## Requirements
 
@@ -33,6 +35,7 @@ This spec designs MIKS's group module: creating a group, inviting and joining it
 - **AC-12**: Any active member can edit the group's name, description, and currency code, as long as the group is not closed.
 - **AC-13**: No group's data (group record, membership list, invites, votes) is ever readable or actionable by a user who is not one of its active members, including a platform `ADMIN`; the request is rejected the same way a non member's would be, with no special case for `ADMIN`.
 - **AC-14**: Every membership relevant event (group created, invite sent, invite accepted, invite revoked, invite expired, member left, removal vote proposed, removal vote decided, member removed, group closed, group edited) is written to the existing immutable audit log.
+- **AC-15** (2026-07-20 addendum): Any active member can list a group's currently open removal vote(s) in one call (each with its live tally), so a member other than the proposer can find and respond to a vote without already knowing its id.
 
 ## Options considered
 
@@ -87,6 +90,7 @@ Reasoning and options: see [rationale.md](rationale.md).
 | /groups/:id/members/:memberId/removal-votes | POST | approvalThreshold, minQuorum, durationHours | vote id | bearer, active member, not the target | 403 not a member, 403 targeting self, 409 open removal vote already exists for this member, 422 quorum/threshold below the mandatory floor, 422 fewer than 2 other active members |
 | /votes/:voteId/responses | POST | choice (FOR/AGAINST/ABSTAIN) | 200 | bearer, active member, not the vote's target | 403 target voting on own removal, 409 vote already closed |
 | /votes/:voteId | GET | | vote detail, responses tally, status | bearer, active member of the vote's group | 403 not a member |
+| /groups/:id/removal-votes (2026-07-20 addendum) | GET | page, limit | this group's currently open `MEMBER_REMOVAL` votes (paginated), each with its full responses tally, same shape as `GET /votes/:voteId` | bearer, active member | 403 not a member |
 
 **Key invariants**:
 - A `GroupMember` row for a given `(groupId, userId)` is unique among rows with `status = ACTIVE` (a `LEFT` history row for the same pair can coexist with a later new `ACTIVE` row).
@@ -97,6 +101,7 @@ Reasoning and options: see [rationale.md](rationale.md).
 - A `MEMBER_REMOVAL` vote's `minQuorum` can never be set below a bare majority of the group's active members excluding the target, and its `approvalThreshold` can never be set below 50%; this floor exists specifically so a 2 member group's sole other member cannot single handedly engineer a removal by setting quorum to just themselves. The proposer may set stricter (higher) values, never looser ones.
 - Once `Group.status = CLOSED`, no new `GroupMember`, `GroupInvite`, `Vote`, `Contribution`, or `Project` row can be created for that group; existing rows stay fully readable.
 - A member's `Contribution` history, `MemberShareCache` percentage, and withdrawable `Vault` balance are never modified by leaving or being removed; they freeze at their last computed value.
+- **2026-07-20 addendum**: `GET /groups/:id/removal-votes` applies the same lazy resolution as `GET /votes/:voteId` (a vote past its `scheduledCloseAt` is resolved before being read, so a stale, effectively closed vote never appears in the "open" list); its tally computation batches every listed vote's responses in one query, never one query per vote, the same N+1 avoidance already used by every other list endpoint in this spec.
 
 **Security model**:
 - A new `GroupMembershipGuard` (in `src/common/guards/`, alongside the existing `JwtAuthGuard`/`RolesGuard` from spec 0001) resolves the caller's `GroupMember` row for the `:id`/`:groupId` in the route and rejects (403) if it is missing or not `ACTIVE`. This guard runs in addition to, never instead of, `JwtAuthGuard`.
@@ -128,6 +133,7 @@ No project wide build approach is recorded in `AGENTS.md` or a scope header (sam
 6. Generalize the `Vote`/`VoteResponse` service to a shared subject type dispatch, and add `POST /groups/:id/members/:memberId/removal-votes`, `POST /votes/:voteId/responses`, `GET /votes/:voteId`, including the self vote exclusion and the auto status flip on `APPROVED`, satisfies **AC-9**, **AC-10**, **AC-11**.
 7. Build `POST /groups/:id/close`, gated on active member count == 1, satisfies **AC-8**.
 8. Wire audit log entries (`EventCategory.MEMBER`) for every event listed in AC-14, at each of the mutation points built above, satisfies **AC-14**.
+9. **(2026-07-20 addendum)** Add `GET /groups/:id/removal-votes` to `GroupsController`/`RemovalVotesService` (`ListQueryDto` page/limit, defaults 1/20): query `Vote` by `groupId`+`subjectType = MEMBER_REMOVAL`+`status = OPEN`, lazily resolve any past `scheduledCloseAt` via the existing `VotesService.resolveVote` before filtering to what is still open, then batch load every listed vote's `VoteResponse` rows in one query to compute each tally, no per vote query. No migration, no new module. Satisfies **AC-15**.
 
 ## Consequences
 
@@ -141,6 +147,7 @@ No project wide build approach is recorded in `AGENTS.md` or a scope header (sam
 - The `Vote` model's `projectId` becoming nullable, plus the new `groupId`/`targetMemberId`/`subjectType` columns, is a real migration against an existing model; any code that already assumed `Vote.projectId` is always present (none exists yet, since no vote controller has been built) would need updating, though today that risk is zero.
 - Platform support/moderation has no technical lever inside a group at all (per AC-13); handling abuse (fraud, harassment) currently requires database level intervention, not an in app action. This is a deliberate, documented gap, not an oversight (see rationale.md), and is tracked below.
 - A closed group is permanently read only in this spec; there is no reopening path, so a group closed by mistake has no in app recovery.
+- **2026-07-20 addendum**: the frontend now has to make one extra request (`GET /groups/:id/removal-votes`) and match `targetMemberId` to a member row itself, rather than the API doing that matching; accepted because it avoids an N+1 request pattern for what is realistically always a very short list (see `rationale.md`'s addendum).
 
 **Neutral**:
 - Introduces one new module, `src/modules/groups/`, and one new shared guard, `GroupMembershipGuard`, following the existing `src/modules/<name>/` and `src/common/guards/` conventions from spec 0001.
@@ -156,3 +163,4 @@ No project wide build approach is recorded in `AGENTS.md` or a scope header (sam
 - [ ] Once a project wide `AGENTS.md` records a build approach, reconcile the `## Build plan` ordering above against it if different from the assumed end to end default (same open item spec 0001 already flags).
 - [ ] The product document (section 5, on votes) frames the Vote mechanism as exclusively for project approval; this spec deliberately extends it to member removal too (see rationale.md), which is a conscious broadening, not a literal reading of that section. Worth a quick confirmation with the product owner that this extension is welcome.
 - [ ] Invite acceptance matches on `User.email`; a user with no email on their account (only possible if a phone only or OAuth-without-email path exists) cannot accept an invite. Not reachable today since phone registration is deferred (spec 0001) and OAuth already requires a verified email, but revisit if phone auth returns.
+- [x] **(2026-07-20 addendum)** `GET /groups/:id/removal-votes` closes the vote discovery gap this Follow-up list did not originally flag; once built, the group membership UI (web spec [0003](../../web/0003-group-membership-ui/index.md)) can finish its blocked AC-9/AC-10/AC-11 work against it.

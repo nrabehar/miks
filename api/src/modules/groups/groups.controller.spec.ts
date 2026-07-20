@@ -40,7 +40,7 @@ describe('GroupsController', () => {
 			list: jest.fn(),
 			revoke: jest.fn(),
 		};
-		votes = { proposeRemoval: jest.fn() };
+		votes = { proposeRemoval: jest.fn(), listOpen: jest.fn() };
 
 		controller = new GroupsController(
 			groups as unknown as GroupsService,
@@ -53,18 +53,26 @@ describe('GroupsController', () => {
 		groups.create.mockResolvedValue({ id: 'group-1' });
 		const dto = { name: 'My Group', currencyCode: 'MGA' };
 
-		const result = await controller.create(user, dto as never);
+		const result = await controller.create(user, dto);
 
 		expect(groups.create).toHaveBeenCalledWith('user-1', dto);
 		expect(result).toEqual({ id: 'group-1' });
 	});
 
 	it('list delegates to GroupsService.listForUser with the caller id and query', async () => {
-		groups.listForUser.mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 });
+		groups.listForUser.mockResolvedValue({
+			data: [],
+			page: 1,
+			limit: 20,
+			total: 0,
+		});
 
 		await controller.list(user, { page: 1, limit: 20 });
 
-		expect(groups.listForUser).toHaveBeenCalledWith('user-1', { page: 1, limit: 20 });
+		expect(groups.listForUser).toHaveBeenCalledWith('user-1', {
+			page: 1,
+			limit: 20,
+		});
 	});
 
 	it('get delegates to GroupsService.get with the route param', async () => {
@@ -79,20 +87,28 @@ describe('GroupsController', () => {
 		const dto = { name: 'Renamed' };
 		groups.update.mockResolvedValue({ id: 'group-1', name: 'Renamed' });
 
-		await controller.update('group-1', user, dto as never);
+		await controller.update('group-1', user, dto);
 
 		expect(groups.update).toHaveBeenCalledWith('group-1', 'user-1', dto);
 	});
 
 	it('listMembers delegates to GroupsService.listMembers', async () => {
-		groups.listMembers.mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 });
+		groups.listMembers.mockResolvedValue({
+			data: [],
+			page: 1,
+			limit: 20,
+			total: 0,
+		});
 
 		await controller.listMembers('group-1', { page: 1, limit: 20 });
 
-		expect(groups.listMembers).toHaveBeenCalledWith('group-1', { page: 1, limit: 20 });
+		expect(groups.listMembers).toHaveBeenCalledWith('group-1', {
+			page: 1,
+			limit: 20,
+		});
 	});
 
-	it('leave delegates to GroupsService.leave with the caller\'s membership (AC-7)', async () => {
+	it("leave delegates to GroupsService.leave with the caller's membership (AC-7)", async () => {
 		await controller.leave('group-1', member);
 
 		expect(groups.leave).toHaveBeenCalledWith('group-1', member);
@@ -116,20 +132,32 @@ describe('GroupsController', () => {
 	});
 
 	it('listInvites delegates to InvitesService.list', async () => {
-		invites.list.mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 });
+		invites.list.mockResolvedValue({
+			data: [],
+			page: 1,
+			limit: 20,
+			total: 0,
+		});
 
 		await controller.listInvites('group-1', { page: 1, limit: 20 });
 
-		expect(invites.list).toHaveBeenCalledWith('group-1', { page: 1, limit: 20 });
+		expect(invites.list).toHaveBeenCalledWith('group-1', {
+			page: 1,
+			limit: 20,
+		});
 	});
 
 	it('revokeInvite delegates to InvitesService.revoke (AC-4)', async () => {
 		await controller.revokeInvite('group-1', 'invite-1', member);
 
-		expect(invites.revoke).toHaveBeenCalledWith('group-1', 'invite-1', member);
+		expect(invites.revoke).toHaveBeenCalledWith(
+			'group-1',
+			'invite-1',
+			member,
+		);
 	});
 
-	it('proposeRemovalVote delegates to VotesService.proposeRemoval using the caller\'s own group id (AC-9)', async () => {
+	it("proposeRemovalVote delegates to VotesService.proposeRemoval using the caller's own group id (AC-9)", async () => {
 		const dto = { approvalThreshold: 50, minQuorum: 2, durationHours: 24 };
 		votes.proposeRemoval.mockResolvedValue({ id: 'vote-1' });
 
@@ -141,5 +169,21 @@ describe('GroupsController', () => {
 			member,
 			dto,
 		);
+	});
+
+	it('listRemovalVotes delegates to RemovalVotesService.listOpen (AC-15)', async () => {
+		votes.listOpen.mockResolvedValue({
+			data: [],
+			page: 1,
+			limit: 20,
+			total: 0,
+		});
+
+		await controller.listRemovalVotes('group-1', { page: 1, limit: 20 });
+
+		expect(votes.listOpen).toHaveBeenCalledWith('group-1', {
+			page: 1,
+			limit: 20,
+		});
 	});
 });

@@ -12,10 +12,12 @@ import { RemovalVotesService } from './removal-votes.service';
 function makePrisma() {
 	return {
 		groupMember: { findFirst: jest.fn(), count: jest.fn() },
-		vote: { findFirst: jest.fn() },
+		vote: { findFirst: jest.fn(), findMany: jest.fn() },
+		voteResponse: { findMany: jest.fn() },
 	} as unknown as PrismaService & {
 		groupMember: { findFirst: jest.Mock; count: jest.Mock };
-		vote: { findFirst: jest.Mock };
+		vote: { findFirst: jest.Mock; findMany: jest.Mock };
+		voteResponse: { findMany: jest.Mock };
 	};
 }
 
@@ -26,8 +28,12 @@ function makeAudit() {
 }
 
 function makeVotes() {
-	return { open: jest.fn() } as unknown as VotesService & {
+	return {
+		open: jest.fn(),
+		resolveVote: jest.fn(),
+	} as unknown as VotesService & {
 		open: jest.Mock;
+		resolveVote: jest.Mock;
 	};
 }
 
@@ -48,12 +54,11 @@ describe('RemovalVotesService', () => {
 
 	it('rejects a member proposing removal against themselves with 403 (AC-9)', async () => {
 		await expect(
-			service.proposeRemoval(
-				'group-1',
-				proposer.id,
-				proposer as never,
-				{ approvalThreshold: 50, minQuorum: 2, durationHours: 24 },
-			),
+			service.proposeRemoval('group-1', proposer.id, proposer as never, {
+				approvalThreshold: 50,
+				minQuorum: 2,
+				durationHours: 24,
+			}),
 		).rejects.toThrow(ForbiddenException);
 	});
 
@@ -61,12 +66,11 @@ describe('RemovalVotesService', () => {
 		prisma.groupMember.findFirst.mockResolvedValue(null);
 
 		await expect(
-			service.proposeRemoval(
-				'group-1',
-				'target-1',
-				proposer as never,
-				{ approvalThreshold: 50, minQuorum: 2, durationHours: 24 },
-			),
+			service.proposeRemoval('group-1', 'target-1', proposer as never, {
+				approvalThreshold: 50,
+				minQuorum: 2,
+				durationHours: 24,
+			}),
 		).rejects.toThrow(NotFoundException);
 	});
 
@@ -75,12 +79,11 @@ describe('RemovalVotesService', () => {
 		prisma.groupMember.count.mockResolvedValue(2);
 
 		await expect(
-			service.proposeRemoval(
-				'group-1',
-				'target-1',
-				proposer as never,
-				{ approvalThreshold: 50, minQuorum: 1, durationHours: 24 },
-			),
+			service.proposeRemoval('group-1', 'target-1', proposer as never, {
+				approvalThreshold: 50,
+				minQuorum: 1,
+				durationHours: 24,
+			}),
 		).rejects.toThrow(UnprocessableEntityException);
 	});
 
@@ -90,12 +93,11 @@ describe('RemovalVotesService', () => {
 		prisma.vote.findFirst.mockResolvedValue({ id: 'existing-vote' });
 
 		await expect(
-			service.proposeRemoval(
-				'group-1',
-				'target-1',
-				proposer as never,
-				{ approvalThreshold: 50, minQuorum: 2, durationHours: 24 },
-			),
+			service.proposeRemoval('group-1', 'target-1', proposer as never, {
+				approvalThreshold: 50,
+				minQuorum: 2,
+				durationHours: 24,
+			}),
 		).rejects.toThrow(ConflictException);
 	});
 
@@ -105,12 +107,11 @@ describe('RemovalVotesService', () => {
 		prisma.vote.findFirst.mockResolvedValue(null);
 
 		await expect(
-			service.proposeRemoval(
-				'group-1',
-				'target-1',
-				proposer as never,
-				{ approvalThreshold: 50, minQuorum: 1, durationHours: 24 },
-			),
+			service.proposeRemoval('group-1', 'target-1', proposer as never, {
+				approvalThreshold: 50,
+				minQuorum: 1,
+				durationHours: 24,
+			}),
 		).rejects.toThrow(UnprocessableEntityException);
 	});
 
@@ -120,12 +121,11 @@ describe('RemovalVotesService', () => {
 		prisma.vote.findFirst.mockResolvedValue(null);
 
 		await expect(
-			service.proposeRemoval(
-				'group-1',
-				'target-1',
-				proposer as never,
-				{ approvalThreshold: 30, minQuorum: 2, durationHours: 24 },
-			),
+			service.proposeRemoval('group-1', 'target-1', proposer as never, {
+				approvalThreshold: 30,
+				minQuorum: 2,
+				durationHours: 24,
+			}),
 		).rejects.toThrow(UnprocessableEntityException);
 	});
 
@@ -153,7 +153,81 @@ describe('RemovalVotesService', () => {
 			durationHours: 24,
 		});
 		expect(audit.log).toHaveBeenCalledWith(
-			expect.objectContaining({ eventType: 'MEMBER_REMOVAL_VOTE_PROPOSED' }),
+			expect.objectContaining({
+				eventType: 'MEMBER_REMOVAL_VOTE_PROPOSED',
+			}),
 		);
+	});
+
+	describe('listOpen (AC-15)', () => {
+		it('resolves each candidate lazily, drops ones no longer open, and tallies the rest in one batch query', async () => {
+			const stillOpen = { id: 'vote-1', status: 'OPEN' };
+			const nowResolved = { id: 'vote-2', status: 'APPROVED' };
+			prisma.vote.findMany.mockResolvedValue([
+				{ id: 'vote-1', status: 'OPEN' },
+				{ id: 'vote-2', status: 'OPEN' },
+			]);
+			votes.resolveVote.mockImplementation((id: string) =>
+				Promise.resolve(id === 'vote-1' ? stillOpen : nowResolved),
+			);
+			prisma.voteResponse.findMany.mockResolvedValue([
+				{ voteId: 'vote-1', memberId: 'm-1', choice: 'FOR' },
+				{ voteId: 'vote-1', memberId: 'm-2', choice: 'AGAINST' },
+			]);
+
+			const result = await service.listOpen('group-1', {});
+
+			expect(votes.resolveVote).toHaveBeenCalledWith('vote-1');
+			expect(votes.resolveVote).toHaveBeenCalledWith('vote-2');
+			expect(prisma.voteResponse.findMany).toHaveBeenCalledWith({
+				where: { voteId: { in: ['vote-1'] } },
+			});
+			expect(result).toEqual({
+				data: [
+					{
+						...stillOpen,
+						responses: [
+							{
+								voteId: 'vote-1',
+								memberId: 'm-1',
+								choice: 'FOR',
+							},
+							{
+								voteId: 'vote-1',
+								memberId: 'm-2',
+								choice: 'AGAINST',
+							},
+						],
+						tally: { FOR: 1, AGAINST: 1, ABSTAIN: 0 },
+					},
+				],
+				page: 1,
+				limit: 20,
+				total: 1,
+			});
+		});
+
+		it('paginates the still-open list after resolution', async () => {
+			prisma.vote.findMany.mockResolvedValue([
+				{ id: 'vote-1', status: 'OPEN' },
+				{ id: 'vote-2', status: 'OPEN' },
+				{ id: 'vote-3', status: 'OPEN' },
+			]);
+			votes.resolveVote.mockImplementation((id: string) =>
+				Promise.resolve({ id, status: 'OPEN' }),
+			);
+			prisma.voteResponse.findMany.mockResolvedValue([]);
+
+			const result = await service.listOpen('group-1', {
+				page: 2,
+				limit: 2,
+			});
+
+			expect(result.total).toBe(3);
+			expect(result.page).toBe(2);
+			expect(result.limit).toBe(2);
+			expect(result.data).toHaveLength(1);
+			expect(result.data[0].id).toBe('vote-3');
+		});
 	});
 });

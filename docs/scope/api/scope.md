@@ -5,7 +5,7 @@
 | Feature | Status | Spec |
 |---|---|---|
 | Authentication | in-progress | [0001](../../specs/api/0001-authentication/index.md) |
-| Group membership | done | [0002](../../specs/api/0002-group-membership/index.md) |
+| Group membership | in-progress | [0002](../../specs/api/0002-group-membership/index.md) |
 | Vaults, contributions, flow rules, and shares | done | [0003](../../specs/api/0003-vaults-contributions-flows/index.md) |
 | Projects | done | [0004](../../specs/api/0004-projects/index.md) |
 | Member notifications | in-progress | [0005](../../specs/api/0005-member-notifications/index.md) |
@@ -34,7 +34,7 @@ Sign up and log in with email + password or OAuth (Google, Facebook), backed by 
 - [ ] Verify it: /check verify authentication (device aware sessions)
 - [ ] Test it: /test authentication (device aware sessions)
 
-## Group membership (done)
+## Group membership (in-progress)
 
 Create a group, invite and join it by email, edit its basic details, leave it, and the two ways a membership can end against someone's will: a formal vote to remove a member, or the last remaining member closing the group outright. MIKS imposes no hierarchical role inside a group, so every active member has the same rights, and group data is fully isolated, with zero exception even for a platform admin. This is a foundational module: contributions, projects, and votes all depend on a group and its members existing first.
 
@@ -49,6 +49,10 @@ Create a group, invite and join it by email, edit its basic details, leave it, a
   - [x] Group closure by the last active member + audit logging of every membership event — AC-8, AC-14
 - [x] Verify it: /check verify group membership (re-run after /debug's fix; the mail-delivery-failure bug is confirmed gone, no orphaned invite on a failed send, retry no longer hits a false 409)
 - [x] Test it: /test group membership
+- [x] Build it: /develop group membership — removal vote discovery API (2026-07-20 addendum, spec [0002](../../specs/api/0002-group-membership/index.md)), found while building the web group membership UI's blocked removal vote screen (spec [0003](../../web/0003-group-membership-ui/index.md)) — code in `api/src/modules/groups/removal-votes.service.ts`, `groups.controller.ts`
+  - [x] `GET /groups/:id/removal-votes` on `GroupsController`/`RemovalVotesService`, paginated, lazily resolved, batched tally — AC-15
+- [x] Verify it: /check verify group membership (removal vote discovery addendum) — live pass 2026-07-20: discovery, batched tally, lazy resolution exclusion, and group isolation all directly re-exercised against a real running server and DB
+- [ ] Test it: /test group membership (removal vote discovery addendum)
 
 ## Vaults, contributions, flow rules, and shares (done)
 

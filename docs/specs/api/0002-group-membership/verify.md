@@ -24,6 +24,12 @@ _Steps derived from spec 0002 acceptance criteria. `/check verify` runs these; `
 - [ ] A user who is not a member of group X calls `GET /groups/X` → 403; the same call as a platform `ADMIN` (not a member of X) → identical 403 → AC-13
 - [ ] After each mutating call above (create, invite sent/accepted/revoked/expired, leave, propose/decide vote, remove, close, edit), query `audit_log` for a matching `event_type`/`group_id` row → AC-14
 
+## 2026-07-20 addendum: removal vote discovery API
+
+- [ ] Propose a removal vote as member A against member C; as a different member B (neither the proposer nor the target), call `GET /groups/:id/removal-votes` → 200, the list includes the open vote with `targetMemberId` = C's member id and a live tally → AC-15
+- [ ] Backdate that vote's `scheduledCloseAt` into the past, then call `GET /groups/:id/removal-votes` again → the now resolved vote no longer appears in the list → AC-15
+- [ ] A user who is not an active member of the group calls `GET /groups/:id/removal-votes` → 403 → AC-15
+
 ## Acceptance-criteria coverage
 
-- AC-1 group creation + creator auto-join + invalid currency · AC-2 invite creation + email send · AC-3 invite accept + email match · AC-4 invite revoke · AC-5 invite expiry/consumption/race · AC-6 unique-active-membership + rejoin · AC-7 voluntary leave + last-member block · AC-8 group closure + read-only after · AC-9 removal vote proposal + quorum/threshold floor · AC-10 target exclusion from voting · AC-11 lazy vote evaluation + frozen balances · AC-12 group edit + closed-group block · AC-13 zero-exception group isolation (incl. ADMIN) · AC-14 audit log coverage
+- AC-1 group creation + creator auto-join + invalid currency · AC-2 invite creation + email send · AC-3 invite accept + email match · AC-4 invite revoke · AC-5 invite expiry/consumption/race · AC-6 unique-active-membership + rejoin · AC-7 voluntary leave + last-member block · AC-8 group closure + read-only after · AC-9 removal vote proposal + quorum/threshold floor · AC-10 target exclusion from voting · AC-11 lazy vote evaluation + frozen balances · AC-12 group edit + closed-group block · AC-13 zero-exception group isolation (incl. ADMIN) · AC-14 audit log coverage · AC-15 (2026-07-20 addendum) removal vote discovery, list scoping, and lazy resolution exclusion

@@ -118,4 +118,10 @@ export class GroupsController {
 	) {
 		return this.votes.proposeRemoval(member.groupId, memberId, member, dto);
 	}
+
+	@UseGuards(GroupMembershipGuard)
+	@Get(':id/removal-votes')
+	listRemovalVotes(@Param('id') id: string, @Query() query: ListQueryDto) {
+		return this.votes.listOpen(id, query);
+	}
 }
