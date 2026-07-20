@@ -66,6 +66,57 @@ export const invitePreviewSchema = z.object({
 
 export type InvitePreview = z.infer<typeof invitePreviewSchema>
 
+// Mirrors Vote/VoteResponse (api/prisma/models/vote.prisma). Only the
+// MEMBER_REMOVAL subject type is used from the groups feature; the shared
+// Vote model also backs PROJECT votes elsewhere in the API.
+export const voteChoiceSchema = z.enum(["FOR", "AGAINST", "ABSTAIN"])
+
+export type VoteChoice = z.infer<typeof voteChoiceSchema>
+
+export const voteStatusSchema = z.enum(["OPEN", "APPROVED", "REJECTED", "INVALID"])
+
+export const voteResponseSchema = z.object({
+	id: z.string(),
+	voteId: z.string(),
+	memberId: z.string(),
+	choice: voteChoiceSchema,
+	votedAt: z.string(),
+})
+
+export type VoteResponse = z.infer<typeof voteResponseSchema>
+
+export const voteTallySchema = z.object({
+	FOR: z.number(),
+	AGAINST: z.number(),
+	ABSTAIN: z.number(),
+})
+
+// GET /groups/:id/removal-votes and the propose endpoint's response both
+// return a MEMBER_REMOVAL Vote; the discovery endpoint additionally batches
+// in each vote's responses and tally so the member list can render a live
+// tally with a single request, no per-vote follow-up fetch.
+export const removalVoteSchema = z.object({
+	id: z.string(),
+	groupId: z.string(),
+	targetMemberId: z.string(),
+	approvalThreshold: z.coerce.number(),
+	minQuorum: z.number(),
+	durationHours: z.number(),
+	openedAt: z.string(),
+	scheduledCloseAt: z.string(),
+	actualCloseAt: z.string().nullable(),
+	status: voteStatusSchema,
+})
+
+export type RemovalVote = z.infer<typeof removalVoteSchema>
+
+export const removalVoteWithTallySchema = removalVoteSchema.extend({
+	responses: z.array(voteResponseSchema),
+	tally: voteTallySchema,
+})
+
+export type RemovalVoteWithTally = z.infer<typeof removalVoteWithTallySchema>
+
 export function paginatedSchema<T extends z.ZodTypeAny>(item: T) {
 	return z.object({
 		data: z.array(item),
@@ -78,6 +129,7 @@ export function paginatedSchema<T extends z.ZodTypeAny>(item: T) {
 export const groupsPageSchema = paginatedSchema(groupSchema)
 export const membersPageSchema = paginatedSchema(groupMemberSchema)
 export const invitesPageSchema = paginatedSchema(groupInviteSchema)
+export const removalVotesPageSchema = paginatedSchema(removalVoteWithTallySchema)
 
 export const createGroupSchema = z.object({
 	name: z.string().min(1, "Le nom est requis"),
@@ -100,3 +152,19 @@ export const inviteEmailSchema = z.object({
 })
 
 export type InviteEmailInput = z.infer<typeof inviteEmailSchema>
+
+// The propose removal vote form only asks for a duration (spec
+// 0003-group-membership-ui AC-9): approvalThreshold and minQuorum are
+// computed to the mandatory floor from the group's active member count,
+// never asked of the proposer.
+export const proposeRemovalVoteFormSchema = z.object({
+	durationHours: z.coerce.number().int().min(1, "La durée doit être d'au moins 1 heure"),
+})
+
+export type ProposeRemovalVoteFormInput = z.infer<typeof proposeRemovalVoteFormSchema>
+
+export interface ProposeRemovalVoteInput {
+	approvalThreshold: number
+	minQuorum: number
+	durationHours: number
+}

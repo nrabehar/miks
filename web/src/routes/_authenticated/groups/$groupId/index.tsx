@@ -39,6 +39,7 @@ import {
 import { Skeleton } from "#/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs"
 import { Textarea } from "#/components/ui/textarea"
+import { useMe } from "#/features/auth/hooks"
 import { InviteRow } from "#/features/groups/components/invite-row"
 import { MemberRow } from "#/features/groups/components/member-row"
 import {
@@ -48,6 +49,7 @@ import {
 	useInvites,
 	useLeaveGroup,
 	useMembers,
+	useRemovalVotes,
 	useUpdateGroup,
 } from "#/features/groups/hooks"
 import {
@@ -58,6 +60,7 @@ import {
 
 const MEMBERS_PAGE_SIZE = 50
 const INVITES_PAGE_SIZE = 20
+const REMOVAL_VOTES_PAGE_SIZE = 20
 
 export const Route = createFileRoute("/_authenticated/groups/$groupId/")({
 	component: GroupDetailPage,
@@ -97,7 +100,7 @@ function GroupDetailPage() {
 				</TabsContent>
 
 				<TabsContent value="members" className="mt-4">
-					<MembersTab groupId={groupId} />
+					<MembersTab groupId={groupId} isClosed={isClosed} />
 				</TabsContent>
 
 				<TabsContent value="invites" className="mt-4">
@@ -327,12 +330,29 @@ function OverviewTab({
 	)
 }
 
-function MembersTab({ groupId }: { groupId: string }) {
+function MembersTab({ groupId, isClosed }: { groupId: string; isClosed: boolean }) {
 	const { t } = useTranslation()
+	const { data: me } = useMe()
 	const { data, isPending } = useMembers(groupId, {
 		page: 1,
 		limit: MEMBERS_PAGE_SIZE,
 	})
+	const { data: removalVotes } = useRemovalVotes(groupId, {
+		page: 1,
+		limit: REMOVAL_VOTES_PAGE_SIZE,
+	})
+
+	const activeCount = data?.data.filter((member) => member.status === "ACTIVE").length ?? 0
+	// Mirrors RemovalVotesService.proposeRemoval's floor: a removal vote needs
+	// at least 2 other active members besides the target, and its minQuorum a
+	// bare majority of them (api/src/modules/groups/removal-votes.service.ts).
+	const othersCount = activeCount - 1
+	const canPropose = othersCount >= 2
+	const minQuorum = Math.floor(othersCount / 2) + 1
+	const myMemberId = data?.data.find((member) => member.userId === me?.id)?.id
+	const votesByTarget = new Map(
+		removalVotes?.data.map((vote) => [vote.targetMemberId, vote]) ?? [],
+	)
 
 	return (
 		<Card>
@@ -351,7 +371,18 @@ function MembersTab({ groupId }: { groupId: string }) {
 					<p className="text-muted-foreground text-sm">{t("groups.members.empty")}</p>
 				)}
 
-				{data?.data.map((member) => <MemberRow key={member.id} member={member} />)}
+				{data?.data.map((member) => (
+					<MemberRow
+						key={member.id}
+						groupId={groupId}
+						member={member}
+						isClosed={isClosed}
+						openVote={votesByTarget.get(member.id)}
+						myMemberId={myMemberId}
+						canPropose={canPropose}
+						minQuorum={minQuorum}
+					/>
+				))}
 			</CardContent>
 		</Card>
 	)

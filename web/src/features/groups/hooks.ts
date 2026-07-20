@@ -5,16 +5,20 @@ import {
 	createGroup,
 	createInvite,
 	leaveGroup,
+	proposeRemovalVote,
+	respondToVote,
 	revokeInvite,
 	updateGroup,
 } from "./api"
 import type { ListParams } from "./api"
+import type { ProposeRemovalVoteInput, VoteChoice } from "./schema"
 import {
 	groupKeys,
 	groupQueryOptions,
 	groupsListQueryOptions,
 	invitesQueryOptions,
 	membersQueryOptions,
+	removalVotesQueryOptions,
 } from "./queries"
 
 export function useGroups(params: ListParams) {
@@ -31,6 +35,10 @@ export function useMembers(groupId: string, params: ListParams) {
 
 export function useInvites(groupId: string, params: ListParams) {
 	return useQuery(invitesQueryOptions(groupId, params))
+}
+
+export function useRemovalVotes(groupId: string, params: ListParams) {
+	return useQuery(removalVotesQueryOptions(groupId, params))
 }
 
 // Every group mutation opts out of TanStack Query's default online mutation
@@ -116,6 +124,45 @@ export function useRevokeInvite(groupId: string) {
 				queryKey: groupKeys.all,
 				predicate: (query) =>
 					query.queryKey[1] === "invites" && query.queryKey[2] === groupId,
+			})
+		},
+	})
+}
+
+export function useProposeRemovalVote(groupId: string) {
+	const queryClient = useQueryClient()
+
+	return useMutation({
+		mutationFn: ({
+			memberId,
+			input,
+		}: {
+			memberId: string
+			input: ProposeRemovalVoteInput
+		}) => proposeRemovalVote(groupId, memberId, input),
+		networkMode: "always",
+		onSuccess: () => {
+			void queryClient.invalidateQueries({
+				queryKey: groupKeys.all,
+				predicate: (query) =>
+					query.queryKey[1] === "removal-votes" && query.queryKey[2] === groupId,
+			})
+		},
+	})
+}
+
+export function useRespondToVote(groupId: string) {
+	const queryClient = useQueryClient()
+
+	return useMutation({
+		mutationFn: ({ voteId, choice }: { voteId: string; choice: VoteChoice }) =>
+			respondToVote(voteId, choice),
+		networkMode: "always",
+		onSuccess: () => {
+			void queryClient.invalidateQueries({
+				queryKey: groupKeys.all,
+				predicate: (query) =>
+					query.queryKey[1] === "removal-votes" && query.queryKey[2] === groupId,
 			})
 		},
 	})

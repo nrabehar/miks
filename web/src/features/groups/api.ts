@@ -5,7 +5,10 @@ import type {
 	GroupInvite,
 	GroupMember,
 	InvitePreview,
+	ProposeRemovalVoteInput,
+	RemovalVote,
 	UpdateGroupInput,
+	VoteChoice,
 } from "./schema"
 import {
 	groupInviteSchema,
@@ -15,6 +18,8 @@ import {
 	invitePreviewSchema,
 	invitesPageSchema,
 	membersPageSchema,
+	removalVoteSchema,
+	removalVotesPageSchema,
 } from "./schema"
 
 export interface ListParams {
@@ -87,4 +92,25 @@ export async function fetchInvitePreview(token: string): Promise<InvitePreview> 
 export async function acceptInvite(token: string): Promise<GroupMember> {
 	const { data } = await apiClient.post(`/invites/${token}/accept`)
 	return groupMemberSchema.parse(data)
+}
+
+export async function fetchRemovalVotes(groupId: string, params: ListParams) {
+	const { data } = await apiClient.get(`/groups/${groupId}/removal-votes`, { params })
+	return removalVotesPageSchema.parse(data)
+}
+
+export async function proposeRemovalVote(
+	groupId: string,
+	memberId: string,
+	input: ProposeRemovalVoteInput,
+): Promise<RemovalVote> {
+	const { data } = await apiClient.post(
+		`/groups/${groupId}/members/${memberId}/removal-votes`,
+		input,
+	)
+	return removalVoteSchema.parse(data)
+}
+
+export async function respondToVote(voteId: string, choice: VoteChoice): Promise<void> {
+	await apiClient.post(`/votes/${voteId}/responses`, { choice })
 }

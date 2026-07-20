@@ -1,6 +1,15 @@
 # Verify: group membership UI · spec 0003 · updated 2026-07-20
 _Steps derived from spec 0003 acceptance criteria. `/check verify` runs these; `/test` locks the durable ones._
 
+## UI / manual — removal vote (AC-9, AC-10, AC-11; unblocked by the api's `GET /groups/:id/removal-votes` discovery addendum)
+- [ ] On a member row with fewer than 2 other active members in the group, the propose vote button is disabled with a visible reason instead of hidden silently → AC-9
+- [ ] With at least 2 other active members, open the propose dialog on a member row, enter a duration, submit → the vote opens (threshold/quorum are not asked, computed to the mandatory floor) → AC-9
+- [ ] Attempt to propose a second vote against the same target while one is already open → see the "already open" error, not a generic failure → AC-9
+- [ ] As an active member other than the target, see the open vote's live tally (FOR/AGAINST/ABSTAIN counts) inline on the target's row, with FOR/AGAINST/ABSTAIN response buttons → respond → the tally updates after the response → AC-10
+- [ ] As the targeted member, view your own row → see the tally with no response buttons of your own → AC-10
+- [ ] As a member who already responded, view the target's row again → response buttons are replaced by an already-responded note, no double vote possible → AC-10
+- [ ] Let a vote's `scheduledCloseAt` pass without any client polling, then trigger any refetch (respond to it, or revisit the tab) → the vote resolves server side on that read and disappears from the open list; the target's member row reflects their new LEFT status once the member list refetches, with no further action → AC-11
+
 ## UI / manual
 - [ ] Log in with a user who has zero groups → land straight on the create group form, not an empty dashboard → AC-1
 - [ ] Log in with a user who has groups → see the paginated dashboard list, use previous/next → AC-1
@@ -17,15 +26,10 @@ _Steps derived from spec 0003 acceptance criteria. `/check verify` runs these; `
 - [ ] Go offline, attempt any group mutation (create, invite, revoke, edit, leave, close) → it fails loudly immediately, never queues for replay; group/member reads still render from the offline cache → AC-13
 - [ ] Switch the app language to Malagasy → every group screen string resolves (no raw `groups.*` keys visible) → AC-14
 
-## Not yet buildable (blocked)
-- [ ] Propose a removal vote from a member row, defaulting threshold/quorum to the mandatory floor, asking only for duration; hidden/disabled with fewer than 2 other active members → AC-9 — **blocked**: needs the backend API addition below.
-- [ ] An open removal vote shows inline on the target's row as a live tally (FOR/AGAINST/ABSTAIN) with response buttons for every eligible member except the target → AC-10 — **blocked**: no endpoint exists for the frontend to discover an open vote's id for a member; only `POST /groups/:id/members/:memberId/removal-votes` (propose, returns the new vote's id) and `GET /votes/:voteId` (needs that id already) exist. Route `/architect group membership UI: add an API surface for the frontend to discover a group's open removal vote(s)` before building this.
-- [ ] A vote past its `scheduledCloseAt` still shows open until the next fetch flips it to its resolved status → AC-11 — same block as above.
-
 ## Commands
 - [ ] `npx tsc --noEmit -p web/tsconfig.app.json` → passes clean
 - [ ] `npx vitest run` (in `web/`) → all suites pass
 
 ## Acceptance-criteria coverage
 - AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-8, AC-12, AC-13, AC-14 covered by the UI/manual steps above, all built and passing typecheck/tests.
-- AC-9, AC-10, AC-11 not yet buildable: blocked on a missing backend API surface, routed to `/architect`.
+- AC-9, AC-10, AC-11 covered by the removal vote UI/manual steps above, built on the api's removal vote discovery addendum, passing typecheck/tests.

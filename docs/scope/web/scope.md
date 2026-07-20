@@ -15,12 +15,12 @@ Builds every screen for the group lifecycle the backend already supports (api sp
 **Done when:** a user can create a group and land in it, invite someone by email and see pending invites, accept an invite (including logging in or registering first if needed), see the member list and edit group details, leave, propose and respond to a removal vote with a live tally, and close the group as its last member, all matching the acceptance criteria in spec [0003](../../specs/web/0003-group-membership-ui/index.md).
 
 - [x] Design it (spec): [0003](../../specs/web/0003-group-membership-ui/index.md)
-- [ ] Build it: /develop group membership UI — code in `web/src/features/groups/`, `web/src/routes/_authenticated/groups/`, `web/src/routes/invites/`, `web/src/routes/_authenticated/index.tsx`
+- [x] Build it: /develop group membership UI — code in `web/src/features/groups/`, `web/src/routes/_authenticated/groups/`, `web/src/routes/invites/`, `web/src/routes/_authenticated/index.tsx`
   - [x] Route scaffold, group feature folder, dashboard list, create group flow — AC-1, AC-2, AC-12
   - [x] Group detail: member list, edit group, invite flow (send, list, revoke) — AC-3, AC-6
   - [x] Public invite landing route, auth carry through, auto accept, terminal error states — AC-4, AC-5
   - [x] Leave and close flows, including the last active member and closed read only states — AC-7, AC-8
-  - [ ] Removal vote (propose, respond, live tally) — AC-9, AC-10, AC-11: blocked, no API to discover an open vote's id for a member (needed for AC-10/AC-11's live tally) — routed to `/architect group membership UI: add an API surface for the frontend to discover a group's open removal vote(s)`. Offline mutation guard (AC-13) and i18n keys (AC-14) are done for every flow already built.
+  - [x] Removal vote (propose, respond, live tally) — AC-9, AC-10, AC-11: unblocked by the api's removal vote discovery addendum (`GET /groups/:id/removal-votes`); the member row proposes a vote (duration only, threshold/quorum computed to the mandatory floor client side from the active member count) and shows a batched inline tally with response buttons for every eligible member, refetched on mutation success rather than polled. Offline mutation guard (AC-13) and i18n keys (AC-14) are done for every flow.
 - [ ] Verify it: /check verify group membership UI
 - [ ] Test it: /test group membership UI
 
