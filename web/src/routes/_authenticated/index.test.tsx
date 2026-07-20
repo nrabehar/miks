@@ -51,17 +51,44 @@ function renderApp() {
 	return { router, queryClient }
 }
 
+const testUser = {
+	id: "1",
+	email: "a@b.com",
+	displayName: "Test User",
+	role: "USER",
+	emailVerified: true,
+}
+
+const oneGroupPage = {
+	data: [
+		{
+			id: "g1",
+			name: "Test Group",
+			description: null,
+			creatorId: "1",
+			currencyCode: "MGA",
+			status: "ACTIVE",
+			closedAt: null,
+			createdAt: new Date().toISOString(),
+		},
+	],
+	page: 1,
+	limit: 20,
+	total: 1,
+}
+
 describe("root auth guard (covers: root layout checks who is logged in via /auth/me)", () => {
 	it("renders the dashboard when /auth/me resolves a real session", async () => {
-		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER", emailVerified: true }
 		apiClient.defaults.adapter = (config) => {
-			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(user))
+			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(testUser))
+			if (config.url === "/groups") return Promise.resolve(envelopeResponse(oneGroupPage))
 			return Promise.reject(new Error(`unexpected request: ${config.url}`))
 		}
 
 		renderApp()
 
-		await screen.findByText(/Test User/)
+		await screen.findByText("Test Group")
+		expect(screen.getByRole("button", { name: "TU" })).toBeInTheDocument()
 	})
 
 	it("redirects to /auth/login when /auth/me is unauthenticated (covers: protected routes redirect when not authenticated)", async () => {
@@ -79,15 +106,15 @@ describe("root auth guard (covers: root layout checks who is logged in via /auth
 
 describe("dashboard", () => {
 	it("logout menu item is reachable by keyboard and has an accessible name", async () => {
-		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER", emailVerified: true }
 		apiClient.defaults.adapter = (config) => {
-			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(user))
+			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(testUser))
+			if (config.url === "/groups") return Promise.resolve(envelopeResponse(oneGroupPage))
 			if (config.url === "/auth/logout") return Promise.resolve(envelopeResponse(null, 204))
 			return Promise.reject(new Error(`unexpected request: ${config.url}`))
 		}
 
 		renderApp()
-		await screen.findByText(/Test User/)
+		await screen.findByText("Test Group")
 
 		const trigger = screen.getByRole("button", { name: "TU" })
 		const user_ = userEvent.setup()
@@ -101,17 +128,16 @@ describe("dashboard", () => {
 	})
 
 	it("navigates to /auth/login once logout succeeds", async () => {
-		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER", emailVerified: true }
-
 		apiClient.defaults.adapter = (config) => {
-			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(user))
+			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(testUser))
+			if (config.url === "/groups") return Promise.resolve(envelopeResponse(oneGroupPage))
 			if (config.url === "/auth/logout") return Promise.resolve(envelopeResponse(null, 204))
 			return Promise.reject(new Error(`unexpected request: ${config.url}`))
 		}
 
 		const { router } = renderApp()
 
-		await screen.findByText(/Test User/)
+		await screen.findByText("Test Group")
 
 		await userEvent.click(screen.getByRole("button", { name: "TU" }))
 		await userEvent.click(await screen.findByText("Se déconnecter"))
@@ -120,10 +146,9 @@ describe("dashboard", () => {
 	})
 
 	it("stays on the dashboard without crashing when logout fails", async () => {
-		const user = { id: "1", email: "a@b.com", displayName: "Test User", role: "USER", emailVerified: true }
-
 		apiClient.defaults.adapter = (config) => {
-			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(user))
+			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(testUser))
+			if (config.url === "/groups") return Promise.resolve(envelopeResponse(oneGroupPage))
 			if (config.url === "/auth/logout") {
 				return Promise.reject({ response: envelopeError(500, "Internal error") })
 			}
@@ -131,7 +156,7 @@ describe("dashboard", () => {
 		}
 
 		const { router } = renderApp()
-		await screen.findByText(/Test User/)
+		await screen.findByText("Test Group")
 
 		await userEvent.click(screen.getByRole("button", { name: "TU" }))
 		await userEvent.click(await screen.findByText("Se déconnecter"))
@@ -140,6 +165,35 @@ describe("dashboard", () => {
 		// neither navigated away nor crashed to an error boundary.
 		await new Promise((resolve) => setTimeout(resolve, 50))
 		expect(router.state.location.pathname).toBe("/")
-		expect(screen.getByText(/Test User/)).toBeInTheDocument()
+		expect(screen.getByText("Test Group")).toBeInTheDocument()
+	})
+})
+
+describe("groups dashboard (spec 0003-group-membership-ui, AC-1)", () => {
+	it("redirects a user with zero groups straight to the create group form", async () => {
+		apiClient.defaults.adapter = (config) => {
+			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(testUser))
+			if (config.url === "/groups") {
+				return Promise.resolve(envelopeResponse({ data: [], page: 1, limit: 20, total: 0 }))
+			}
+			return Promise.reject(new Error(`unexpected request: ${config.url}`))
+		}
+
+		const { router } = renderApp()
+
+		await waitFor(() => expect(router.state.location.pathname).toBe("/groups/new"))
+	})
+
+	it("lists the user's groups when they have at least one", async () => {
+		apiClient.defaults.adapter = (config) => {
+			if (config.url === "/auth/me") return Promise.resolve(envelopeResponse(testUser))
+			if (config.url === "/groups") return Promise.resolve(envelopeResponse(oneGroupPage))
+			return Promise.reject(new Error(`unexpected request: ${config.url}`))
+		}
+
+		renderApp()
+
+		expect(await screen.findByText("Test Group")).toBeInTheDocument()
+		expect(screen.getByText("Mes groupes")).toBeInTheDocument()
 	})
 })

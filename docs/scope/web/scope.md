@@ -15,12 +15,12 @@ Builds every screen for the group lifecycle the backend already supports (api sp
 **Done when:** a user can create a group and land in it, invite someone by email and see pending invites, accept an invite (including logging in or registering first if needed), see the member list and edit group details, leave, propose and respond to a removal vote with a live tally, and close the group as its last member, all matching the acceptance criteria in spec [0003](../../specs/web/0003-group-membership-ui/index.md).
 
 - [x] Design it (spec): [0003](../../specs/web/0003-group-membership-ui/index.md)
-- [ ] Build it: /develop group membership UI
-  - [ ] Route scaffold, group feature folder, dashboard list, create group flow — AC-1, AC-2, AC-12
-  - [ ] Group detail: member list, edit group, invite flow (send, list, revoke) — AC-3, AC-6
-  - [ ] Public invite landing route, auth carry through, auto accept, terminal error states — AC-4, AC-5
-  - [ ] Leave and close flows, including the last active member and closed read only states — AC-7, AC-8
-  - [ ] Removal vote (propose, respond, live tally), offline mutation guard, i18n keys — AC-9, AC-10, AC-11, AC-13, AC-14
+- [ ] Build it: /develop group membership UI — code in `web/src/features/groups/`, `web/src/routes/_authenticated/groups/`, `web/src/routes/invites/`, `web/src/routes/_authenticated/index.tsx`
+  - [x] Route scaffold, group feature folder, dashboard list, create group flow — AC-1, AC-2, AC-12
+  - [x] Group detail: member list, edit group, invite flow (send, list, revoke) — AC-3, AC-6
+  - [x] Public invite landing route, auth carry through, auto accept, terminal error states — AC-4, AC-5
+  - [x] Leave and close flows, including the last active member and closed read only states — AC-7, AC-8
+  - [ ] Removal vote (propose, respond, live tally) — AC-9, AC-10, AC-11: blocked, no API to discover an open vote's id for a member (needed for AC-10/AC-11's live tally) — routed to `/architect group membership UI: add an API surface for the frontend to discover a group's open removal vote(s)`. Offline mutation guard (AC-13) and i18n keys (AC-14) are done for every flow already built.
 - [ ] Verify it: /check verify group membership UI
 - [ ] Test it: /test group membership UI
 

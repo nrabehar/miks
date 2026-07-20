@@ -1,7 +1,7 @@
 # 0003. Group membership UI (create, invite, join, members, leave, removal vote, close)
 
 **Date**: 2026-07-19
-**Status**: Proposed
+**Status**: In Progress
 
 ## Summary
 

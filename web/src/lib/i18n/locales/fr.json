@@ -126,5 +126,85 @@
 		"subtitle": "Voici un aperçu de votre compte",
 		"role": "Rôle",
 		"logout": "Se déconnecter"
+	},
+	"groups": {
+		"dashboard": {
+			"title": "Mes groupes",
+			"create": "Créer un groupe",
+			"notAMember": "Vous n'êtes pas membre de ce groupe",
+			"previous": "Précédent",
+			"next": "Suivant",
+			"pageOf": "Page {{page}} sur {{totalPages}}"
+		},
+		"create": {
+			"title": "Créer un groupe",
+			"name": "Nom",
+			"description": "Description",
+			"currency": "Devise",
+			"submit": "Créer",
+			"submitting": "Création en cours...",
+			"genericError": "La création du groupe a échoué, réessayez"
+		},
+		"detail": {
+			"overviewTab": "Aperçu",
+			"membersTab": "Membres",
+			"invitesTab": "Invitations"
+		},
+		"overview": {
+			"title": "Aperçu du groupe",
+			"save": "Enregistrer",
+			"saving": "Enregistrement en cours...",
+			"saved": "Modifications enregistrées",
+			"genericError": "Une erreur est survenue, réessayez",
+			"leave": "Quitter le groupe",
+			"leaveConfirmTitle": "Quitter ce groupe ?",
+			"leaveConfirmDescription": "Vous ne pourrez plus voir ni gérer ce groupe, sauf si vous êtes réinvité.",
+			"leaveLastMember": "Vous êtes le dernier membre actif, vous devez clôturer le groupe au lieu de le quitter",
+			"left": "Vous avez quitté le groupe",
+			"close": "Clôturer le groupe",
+			"closeConfirmTitle": "Clôturer ce groupe ?",
+			"closeConfirmDescription": "Cette action est définitive : le groupe deviendra consultable en lecture seule pour toujours.",
+			"closeNotLastMember": "Seul le dernier membre actif peut clôturer le groupe",
+			"closed": "Le groupe a été clôturé",
+			"closedNotice": "Ce groupe est clôturé et consultable en lecture seule uniquement."
+		},
+		"members": {
+			"title": "Membres",
+			"empty": "Aucun membre",
+			"you": "Vous",
+			"left": "Parti",
+			"unknownMember": "Membre {{id}}",
+			"joinedAt": "Membre depuis le {{date}}",
+			"leftAt": "Parti le {{date}}"
+		},
+		"invites": {
+			"inviteTitle": "Inviter par e-mail",
+			"emailPlaceholder": "vous@exemple.com",
+			"send": "Envoyer l'invitation",
+			"sending": "Envoi en cours...",
+			"sent": "Invitation envoyée",
+			"alreadyPendingOrMember": "Cette personne est déjà membre ou a déjà une invitation en attente",
+			"genericError": "L'envoi de l'invitation a échoué, réessayez",
+			"pendingTitle": "Invitations en attente",
+			"empty": "Aucune invitation en attente",
+			"expiresAt": "Expire le {{date}}",
+			"revoke": "Révoquer",
+			"revokeConfirmTitle": "Révoquer cette invitation ?",
+			"revokeConfirmDescription": "Le lien d'invitation ne pourra plus être utilisé.",
+			"cancel": "Annuler"
+		},
+		"invite": {
+			"previewTitle": "Invitation à rejoindre {{groupName}}",
+			"previewSubtitle": "Invité par {{inviter}}",
+			"login": "Se connecter",
+			"register": "Créer un compte",
+			"errorTitle": "Invitation invalide",
+			"noLongerValid": "Cette invitation a expiré, a déjà été utilisée ou a été révoquée.",
+			"emailMismatch": "Cette invitation a été envoyée à une autre adresse e-mail que celle de votre compte.",
+			"backToDashboard": "Retour à mes groupes"
+		},
+		"status": {
+			"closed": "Clôturé"
+		}
 	}
 }

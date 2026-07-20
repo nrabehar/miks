@@ -126,5 +126,85 @@
 		"subtitle": "Ity ny topi-maso ankapobeny momba ny kaontinao",
 		"role": "Andraikitra",
 		"logout": "Hivoaka"
+	},
+	"groups": {
+		"dashboard": {
+			"title": "Ireo vondrona ahy",
+			"create": "Mamorona vondrona",
+			"notAMember": "Tsy mpikambana amin'ity vondrona ity ianao",
+			"previous": "Teo aloha",
+			"next": "Manaraka",
+			"pageOf": "Pejy {{page}} amin'ny {{totalPages}}"
+		},
+		"create": {
+			"title": "Mamorona vondrona",
+			"name": "Anarana",
+			"description": "Famaritana",
+			"currency": "Vola",
+			"submit": "Mamorona",
+			"submitting": "Famoronana...",
+			"genericError": "Tsy nahomby ny famoronana vondrona, andramo indray"
+		},
+		"detail": {
+			"overviewTab": "Topi-maso",
+			"membersTab": "Mpikambana",
+			"invitesTab": "Fanasana"
+		},
+		"overview": {
+			"title": "Topi-maso momba ny vondrona",
+			"save": "Tehirizo",
+			"saving": "Fitehirizana...",
+			"saved": "Voatahiry ny fanovana",
+			"genericError": "Nisy olana nitranga, andramo indray",
+			"leave": "Miala amin'ny vondrona",
+			"leaveConfirmTitle": "Hiala amin'ity vondrona ity ?",
+			"leaveConfirmDescription": "Tsy ho afaka hijery na hitantana ity vondrona ity intsony ianao, raha tsy asaina miditra indray.",
+			"leaveLastMember": "Ianao no mpikambana mavitrika farany, tsy maintsy mamarana ny vondrona ianao fa tsy miala",
+			"left": "Niala tamin'ny vondrona ianao",
+			"close": "Mamarana ny vondrona",
+			"closeConfirmTitle": "Hamarana ity vondrona ity ?",
+			"closeConfirmDescription": "Tsy azo hovana intsony ity : ho azo jerena fotsiny ny vondrona amin'ny ho avy.",
+			"closeNotLastMember": "Ny mpikambana mavitrika farany ihany no afaka mamarana ny vondrona",
+			"closed": "Voafarana ny vondrona",
+			"closedNotice": "Voafarana ity vondrona ity ary azo jerena fotsiny."
+		},
+		"members": {
+			"title": "Mpikambana",
+			"empty": "Tsy misy mpikambana",
+			"you": "Ianao",
+			"left": "Niala",
+			"unknownMember": "Mpikambana {{id}}",
+			"joinedAt": "Mpikambana hatramin'ny {{date}}",
+			"leftAt": "Niala tamin'ny {{date}}"
+		},
+		"invites": {
+			"inviteTitle": "Manasa amin'ny mailaka",
+			"emailPlaceholder": "ianao@ohatra.com",
+			"send": "Alefaso ny fanasana",
+			"sending": "Fandefasana...",
+			"sent": "Nalefa ny fanasana",
+			"alreadyPendingOrMember": "Efa mpikambana io olona io na efa manana fanasana miandry",
+			"genericError": "Tsy nahomby ny fandefasana fanasana, andramo indray",
+			"pendingTitle": "Fanasana miandry",
+			"empty": "Tsy misy fanasana miandry",
+			"expiresAt": "Lany daty ny {{date}}",
+			"revoke": "Esory",
+			"revokeConfirmTitle": "Hesorina io fanasana io ?",
+			"revokeConfirmDescription": "Tsy ho azo ampiasaina intsony ny rohin'ny fanasana.",
+			"cancel": "Aoka ihany"
+		},
+		"invite": {
+			"previewTitle": "Fanasana hiditra ao amin'ny {{groupName}}",
+			"previewSubtitle": "Nasain'i {{inviter}}",
+			"login": "Hiditra",
+			"register": "Mamorona kaonty",
+			"errorTitle": "Fanasana tsy mety",
+			"noLongerValid": "Lany daty na efa nampiasaina na nesorina ity fanasana ity.",
+			"emailMismatch": "Nalefa tamin'ny mailaka hafa noho ny an'ny kaontinao ity fanasana ity.",
+			"backToDashboard": "Hiverina any amin'ny vondronako"
+		},
+		"status": {
+			"closed": "Voafarana"
+		}
 	}
 }
