@@ -146,9 +146,13 @@
 			"genericError": "La création du groupe a échoué, réessayez"
 		},
 		"detail": {
-			"overviewTab": "Aperçu",
+			"dashboardTab": "Vue d'ensemble",
 			"membersTab": "Membres",
-			"invitesTab": "Invitations"
+			"invitesTab": "Invitations",
+			"settingsTab": "Paramètres"
+		},
+		"sidebar": {
+			"backToGroups": "Mes groupes"
 		},
 		"overview": {
 			"title": "Aperçu du groupe",

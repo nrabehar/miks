@@ -146,9 +146,13 @@
 			"genericError": "Tsy nahomby ny famoronana vondrona, andramo indray"
 		},
 		"detail": {
-			"overviewTab": "Topi-maso",
+			"dashboardTab": "Topi-maso",
 			"membersTab": "Mpikambana",
-			"invitesTab": "Fanasana"
+			"invitesTab": "Fanasana",
+			"settingsTab": "Fikirakirana"
+		},
+		"sidebar": {
+			"backToGroups": "Ny vondrona ahy"
 		},
 		"overview": {
 			"title": "Topi-maso momba ny vondrona",

@@ -2,6 +2,7 @@ import { createRootRouteWithContext, Outlet } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
 import type { QueryClient } from "@tanstack/react-query"
 import { Toaster } from "#/components/ui/sonner"
+import { TooltipProvider } from "#/components/ui/tooltip"
 import { authKeys, meQueryOptions } from "#/features/auth/queries"
 
 interface RouterContext {
@@ -29,10 +30,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootComponent() {
 	return (
-		<>
+		<TooltipProvider>
 			<Outlet />
 			<Toaster />
 			{import.meta.env.DEV && <TanStackRouterDevtools position="bottom-right" />}
-		</>
+		</TooltipProvider>
 	)
 }

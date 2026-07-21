@@ -22,6 +22,9 @@ import { Route as AuthenticatedGroupsGroupIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedGroupsNewRouteImport } from './routes/_authenticated/groups/new'
 import { Route as AuthenticatedSettingsSessionsRouteImport } from './routes/_authenticated/settings/sessions'
 import { Route as AuthenticatedGroupsGroupIdIndexRouteImport } from './routes/_authenticated/groups/$groupId/index'
+import { Route as AuthenticatedGroupsGroupIdInvitesRouteImport } from './routes/_authenticated/groups/$groupId/invites'
+import { Route as AuthenticatedGroupsGroupIdMembersRouteImport } from './routes/_authenticated/groups/$groupId/members'
+import { Route as AuthenticatedGroupsGroupIdSettingsRouteImport } from './routes/_authenticated/groups/$groupId/settings'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -90,6 +93,24 @@ const AuthenticatedGroupsGroupIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedGroupsGroupIdRoute,
   } as any)
+const AuthenticatedGroupsGroupIdInvitesRoute =
+  AuthenticatedGroupsGroupIdInvitesRouteImport.update({
+    id: '/invites',
+    path: '/invites',
+    getParentRoute: () => AuthenticatedGroupsGroupIdRoute,
+  } as any)
+const AuthenticatedGroupsGroupIdMembersRoute =
+  AuthenticatedGroupsGroupIdMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AuthenticatedGroupsGroupIdRoute,
+  } as any)
+const AuthenticatedGroupsGroupIdSettingsRoute =
+  AuthenticatedGroupsGroupIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedGroupsGroupIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -103,6 +124,9 @@ export interface FileRoutesByFullPath {
   '/groups/$groupId': typeof AuthenticatedGroupsGroupIdRouteWithChildren
   '/groups/new': typeof AuthenticatedGroupsNewRoute
   '/settings/sessions': typeof AuthenticatedSettingsSessionsRoute
+  '/groups/$groupId/invites': typeof AuthenticatedGroupsGroupIdInvitesRoute
+  '/groups/$groupId/members': typeof AuthenticatedGroupsGroupIdMembersRoute
+  '/groups/$groupId/settings': typeof AuthenticatedGroupsGroupIdSettingsRoute
   '/groups/$groupId/': typeof AuthenticatedGroupsGroupIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -116,6 +140,9 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/groups/new': typeof AuthenticatedGroupsNewRoute
   '/settings/sessions': typeof AuthenticatedSettingsSessionsRoute
+  '/groups/$groupId/invites': typeof AuthenticatedGroupsGroupIdInvitesRoute
+  '/groups/$groupId/members': typeof AuthenticatedGroupsGroupIdMembersRoute
+  '/groups/$groupId/settings': typeof AuthenticatedGroupsGroupIdSettingsRoute
   '/groups/$groupId': typeof AuthenticatedGroupsGroupIdIndexRoute
 }
 export interface FileRoutesById {
@@ -132,6 +159,9 @@ export interface FileRoutesById {
   '/_authenticated/groups/$groupId': typeof AuthenticatedGroupsGroupIdRouteWithChildren
   '/_authenticated/groups/new': typeof AuthenticatedGroupsNewRoute
   '/_authenticated/settings/sessions': typeof AuthenticatedSettingsSessionsRoute
+  '/_authenticated/groups/$groupId/invites': typeof AuthenticatedGroupsGroupIdInvitesRoute
+  '/_authenticated/groups/$groupId/members': typeof AuthenticatedGroupsGroupIdMembersRoute
+  '/_authenticated/groups/$groupId/settings': typeof AuthenticatedGroupsGroupIdSettingsRoute
   '/_authenticated/groups/$groupId/': typeof AuthenticatedGroupsGroupIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -148,6 +178,9 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/groups/new'
     | '/settings/sessions'
+    | '/groups/$groupId/invites'
+    | '/groups/$groupId/members'
+    | '/groups/$groupId/settings'
     | '/groups/$groupId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -161,6 +194,9 @@ export interface FileRouteTypes {
     | '/'
     | '/groups/new'
     | '/settings/sessions'
+    | '/groups/$groupId/invites'
+    | '/groups/$groupId/members'
+    | '/groups/$groupId/settings'
     | '/groups/$groupId'
   id:
     | '__root__'
@@ -176,6 +212,9 @@ export interface FileRouteTypes {
     | '/_authenticated/groups/$groupId'
     | '/_authenticated/groups/new'
     | '/_authenticated/settings/sessions'
+    | '/_authenticated/groups/$groupId/invites'
+    | '/_authenticated/groups/$groupId/members'
+    | '/_authenticated/groups/$groupId/settings'
     | '/_authenticated/groups/$groupId/'
   fileRoutesById: FileRoutesById
 }
@@ -283,15 +322,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGroupsGroupIdIndexRouteImport
       parentRoute: typeof AuthenticatedGroupsGroupIdRoute
     }
+    '/_authenticated/groups/$groupId/invites': {
+      id: '/_authenticated/groups/$groupId/invites'
+      path: '/invites'
+      fullPath: '/groups/$groupId/invites'
+      preLoaderRoute: typeof AuthenticatedGroupsGroupIdInvitesRouteImport
+      parentRoute: typeof AuthenticatedGroupsGroupIdRoute
+    }
+    '/_authenticated/groups/$groupId/members': {
+      id: '/_authenticated/groups/$groupId/members'
+      path: '/members'
+      fullPath: '/groups/$groupId/members'
+      preLoaderRoute: typeof AuthenticatedGroupsGroupIdMembersRouteImport
+      parentRoute: typeof AuthenticatedGroupsGroupIdRoute
+    }
+    '/_authenticated/groups/$groupId/settings': {
+      id: '/_authenticated/groups/$groupId/settings'
+      path: '/settings'
+      fullPath: '/groups/$groupId/settings'
+      preLoaderRoute: typeof AuthenticatedGroupsGroupIdSettingsRouteImport
+      parentRoute: typeof AuthenticatedGroupsGroupIdRoute
+    }
   }
 }
 
 interface AuthenticatedGroupsGroupIdRouteChildren {
+  AuthenticatedGroupsGroupIdInvitesRoute: typeof AuthenticatedGroupsGroupIdInvitesRoute
+  AuthenticatedGroupsGroupIdMembersRoute: typeof AuthenticatedGroupsGroupIdMembersRoute
+  AuthenticatedGroupsGroupIdSettingsRoute: typeof AuthenticatedGroupsGroupIdSettingsRoute
   AuthenticatedGroupsGroupIdIndexRoute: typeof AuthenticatedGroupsGroupIdIndexRoute
 }
 
 const AuthenticatedGroupsGroupIdRouteChildren: AuthenticatedGroupsGroupIdRouteChildren =
   {
+    AuthenticatedGroupsGroupIdInvitesRoute:
+      AuthenticatedGroupsGroupIdInvitesRoute,
+    AuthenticatedGroupsGroupIdMembersRoute:
+      AuthenticatedGroupsGroupIdMembersRoute,
+    AuthenticatedGroupsGroupIdSettingsRoute:
+      AuthenticatedGroupsGroupIdSettingsRoute,
     AuthenticatedGroupsGroupIdIndexRoute: AuthenticatedGroupsGroupIdIndexRoute,
   }
 
