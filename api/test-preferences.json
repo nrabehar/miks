@@ -1,9 +1,0 @@
-{
-	"tool": "jest",
-	"gate": null,
-	"additionalTools": [],
-	"e2eTool": "none",
-	"testDir": "beside-source",
-	"filePattern": "*.spec.ts",
-	"packageManager": "npm"
-}
